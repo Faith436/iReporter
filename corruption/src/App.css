@@ -1,164 +1,178 @@
-/* ===== General Layout ===== */
+/* ========== GLOBAL STYLES ========== */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f5f5;
   margin: 0;
-  padding: 0;
-}
-
-.container {
-  width: 95%;
-  max-width: 1200px;
-  margin: 20px auto;
-}
-
-/* ===== Auth Forms ===== */
-.auth-container, .form-container {
-  background-color: #fff;
-  padding: 25px 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 400px;
-  margin: 40px auto;
-}
-
-.auth-container h2, .form-container h2 {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  background-color: #f5f7fb;
+  color: #333;
 }
 
 button {
-  background-color: #007BFF;
-  color: #fff;
-  padding: 12px 20px;
-  margin-top: 10px;
+  cursor: pointer;
   border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  width: 100%;
-  transition: background 0.3s;
+  outline: none;
 }
 
-button:hover {
-  background-color: #0056b3;
+/* ========== DASHBOARD CONTAINER ========== */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  margin-left: 250px; /* Sidebar offset */
+  background-color: #f5f7fb;
 }
 
-.link {
-  color: #007BFF;
-  cursor: pointer;
+/* ========== HEADER ========== */
+.dashboard-container h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #1e2a4a;
+  margin-bottom: 1.5rem;
 }
 
-/* ===== Dashboard ===== */
-.dashboard-container, .admin-dashboard-container {
-  background-color: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
+/* ========== QUICK STATS ========== */
 .quick-stats {
   display: flex;
-  gap: 20px;
-  margin: 20px 0;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .quick-stats div {
   flex: 1;
-  background-color: #e9ecef;
-  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
   text-align: center;
-  border-radius: 10px;
-  font-weight: bold;
   font-size: 1.2rem;
+  color: #1e2a4a;
+  font-weight: 600;
+  transition: transform 0.2s ease;
 }
 
-.card {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+.quick-stats div:hover {
+  transform: translateY(-3px);
+  background: #f0f4ff;
 }
 
-.card h3 {
-  margin-top: 0;
-}
-
-.dashboard-container button, .admin-dashboard-container button {
-  margin-top: 10px;
-}
-
-/* ===== Report Details ===== */
-.report-details-container, .update-status-container {
-  background-color: #fff;
-  padding: 25px;
+/* ========== REPORT ISSUES SECTION ========== */
+.report-issues {
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 2rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
 }
 
-.evidence-container {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.report-issues h3 {
+  color: #1e2a4a;
+  margin-bottom: 1rem;
 }
 
-.evidence-card {
-  border: 1px solid #ddd;
+.report-issues button {
+  background: linear-gradient(135deg, #1e90ff, #00b4d8);
+  color: white;
+  padding: 0.8rem 1.2rem;
   border-radius: 8px;
-  padding: 5px;
+  margin-right: 1rem;
+  font-size: 1rem;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
-/* ===== Update Status ===== */
-.update-status-container label {
-  display: block;
-  margin: 10px 0;
+.report-issues button:hover {
+  background: linear-gradient(135deg, #0077b6, #0096c7);
+  transform: scale(1.05);
 }
 
-/* ===== Map Mock ===== */
-.map-preview {
-  width: 100%;
-  height: 200px;
-  background-color: #d1ecf1;
+/* ========== RECENT REPORTS ========== */
+.recent-reports {
+  background: white;
   border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.recent-reports h3 {
+  margin-bottom: 1.2rem;
+  color: #1e2a4a;
+}
+
+.report-card {
+  background: #f9fbff;
+  border-left: 5px solid #0077b6;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.report-card:hover {
+  transform: translateX(5px);
+  background: #eef6ff;
+}
+
+.report-card h4 {
+  color: #1e2a4a;
+  margin-bottom: 0.4rem;
+}
+
+.report-card p {
+  margin: 0.2rem 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 230px;
+  height: 100vh;
+  background-color: #1e2a4a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 2rem;
+}
+
+.sidebar img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.sidebar h3 {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar p {
+  font-size: 0.9rem;
+  color: #b0c4de;
+  margin-bottom: 2rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar ul li {
+  width: 100%;
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #0c5460;
-  font-weight: bold;
-  margin: 15px 0;
+  gap: 1rem;
+  color: #b0c4de;
+  font-weight: 500;
+  transition: background 0.3s ease, color 0.3s ease;
+  cursor: pointer;
 }
 
-/* ===== Admin Quick Stats ===== */
-.admin-dashboard-container .quick-stats {
-  display: flex;
-  gap: 15px;
+.sidebar ul li:hover {
+  background: #273a67;
+  color: white;
 }
-
-.admin-dashboard-container .quick-stats div {
-  flex: 1;
-  background-color: #e2e3e5;
-  padding: 20px;
-  text-align: center;
-  font-weight: bold;
-  font-size: 1rem;
-  border-radius: 8px;
-}
-
-/* ===== Buttons ===== */
-button.small {
-  width: auto;
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  margin-right: 5px;
-}
-
