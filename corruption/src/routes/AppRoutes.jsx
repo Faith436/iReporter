@@ -10,13 +10,15 @@ import UpdateStatus from '../pages/UpdateStatus';
 import { useAuth } from '../contexts/AuthContext';
 import MyReports from "../components/MyReports";
 import MapPreview from "../components/MapPreview"
+import LandingPage from '../pages/LandingPage'; 
 
 function RoutesConfig() {
   const { user } = useAuth();
 
   return (
     <Routes>
-      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Login />} />
+        <Route path="/" element={<LandingPage />} /> 
+      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
       <Route path="/create-report" element={user ? <CreateReport /> : <Navigate to="/" />} />
