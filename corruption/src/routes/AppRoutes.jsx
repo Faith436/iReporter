@@ -8,6 +8,8 @@ import ReportDetails from '../pages/ReportDetails';
 import AdminDashboard from '../pages/AdminDashboard';
 import UpdateStatus from '../pages/UpdateStatus';
 import { useAuth } from '../contexts/AuthContext';
+import MyReports from "../components/MyReports";
+import MapPreview from "../components/MapPreview"
 
 function RoutesConfig() {
   const { user } = useAuth();
@@ -18,6 +20,8 @@ function RoutesConfig() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
       <Route path="/create-report" element={user ? <CreateReport /> : <Navigate to="/" />} />
+       <Route path="/my-reports" element={<MyReports />} /> {/* My Reports */}
+         <Route path="/map" element={<MapPreview />} />
       <Route path="/report/:id" element={user ? <ReportDetails /> : <Navigate to="/" />} />
       <Route path="/admin" element={user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/" />} />
       <Route path="/update-status/:id" element={user?.role === 'admin' ? <UpdateStatus /> : <Navigate to="/" />} />

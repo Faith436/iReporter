@@ -1,38 +1,66 @@
+// import React from 'react';
+// import Side from '../components/Side';
+// import QuickStarts from '../components/QuickStats';
+// import RecentReports from '../components/RecentReports';
+// import Footer from '../components/Footer';
+// import '../styles/Dashboard.css';
+
+// function Dashboard() {
+//   return (
+//     <div className="dashboard">
+//       <Side />
+
+//       <div className="dashboard-main">
+//         <header className="dashboard-header">
+//           <h2>👋 Welcome back, User!</h2>
+//           <p>Here’s what’s happening with your reports today.</p>
+//         </header>
+
+//         <QuickStarts />
+
+//         <section className="dashboard-section">
+//           <RecentReports />
+//         </section>
+
+//         <Footer />
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default Dashboard;
+
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../App.css';
+import Side from '../components/Side';
+import QuickStarts from '../components/QuickStats';
+import RecentReports from '../components/RecentReports';
+import Footer from '../components/Footer';
+import '../styles/Dashboard.css';
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const recentReports = [
-    { id: 1, title: 'Road Repair Needed', status: 'Pending', location: 'Main Street', date: '2 days ago' },
-    { id: 2, title: 'Corruption Case', status: 'Under Investigation', location: 'Licensing Office', date: '1 week ago' }
-  ];
-
   return (
-    <div className="dashboard-container">
-      <h2>👋 Welcome back!</h2>
-      <div className="quick-stats">
-        <div>Total: 5</div>
-        <div>Active: 2</div>
-        <div>Resolved: 3</div>
-      </div>
+    <div className="dashboard">
+      <Side />
 
-      <div className="report-issues">
-        <h3>🚨 Report Issues</h3>
-        <button onClick={() => navigate('/create-report')}>📌 Report Red Flag</button>
-        {/* <button onClick={() => navigate('/create-report')}>🛠️ Request Intervention</button> */}
-      </div>
+      <div className="dashboard-main">
+        <header className="dashboard-header">
+          <h2>👋 Welcome back, User!</h2>
+          <p>Here’s what’s happening with your reports today.</p>
+        </header>
 
-      <div className="recent-reports">
-        <h3>📋 My Recent Reports</h3>
-        {recentReports.map(report => (
-          <div key={report.id} className="report-card" onClick={() => navigate(`/report/${report.id}`)}>
-            <h4>{report.title}</h4>
-            <p>📍 {report.location} • 🕐 {report.date}</p>
-            <p>Status: {report.status}</p>
-          </div>
-        ))}
+        {/* QuickStarts Section */}
+        <section className="quick-starts">
+          <QuickStarts />
+        </section>
+
+        {/* Recent Reports Section */}
+        <section className="dashboard-section">
+          <h3>Recently Reported Corruption Cases</h3>
+          <RecentReports />
+        </section>
+
+        {/* Footer always at bottom */}
+        <Footer />
       </div>
     </div>
   );
