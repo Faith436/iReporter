@@ -13,7 +13,7 @@ const Side = ({
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  ;
 
   // Load notifications from localStorage
   useEffect(() => {
@@ -24,14 +24,8 @@ const Side = ({
     setUnreadCount(unread);
   }, []);
 
-  // Load theme preference
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('ireporter-theme');
-    if (savedTheme) {
-      setIsDarkTheme(savedTheme === 'dark');
-      document.body.classList.toggle('dark-theme', savedTheme === 'dark');
-    }
-  }, []);
+  
+ 
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -60,16 +54,7 @@ const Side = ({
     navigate('/map');
   };
 
-  const handleThemeToggle = () => {
-    const newTheme = !isDarkTheme;
-    setIsDarkTheme(newTheme);
-    document.body.classList.toggle('dark-theme', newTheme);
-    localStorage.setItem('ireporter-theme', newTheme ? 'dark' : 'light');
-    
-    if (onThemeToggle) {
-      onThemeToggle(newTheme);
-    }
-  };
+ 
 
   const markNotificationAsRead = (notificationId) => {
     const updatedNotifications = notifications.map(notification =>
@@ -211,24 +196,7 @@ const Side = ({
           </li>
 
           {/* Settings */}
-          <li className="settings-item">
-            <span className="nav-icon">⚙️</span>
-            <span className="nav-text">Settings</span>
-            <div className="theme-toggle">
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={isDarkTheme}
-                  onChange={handleThemeToggle}
-                  className="toggle-input"
-                />
-                <span className="toggle-slider"></span>
-              </label>
-              <span className="theme-text">
-                {isDarkTheme ? 'Dark' : 'Light'}
-              </span>
-            </div>
-          </li>
+          
         </ul>
 
         <div className="sidebar-footer">

@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import CreateReport from './pages/CreateReport';
 import MyReports from './components/MyReports';
 import MapPreview from './components/MapPreview';
+import AdminDashboard from './pages/AdminDashboard';
 import './App.css';
 
 // Simple auth context
@@ -97,7 +98,15 @@ function App() {
             <Route path="/create-report" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/my-reports" element={<ProtectedRoute><MyReports /></ProtectedRoute>} />
             <Route path="/map" element={<ProtectedRoute><MapPreview /></ProtectedRoute>} />
-            
+            // In your App.js routes
+<Route 
+  path="/admin" 
+  element={
+    <ProtectedRoute requireAdmin={true}>
+      <AdminDashboard />
+    </ProtectedRoute>
+  } 
+/>
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

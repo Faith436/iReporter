@@ -1,24 +1,44 @@
-
 // import React, { useState } from "react";
 // import { useNavigate } from "react-router-dom";
 // import "../styles/CreateReport.css";
 
-// // const CreateReport = () => {
-// //   const navigate = useNavigate();
-// //   const [currentStep, setCurrentStep] = useState(1);
-// //   const [formData, setFormData] = useState({
-// //     reportType: 'red-flag',
-// //     title: '',
-// //     description: '',
-// //     location: '',
-// //     coordinates: null,
-// //     evidence: '',
-// //     images: null
-// //   });
+// // Create a simple report management hook since useReports import is failing
+// const useReportManager = () => {
+//   const createReport = (reportData) => {
+//     const newReport = {
+//       id: Date.now(),
+//       ...reportData,
+//       date: new Date().toISOString().split('T')[0],
+//       status: 'pending'
+//     };
+    
+//     // Save to localStorage
+//     const existingReports = JSON.parse(localStorage.getItem('myReports')) || [];
+//     const updatedReports = [newReport, ...existingReports];
+//     localStorage.setItem('myReports', JSON.stringify(updatedReports));
+    
+//     // Create notification
+//     const existingNotifications = JSON.parse(localStorage.getItem('ireporter-notifications')) || [];
+//     const newNotification = {
+//       id: Date.now(),
+//       title: "Report Submitted",
+//       message: `Your report "${reportData.title}" has been submitted successfully`,
+//       type: "submission",
+//       timestamp: new Date().toISOString(),
+//       read: false,
+//       reportId: newReport.id
+//     };
+//     localStorage.setItem('ireporter-notifications', JSON.stringify([newNotification, ...existingNotifications]));
+    
+//     return newReport;
+//   };
+
+//   return { createReport };
+// };
 
 // const CreateReport = () => {
 //   const navigate = useNavigate();
-//   const { createReport } = useReports();
+//   const { createReport } = useReportManager();
 //   const [currentStep, setCurrentStep] = useState(1);
 //   const [formData, setFormData] = useState({
 //     reportType: 'red-flag',
@@ -56,16 +76,12 @@
 //     e.preventDefault();
     
 //     try {
-//       // Save to localStorage (replace with your API call)
-//       const existingReports = JSON.parse(localStorage.getItem('myReports')) || [];
-//       const newReport = {
-//         id: Date.now(),
-//         ...formData,
-//         date: new Date().toISOString().split('T')[0],
-//         status: 'pending'
-//       };
+//       console.log('Submitting report with data:', formData);
       
-//       localStorage.setItem('myReports', JSON.stringify([...existingReports, newReport]));
+//       // Use the local report manager to create report
+//       const newReport = createReport(formData);
+      
+//       console.log('Report created successfully:', newReport);
       
 //       alert('Report created successfully!');
 //       navigate('/dashboard');
@@ -306,57 +322,22 @@
 
 // export default CreateReport;
 
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/CreateReport.css";
 
-// Create a simple report management hook since useReports import is failing
-const useReportManager = () => {
-  const createReport = (reportData) => {
-    const newReport = {
-      id: Date.now(),
-      ...reportData,
-      date: new Date().toISOString().split('T')[0],
-      status: 'pending'
-    };
-    
-    // Save to localStorage
-    const existingReports = JSON.parse(localStorage.getItem('myReports')) || [];
-    const updatedReports = [newReport, ...existingReports];
-    localStorage.setItem('myReports', JSON.stringify(updatedReports));
-    
-    // Create notification
-    const existingNotifications = JSON.parse(localStorage.getItem('ireporter-notifications')) || [];
-    const newNotification = {
-      id: Date.now(),
-      title: "Report Submitted",
-      message: `Your report "${reportData.title}" has been submitted successfully`,
-      type: "submission",
-      timestamp: new Date().toISOString(),
-      read: false,
-      reportId: newReport.id
-    };
-    localStorage.setItem('ireporter-notifications', JSON.stringify([newNotification, ...existingNotifications]));
-    
-    return newReport;
-  };
-
-  return { createReport };
-};
-
 const CreateReport = () => {
   const navigate = useNavigate();
-  const { createReport } = useReportManager();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     reportType: 'red-flag',
     title: '',
     description: '',
     location: '',
-    coordinates: null,
+    coordinates: { lat: '', lng: '' }, // Changed to empty strings for manual input
     evidence: '',
-    images: null
+    images: [],
+    videos: []
   });
 
   const steps = [
@@ -387,10 +368,29 @@ const CreateReport = () => {
     try {
       console.log('Submitting report with data:', formData);
       
-      // Use the local report manager to create report
-      const newReport = createReport(formData);
+      // Save to localStorage
+      const existingReports = JSON.parse(localStorage.getItem('myReports')) || [];
+      const newReport = {
+        id: Date.now(),
+        ...formData,
+        date: new Date().toISOString().split('T')[0],
+        status: 'pending'
+      };
       
-      console.log('Report created successfully:', newReport);
+      localStorage.setItem('myReports', JSON.stringify([newReport, ...existingReports]));
+      
+      // Create notification
+      const existingNotifications = JSON.parse(localStorage.getItem('ireporter-notifications')) || [];
+      const newNotification = {
+        id: Date.now(),
+        title: "Report Submitted",
+        message: `Your report "${formData.title}" has been submitted successfully`,
+        type: "submission",
+        timestamp: new Date().toISOString(),
+        read: false,
+        reportId: newReport.id
+      };
+      localStorage.setItem('ireporter-notifications', JSON.stringify([newNotification, ...existingNotifications]));
       
       alert('Report created successfully!');
       navigate('/dashboard');
@@ -398,6 +398,44 @@ const CreateReport = () => {
       console.error('Error creating report:', error);
       alert('Error creating report. Please try again.');
     }
+  };
+
+  // Handle file uploads
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const imageUrls = files.map(file => URL.createObjectURL(file));
+    updateFormData({ 
+      images: [...formData.images, ...files],
+      imagePreviews: [...(formData.imagePreviews || []), ...imageUrls]
+    });
+  };
+
+  const handleVideoUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const videoUrls = files.map(file => URL.createObjectURL(file));
+    updateFormData({ 
+      videos: [...formData.videos, ...files],
+      videoPreviews: [...(formData.videoPreviews || []), ...videoUrls]
+    });
+  };
+
+  // Remove uploaded file
+  const removeImage = (index) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    const newPreviews = formData.imagePreviews.filter((_, i) => i !== index);
+    updateFormData({ 
+      images: newImages,
+      imagePreviews: newPreviews
+    });
+  };
+
+  const removeVideo = (index) => {
+    const newVideos = formData.videos.filter((_, i) => i !== index);
+    const newPreviews = formData.videoPreviews.filter((_, i) => i !== index);
+    updateFormData({ 
+      videos: newVideos,
+      videoPreviews: newPreviews
+    });
   };
 
   const renderStep = () => {
@@ -476,33 +514,85 @@ const CreateReport = () => {
             <h2>Location Details</h2>
             
             <div className="form-group">
-              <label className="form-label">Location *</label>
+              <label className="form-label">Location Name *</label>
               <input
                 type="text"
                 value={formData.location}
                 onChange={(e) => updateFormData({ location: e.target.value })}
-                placeholder="Enter the location (e.g., Victoria Island, Lagos, Nigeria)"
+                placeholder="Enter the location name (e.g., Victoria Island, Lagos, Nigeria)"
                 className="form-input"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Location Coordinates</label>
+              <label className="form-label">Manual Coordinates Input</label>
+              <div className="coordinates-input-group">
+                <div className="coordinate-input">
+                  <label>Latitude</label>
+                  <input
+                    type="text"
+                    value={formData.coordinates.lat}
+                    onChange={(e) => updateFormData({ 
+                      coordinates: { ...formData.coordinates, lat: e.target.value } 
+                    })}
+                    placeholder="e.g., 6.5244"
+                    className="form-input"
+                  />
+                </div>
+                <div className="coordinate-input">
+                  <label>Longitude</label>
+                  <input
+                    type="text"
+                    value={formData.coordinates.lng}
+                    onChange={(e) => updateFormData({ 
+                      coordinates: { ...formData.coordinates, lng: e.target.value } 
+                    })}
+                    placeholder="e.g., 3.3792"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div className="form-hint">
+                Enter decimal coordinates (e.g., 6.5244 for latitude, 3.3792 for longitude)
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Or Use Automatic Location</label>
               <div className="location-actions">
                 <button
                   type="button"
-                  onClick={() => updateFormData({ coordinates: { lat: "6.5244", lng: "3.3792" } })}
+                  onClick={() => {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          updateFormData({ 
+                            coordinates: { 
+                              lat: position.coords.latitude.toFixed(6), 
+                              lng: position.coords.longitude.toFixed(6) 
+                            } 
+                          });
+                          alert('Location captured successfully!');
+                        },
+                        (error) => {
+                          alert('Unable to retrieve your location. Please enter coordinates manually.');
+                        }
+                      );
+                    } else {
+                      alert('Geolocation is not supported by your browser. Please enter coordinates manually.');
+                    }
+                  }}
                   className="btn btn-secondary"
                 >
                   📍 Use Current Location
                 </button>
               </div>
               
-              {formData.coordinates && (
+              {(formData.coordinates.lat || formData.coordinates.lng) && (
                 <div className="coordinates-display">
                   <strong>Current coordinates:</strong> 
-                  {formData.coordinates.lat}, {formData.coordinates.lng}
+                  {formData.coordinates.lat || '—'}, {formData.coordinates.lng || '—'}
                 </div>
               )}
             </div>
@@ -527,16 +617,83 @@ const CreateReport = () => {
 
             <div className="form-group">
               <label className="form-label">Upload Images</label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => updateFormData({ images: e.target.files })}
-                className="form-input"
-              />
-              {formData.images && (
-                <div className="file-preview">
-                  <p>{formData.images.length} file(s) selected</p>
+              <div className="file-upload-section">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="file-input"
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload" className="file-upload-btn">
+                  📷 Choose Images
+                </label>
+                <span className="file-count">{formData.images.length} image(s) selected</span>
+              </div>
+              
+              {/* Image Previews */}
+              {formData.imagePreviews && formData.imagePreviews.length > 0 && (
+                <div className="file-previews">
+                  <h4>Image Previews:</h4>
+                  <div className="preview-grid">
+                    {formData.imagePreviews.map((preview, index) => (
+                      <div key={index} className="preview-item">
+                        <img src={preview} alt={`Preview ${index + 1}`} className="preview-image" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="remove-file-btn"
+                        >
+                          ×
+                        </button>
+                        <span className="file-name">{formData.images[index]?.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Upload Videos</label>
+              <div className="file-upload-section">
+                <input
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  className="file-input"
+                  id="video-upload"
+                />
+                <label htmlFor="video-upload" className="file-upload-btn">
+                  🎥 Choose Videos
+                </label>
+                <span className="file-count">{formData.videos.length} video(s) selected</span>
+              </div>
+              
+              {/* Video Previews */}
+              {formData.videoPreviews && formData.videoPreviews.length > 0 && (
+                <div className="file-previews">
+                  <h4>Video Previews:</h4>
+                  <div className="preview-grid">
+                    {formData.videoPreviews.map((preview, index) => (
+                      <div key={index} className="preview-item">
+                        <video controls className="preview-video">
+                          <source src={preview} type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                        <button
+                          type="button"
+                          onClick={() => removeVideo(index)}
+                          className="remove-file-btn"
+                        >
+                          ×
+                        </button>
+                        <span className="file-name">{formData.videos[index]?.name}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -630,4 +787,3 @@ const CreateReport = () => {
 };
 
 export default CreateReport;
-
