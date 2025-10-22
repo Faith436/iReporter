@@ -270,3 +270,15 @@ button {
   flex: 1;
 }
 
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #3182ce;
+}
+
+.App {
+  min-height: 100vh;
+}

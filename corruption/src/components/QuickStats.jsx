@@ -1,18 +1,115 @@
+// import React from 'react';
+// import { useReports } from '../context/ReportContext';
 
-const QuickStarts = () => {
-  const stats = [
-    { title: "Total Reports", value: 124 },
-    { title: "Under Investigation", value: 42 },
-    { title: "Resolved Cases", value: 61 },
+// const QuickStats = () => {
+//   const { getStats } = useReports();
+//   const stats = getStats();
+
+//   console.log('QuickStats rendering with:', stats);
+
+//   const statCards = [
+//     { 
+//       title: "Red Flags", 
+//       value: stats.redFlags, 
+//       color: "red",
+//       description: "Corruption reports"
+//     },
+//     { 
+//       title: "Interventions", 
+//       value: stats.interventions, 
+//       color: "blue",
+//       description: "Infrastructure requests"
+//     },
+//     { 
+//       title: "Under Investigation", 
+//       value: stats.underInvestigation, 
+//       color: "yellow",
+//       description: "Active investigations"
+//     },
+//     { 
+//       title: "Resolved", 
+//       value: stats.resolved, 
+//       color: "green",
+//       description: "Completed cases"
+//     }
+//   ];
+
+//   return (
+//     <div className="quick-stats-grid">
+//       {statCards.map((stat, index) => (
+//         <div key={index} className={`stat-card stat-${stat.color}`}>
+//           <div className="stat-number">{stat.value}</div>
+//           <div className="stat-title">{stat.title}</div>
+//           <div className="stat-description">{stat.description}</div>
+//         </div>
+//       ))}
+//       <div className="stat-card create-report-card">
+//         <a href="/create-report" className="create-report-btn">
+//           + Create Report
+//         </a>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default QuickStats;
+
+import React from 'react';
+
+const QuickStats = () => {
+  // Get reports from localStorage for real data
+  const reports = JSON.parse(localStorage.getItem('myReports')) || [];
+  
+  const stats = {
+    redFlags: reports.filter(r => r.reportType === 'red-flag').length,
+    interventions: reports.filter(r => r.reportType === 'intervention').length,
+    underInvestigation: reports.filter(r => r.status === 'under-investigation').length,
+    resolved: reports.filter(r => r.status === 'resolved').length
+  };
+
+  const statCards = [
+    { 
+      title: "Red Flags", 
+      value: stats.redFlags, 
+      color: "red",
+      description: "Corruption reports"
+    },
+    { 
+      title: "Interventions", 
+      value: stats.interventions, 
+      color: "blue",
+      description: "Infrastructure requests"
+    },
+    { 
+      title: "Under Investigation", 
+      value: stats.underInvestigation, 
+      color: "yellow",
+      description: "Active investigations"
+    },
+    { 
+      title: "Resolved", 
+      value: stats.resolved, 
+      color: "green",
+      description: "Completed cases"
+    }
   ];
 
-  return stats.map((item, i) => (
-    <div className="stat-card" key={i}>
-      <div className="stat-title">{item.title}</div>
-      <div className="stat-value">{item.value}</div>
+  return (
+    <div className="quick-stats-grid">
+      {statCards.map((stat, index) => (
+        <div key={index} className={`stat-card stat-${stat.color}`}>
+          <div className="stat-number">{stat.value}</div>
+          <div className="stat-title">{stat.title}</div>
+          <div className="stat-description">{stat.description}</div>
+        </div>
+      ))}
+      <div className="stat-card create-report-card">
+        <a href="/create-report" className="create-report-btn">
+          + Create Report
+        </a>
+      </div>
     </div>
-  ));
+  );
 };
 
-export default QuickStarts;
-
+export default QuickStats;

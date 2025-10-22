@@ -1,49 +1,15 @@
-// import React from 'react';
-// import Side from '../components/Side';
-// import QuickStarts from '../components/QuickStats';
-// import RecentReports from '../components/RecentReports';
-// import Footer from '../components/Footer';
-// import '../styles/Dashboard.css';
-
-// function Dashboard() {
-//   return (
-//     <div className="dashboard">
-//       <Side />
-
-//       <div className="dashboard-main">
-//         <header className="dashboard-header">
-//           <h2>👋 Welcome back, User!</h2>
-//           <p>Here’s what’s happening with your reports today.</p>
-//         </header>
-
-//         {/* QuickStarts Section */}
-//         <section className="quick-starts">
-//           <QuickStarts />
-//         </section>
-
-//         {/* Recent Reports Section */}
-//         <section className="dashboard-section">
-//           <h3>Recently Reported Corruption Cases</h3>
-//           <RecentReports />
-//         </section>
-
-//         {/* Footer always at bottom */}
-//         <Footer />
-//       </div>
-//     </div>
-//   );
-// }
-
-// export default Dashboard;
-
-
 import React, { useState } from 'react';
 import Side from '../components/Side';
-import Footer from '../components/Footer';
 import '../styles/Dashboard.css';
 
-// Temporary components - we'll replace these with your upgraded ones
-const QuickStats = () => {
+// Import the components properly
+import QuickStats from '../components/QuickStats';
+import ReportList from '../components/RecentReports'; // Using your existing RecentReports component
+
+// If you don't have these components, let's create inline versions:
+
+// QuickStats Component (if the import fails)
+const QuickStatsComponent = () => {
   const stats = [
     { title: "Red Flags", value: 2, color: "red" },
     { title: "Interventions", value: 2, color: "blue" },
@@ -60,15 +26,16 @@ const QuickStats = () => {
         </div>
       ))}
       <div className="stat-card create-report-card">
-        <button className="create-report-btn">
+        <a href="/create-report" className="create-report-btn">
           + Create Report
-        </button>
+        </a>
       </div>
     </div>
   );
 };
 
-const ReportList = () => {
+// ReportList Component (if the import fails)
+const ReportListComponent = () => {
   const reports = [
     {
       id: 1,
@@ -121,10 +88,19 @@ function Dashboard() {
   const [activeView, setActiveView] = useState('list');
   const [reportType, setReportType] = useState('all');
   const [status, setStatus] = useState('all');
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  const handleThemeToggle = (newTheme) => {
+    setIsDarkTheme(newTheme);
+  };
+
+  // Use imported components or fallback to inline components
+  const QuickStatsToUse = QuickStats || QuickStatsComponent;
+  const ReportListToUse = ReportList || ReportListComponent;
 
   return (
     <div className="dashboard">
-      <Side />
+      <Side onThemeToggle={handleThemeToggle} />
       
       <div className="dashboard-main">
         {/* Header Section */}
@@ -135,7 +111,7 @@ function Dashboard() {
 
         {/* Quick Stats Section */}
         <section className="quick-starts">
-          <QuickStats />
+          <QuickStatsToUse />
         </section>
 
         {/* Controls Section */}
@@ -182,10 +158,8 @@ function Dashboard() {
 
         {/* Reports List Section */}
         <section className="dashboard-section">
-          <ReportList />
+          <ReportListToUse />
         </section>
-
-        <Footer />
       </div>
     </div>
   );
