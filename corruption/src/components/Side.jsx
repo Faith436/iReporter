@@ -71,6 +71,7 @@ const Side = ({
   };
 
   // Sample notifications (in real app, these would come from API)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const sampleNotifications = [
     {
       id: 1,
@@ -108,7 +109,7 @@ const Side = ({
       setUnreadCount(sampleNotifications.filter(n => !n.read).length);
       localStorage.setItem('ireporter-notifications', JSON.stringify(sampleNotifications));
     }
-  }, []);
+  }, [notifications.length, sampleNotifications]);
 
   const getNotificationIcon = (type) => {
     switch (type) {
