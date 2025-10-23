@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/Sidebar.css";
 
 const Side = ({ 
-  user = { name: "John Doe", email: "johndoe@ireporter.com" },
+  user = { name: "", email: "" },
   onThemeToggle 
 }) => {
   const navigate = useNavigate();
