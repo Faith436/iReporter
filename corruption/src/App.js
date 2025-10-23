@@ -23,15 +23,23 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("ireporter-user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (err) {
-        console.error("Error parsing saved user:", err);
-        localStorage.removeItem("ireporter-user");
-      }
+  // useEffect(() => {
+  //   const savedUser = localStorage.getItem("ireporter-user");
+  //   if (savedUser) {
+  //     try {
+  //       setUser(JSON.parse(savedUser));
+  //     } catch (err) {
+  //       console.error("Error parsing saved user:", err);
+  //       localStorage.removeItem("ireporter-user");
+  //     }
+  //   }
+  //   setLoading(false);
+  // }, []);
+   useEffect(() => {
+    // Check if user is logged in on app start
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
@@ -185,13 +193,29 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// const AuthPublicRoute = ({ children }) => {
+//   const { user, loading } = useAuth();
+//   if (loading) return <div className="loading">Loading...</div>;
+//   // 🚫 FIXED: only redirect if logged in and not clicking from LandingPage
+//   if (user) return <Navigate to="/dashboard" />;
+//   return children;
+// };
 const AuthPublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading">Loading...</div>;
-  // 🚫 FIXED: only redirect if logged in and not clicking from LandingPage
-  if (user) return <Navigate to="/dashboard" />;
+
+  // ✅ Fix: redirect based on role
+  if (user) {
+    if (user.role === 'admin') {
+      return <Navigate to="/admin" />;
+    } else {
+      return <Navigate to="/dashboard" />;
+    }
+  }
+
   return children;
 };
+
 
 const PublicRoute = ({ children }) => {
   const { loading } = useAuth();
