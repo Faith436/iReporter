@@ -1,29 +1,35 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../App'; // Import from App.js now
+import { useAuth } from '../App';
 import '../App.css';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user');
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     
-    // Mock login - replace with your actual API call
     try {
-      // Simulate API call
+      // Mock login - replace with your actual API call
       const userData = {
         id: Date.now(),
         email: email,
-        name: email.split('@')[0], // Simple name from email
-        role: 'user' // Default role
+        name: email.split('@')[0],
+        role: role
       };
       
       login(userData);
-      navigate('/dashboard');
+      
+      // Redirect based on role
+      if (role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Login error:', error);
       alert('Login failed. Please try again.');
@@ -37,7 +43,7 @@ function Login() {
         <form className="auth-form" onSubmit={handleLogin}>
           <input 
             type="email" 
-            placeholder="Username or Email" 
+            placeholder="Email Address" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             required 
@@ -49,6 +55,45 @@ function Login() {
             onChange={(e) => setPassword(e.target.value)} 
             required 
           />
+          
+          {/* Role Selection for Login */}
+          <div className="form-group">
+            <label className="form-label">Login As</label>
+            <div className="role-selection">
+              <label className="role-option">
+                <input
+                  type="radio"
+                  name="role"
+                  value="user"
+                  checked={role === 'user'}
+                  onChange={(e) => setRole(e.target.value)}
+                />
+                <div className="role-content">
+                  <span className="role-title">👤 Citizen User</span>
+                  <span className="role-description">
+                    Access user dashboard and reports
+                  </span>
+                </div>
+              </label>
+
+              <label className="role-option">
+                <input
+                  type="radio"
+                  name="role"
+                  value="admin"
+                  checked={role === 'admin'}
+                  onChange={(e) => setRole(e.target.value)}
+                />
+                <div className="role-content">
+                  <span className="role-title">👑 Administrator</span>
+                  <span className="role-description">
+                    Access admin dashboard and management
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+          
           <div className="auth-options">
             <label>
               <input type="checkbox" /> Remember me

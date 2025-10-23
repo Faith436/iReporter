@@ -8,6 +8,29 @@ const heroImage = "https://images.unsplash.com/photo-1670602152500-e14c206b5335?
 const LandingPage = () => {
   const navigate = useNavigate();
 
+  const handleSignIn = () => {
+    navigate("/login");
+  };
+
+  const handleGetStarted = () => {
+    navigate("/signup");
+  };
+
+  const handleStartReporting = () => {
+    // Check if user is logged in, if not go to signup
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (user) {
+      // Redirect based on role
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <div className="landing-page">
       {/* ===== HERO SECTION ===== */}
@@ -15,10 +38,10 @@ const LandingPage = () => {
         <nav className="navbar">
           <h1 className="logo">iReporter</h1>
           <div className="nav-buttons">
-            <button onClick={() => navigate("/login")} className="btn-outline">
+            <button onClick={handleSignIn} className="btn-outline">
               Sign In
             </button>
-            <button onClick={() => navigate("/signup")} className="btn-primary">
+            <button onClick={handleGetStarted} className="btn-primary">
               Get Started
             </button>
           </div>
@@ -33,10 +56,10 @@ const LandingPage = () => {
               your voice heard and drive positive change in your community.
             </p>
             <div className="hero-buttons">
-              <button onClick={() => navigate("/create-report")} className="btn-primary">
+              <button onClick={handleStartReporting} className="btn-primary">
                 Start Reporting
               </button>
-              <button onClick={() => navigate("/login")} className="btn-outline">
+              <button onClick={handleSignIn} className="btn-outline">
                 Sign In
               </button>
             </div>
@@ -49,47 +72,46 @@ const LandingPage = () => {
 
       {/* ===== FEATURES SECTION ===== */}
       <section className="features">
-  <h2>iReporter Platform</h2>
-  <p>Powerful Features for Civic Engagement</p>
-  <div className="feature-grid">
-    <div className="feature-card">
-      <FaFlag className="feature-icon" />
-      <h3>Red Flag Reports</h3>
-      <p>Report corruption incidents, bribery, and misuse of public funds with evidence and location data.</p>
-    </div>
+        <h2>iReporter Platform</h2>
+        <p>Powerful Features for Civic Engagement</p>
+        <div className="feature-grid">
+          <div className="feature-card">
+            <FaFlag className="feature-icon" />
+            <h3>Red Flag Reports</h3>
+            <p>Report corruption incidents, bribery, and misuse of public funds with evidence and location data.</p>
+          </div>
 
-    <div className="feature-card">
-      <FaHandsHelping className="feature-icon" />
-      <h3>Intervention Requests</h3>
-      <p>Request government intervention for infrastructure issues like bad roads, collapsed bridges, and flooding.</p>
-    </div>
+          <div className="feature-card">
+            <FaHandsHelping className="feature-icon" />
+            <h3>Intervention Requests</h3>
+            <p>Request government intervention for infrastructure issues like bad roads, collapsed bridges, and flooding.</p>
+          </div>
 
-    <div className="feature-card">
-      <FaMapMarkerAlt className="feature-icon" />
-      <h3>Geolocation Tracking</h3>
-      <p>Add precise location coordinates to your reports and visualize incidents on interactive maps.</p>
-    </div>
+          <div className="feature-card">
+            <FaMapMarkerAlt className="feature-icon" />
+            <h3>Geolocation Tracking</h3>
+            <p>Add precise location coordinates to your reports and visualize incidents on interactive maps.</p>
+          </div>
 
-    <div className="feature-card">
-      <FaPhotoVideo className="feature-icon" />
-      <h3>Media Evidence</h3>
-      <p>Upload images and videos to support your claims and provide compelling evidence.</p>
-    </div>
+          <div className="feature-card">
+            <FaPhotoVideo className="feature-icon" />
+            <h3>Media Evidence</h3>
+            <p>Upload images and videos to support your claims and provide compelling evidence.</p>
+          </div>
 
-    <div className="feature-card">
-      <FaBell className="feature-icon" />
-      <h3>Real-time Updates</h3>
-      <p>Receive notifications when administrators update the status of your reports.</p>
-    </div>
+          <div className="feature-card">
+            <FaBell className="feature-icon" />
+            <h3>Real-time Updates</h3>
+            <p>Receive notifications when administrators update the status of your reports.</p>
+          </div>
 
-    <div className="feature-card">
-      <FaUserSecret className="feature-icon" />
-      <h3>Secure & Anonymous</h3>
-      <p>Your reports are secure and you can choose to remain anonymous while still tracking progress.</p>
-    </div>
-  </div>
-</section>
-
+          <div className="feature-card">
+            <FaUserSecret className="feature-icon" />
+            <h3>Secure & Anonymous</h3>
+            <p>Your reports are secure and you can choose to remain anonymous while still tracking progress.</p>
+          </div>
+        </div>
+      </section>
 
       {/* ===== HOW IT WORKS ===== */}
       <section className="how-it-works">
@@ -120,7 +142,7 @@ const LandingPage = () => {
       <section className="cta">
         <h2>Ready to Make a Difference?</h2>
         <p>Join thousands of citizens who are using iReporter to fight corruption and improve their communities.</p>
-        <button onClick={() => navigate("/signup")} className="btn-primary">
+        <button onClick={handleGetStarted} className="btn-primary">
           Get Started Today
         </button>
       </section>
