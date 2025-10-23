@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> 620c207c2d03ed560bdbd9612640a02c2ffb7c5e
 import React from 'react';
 
 const QuickStats = () => {
