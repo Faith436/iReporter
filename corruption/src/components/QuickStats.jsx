@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 620c207c2d03ed560bdbd9612640a02c2ffb7c5e
 import React from 'react';
 
 const QuickStats = () => {
@@ -47,11 +51,7 @@ const QuickStats = () => {
           <div className="stat-description">{stat.description}</div>
         </div>
       ))}
-      <div className="stat-card create-report-card">
-        <a href="/create-report" className="create-report-btn">
-          + Create Report
-        </a>
-      </div>
+  
     </div>
   );
 };
