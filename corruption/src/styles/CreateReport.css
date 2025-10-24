@@ -21,7 +21,7 @@
 }
 
 .create-report-header p {
-  color: #718096;
+  color: #4a5568;
   font-size: 1.1rem;
 }
 
@@ -52,51 +52,58 @@
   height: 40px;
   border-radius: 50%;
   background: #e2e8f0;
-  color: white;
+  color: #2d3748;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   transition: all 0.3s ease;
+  border: 2px solid #cbd5e0;
 }
 
 .step.active .step-number {
   background: #3182ce;
   color: white;
+  border-color: #3182ce;
 }
 
 .step.completed .step-number {
   background: #38a169;
   color: white;
+  border-color: #38a169;
 }
 
 .step-title {
   font-size: 0.9rem;
-  color: #718096;
-  font-weight: 500;
-  white-space: nowrap;
+  color: #0f1216;
+  text-align: center;
+  max-width: 80px;
 }
 
 .step.active .step-title {
-  color: #3182ce;
-  font-weight: 600;
+  color: #111315;
+  font-weight: 700;
+}
+
+.step.completed .step-title {
+  color: #38a169;
 }
 
 .step-connector {
   width: 100px;
   height: 2px;
-  background: #e2e8f0;
+  background: #cbd5e0;
   margin: 0 1rem;
   transition: background 0.3s ease;
 }
 
 .step-connector.active {
-  background: #3182ce;
+  background: #38a169;
 }
 
 /* Form */
 .create-report-form {
-  background: white;
+  background: rgb(255, 255, 255);
   padding: 2rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -157,7 +164,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: white;
+  background: rgb(255, 255, 255);
 }
 
 .radio-option:hover {
@@ -179,11 +186,12 @@
 .radio-title {
   font-weight: 600;
   color: #2d3748;
+  font-size: 1rem;
 }
 
 .radio-description {
   font-size: 0.9rem;
-  color: #718096;
+  color: #4a5568;
   line-height: 1.4;
 }
 
@@ -216,7 +224,7 @@
 
 .btn-secondary {
   background: #e2e8f0;
-  color: #4a5568;
+  color: #2d3748;
 }
 
 .btn-secondary:hover {
@@ -233,7 +241,7 @@
   padding: 0.75rem;
   border-radius: 6px;
   font-size: 0.9rem;
-  color: #4a5568;
+  color: #2d3748;
   border-left: 3px solid #3182ce;
 }
 
@@ -258,7 +266,7 @@
 }
 
 .confirmation-text {
-  color: #4a5568;
+  color: #2d3748;
   line-height: 1.5;
   font-weight: 500;
 }
@@ -270,7 +278,7 @@
   background: #f7fafc;
   border-radius: 4px;
   font-size: 0.9rem;
-  color: #718096;
+  color: #4a5568;
 }
 
 /* Form Navigation */
@@ -368,8 +376,9 @@
 }
 
 .file-count {
-  color: #718096;
+  color: #4a5568;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 /* File Previews */
@@ -443,7 +452,7 @@
 
 .file-name {
   font-size: 0.75rem;
-  color: #718096;
+  color: #4a5568;
   display: block;
   word-break: break-all;
   max-width: 100%;
@@ -452,7 +461,7 @@
 /* Form Hints */
 .form-hint {
   font-size: 0.8rem;
-  color: #718096;
+  color: #4a5568;
   margin-top: 0.25rem;
   font-style: italic;
 }
