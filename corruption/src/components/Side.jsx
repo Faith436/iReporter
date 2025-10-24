@@ -13,17 +13,6 @@ const Side = ({
   const [showNotifications, setShowNotifications] = useState(false);
   ;
 
-  // Load notifications from localStorage
-  useEffect(() => {
-    const storedNotifications = JSON.parse(localStorage.getItem('ireporter-notifications')) || [];
-    setNotifications(storedNotifications);
-    
-    const unread = storedNotifications.filter(n => !n.read).length;
-    setUnreadCount(unread);
-  }, []);
-
-  
- 
 
   const handleNavigation = (path) => {
     navigate(path);

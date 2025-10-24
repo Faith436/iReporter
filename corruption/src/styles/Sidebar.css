@@ -307,37 +307,6 @@
   font-size: 0.8rem;
 }
 
-/* Dark Theme Support */
-body.dark-theme .notifications-panel {
-  background: #2d3748;
-  border-left-color: #4a5568;
-}
-
-body.dark-theme .notifications-header {
-  background: #4a5568;
-  border-bottom-color: #718096;
-}
-
-body.dark-theme .notifications-header h3 {
-  color: white;
-}
-
-body.dark-theme .notification-item.read {
-  background: #4a5568;
-}
-
-body.dark-theme .notification-item.unread {
-  background: #2f855a;
-}
-
-body.dark-theme .notification-content h4 {
-  color: #e2e8f0;
-}
-
-body.dark-theme .notification-content p {
-  color: #a0aec0;
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .sidebar {
