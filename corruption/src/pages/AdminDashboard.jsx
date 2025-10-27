@@ -1,437 +1,339 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../styles/AdminDashboard.css';
+// src/pages/AdminDashboard.jsx
+import React, { useState, useEffect } from "react";
+import { 
+  Bell, X, Search, Trash2, Edit3, FileWarning, CheckCircle, AlertTriangle, Wrench, Plus, ChevronDown 
+} from "lucide-react";
+import { dummyReports, statuses, dateOptions } from "../data/reportsData";
+import Header from "../components/Header";
+
+const COLOR_PRIMARY_PURPLE = "#4D2C5E";
+const COLOR_PRIMARY_TEAL = "#116E75";
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const [reports, setReports] = useState([]);
+  const [reports, setReports] = useState(dummyReports);
   const [filteredReports, setFilteredReports] = useState([]);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusUpdate, setStatusUpdate] = useState({
-    status: '',
-    adminNotes: '',
-    notifyUser: true
+  const [filters, setFilters] = useState({ status: "all", date: "All Dates", search: "" });
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingReport, setEditingReport] = useState(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    status: "pending",
+    location: "",
+    date: "",
   });
-  const [filters, setFilters] = useState({
-    type: 'all',
-    status: 'all',
-    search: ''
-  });
 
-  // Load reports from localStorage
-  useEffect(() => {
-    const loadReports = () => {
-      try {
-        const storedReports = JSON.parse(localStorage.getItem('myReports')) || [];
-        console.log('Loaded reports for admin:', storedReports);
-        setReports(storedReports);
-        setFilteredReports(storedReports);
-      } catch (error) {
-        console.error('Error loading reports:', error);
-        setReports([]);
-        setFilteredReports([]);
-      }
-    };
+  // Function to check if a report matches the date filter
+  const checkDateFilter = (reportDate) => {
+    const today = new Date();
+    const report = new Date(reportDate);
+    switch (filters.date) {
+      case "Today":
+        return report.toDateString() === today.toDateString();
+      case "Last 3 Days":
+        const threeDaysAgo = new Date(today);
+        threeDaysAgo.setDate(today.getDate() - 3);
+        return report >= threeDaysAgo && report <= today;
+      case "This Week":
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        return report >= weekStart && report <= weekEnd;
+      case "This Month":
+        return report.getMonth() === today.getMonth() && report.getFullYear() === today.getFullYear();
+      case "Last Month":
+        const lastMonth = today.getMonth() - 1;
+        return report.getMonth() === lastMonth && report.getFullYear() === today.getFullYear();
+      default:
+        return true; // "All Dates"
+    }
+  };
 
-    loadReports();
-  }, []);
-
-  // Filter reports based on criteria
+  // Filter reports
   useEffect(() => {
     let filtered = [...reports];
-
-    // Filter by type
-    if (filters.type !== 'all') {
-      filtered = filtered.filter(report => report.reportType === filters.type);
-    }
-
-    // Filter by status
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(report => report.status === filters.status);
-    }
-
-    // Filter by search
+    if (filters.status !== "all") filtered = filtered.filter(r => r.status === filters.status);
+    filtered = filtered.filter(r => checkDateFilter(r.date));
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(report => 
-        report.title.toLowerCase().includes(searchLower) ||
-        report.description.toLowerCase().includes(searchLower) ||
-        report.location.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        r =>
+          r.title.toLowerCase().includes(searchLower) ||
+          r.description.toLowerCase().includes(searchLower) ||
+          r.location.toLowerCase().includes(searchLower)
       );
     }
-
     setFilteredReports(filtered);
   }, [filters, reports]);
 
-  // Get statistics
-  const getStats = () => {
-    const total = reports.length;
-    const pending = reports.filter(r => r.status === 'pending').length;
-    const underInvestigation = reports.filter(r => r.status === 'under-investigation').length;
-    const resolved = reports.filter(r => r.status === 'resolved').length;
-    const rejected = reports.filter(r => r.status === 'rejected').length;
-    
-    return { total, pending, underInvestigation, resolved, rejected };
+  // Stats
+  const stats = {
+    total: reports.length,
+    pending: reports.filter(r => r.status === "pending").length,
+    inProgress: reports.filter(r => r.status === "in-progress").length,
+    resolved: reports.filter(r => r.status === "resolved").length,
+    underInvestigation: reports.filter(r => r.status === "under investigation").length,
   };
 
-  const stats = getStats();
-
-  // Open status update modal
-  const openStatusModal = (report) => {
-    setSelectedReport(report);
-    setStatusUpdate({
-      status: report.status || 'pending',
-      adminNotes: '',
-      notifyUser: true
-    });
-    setShowStatusModal(true);
-  };
-
-  // Update report status
-  const updateReportStatus = () => {
-    if (!selectedReport) return;
-
-    const updatedReports = reports.map(report =>
-      report.id === selectedReport.id 
-        ? { 
-            ...report, 
-            status: statusUpdate.status,
-            adminNotes: statusUpdate.adminNotes,
-            statusUpdatedAt: new Date().toISOString(),
-            statusUpdatedBy: 'Admin'
-          }
-        : report
-    );
-
-    setReports(updatedReports);
-    localStorage.setItem('myReports', JSON.stringify(updatedReports));
-
-    // Create notification for user
-    if (statusUpdate.notifyUser) {
-      const existingNotifications = JSON.parse(localStorage.getItem('ireporter-notifications')) || [];
-      const statusMessages = {
-        'under-investigation': 'is now under investigation',
-        'resolved': 'has been resolved',
-        'rejected': 'has been rejected'
-      };
-
-      const newNotification = {
-        id: Date.now(),
-        title: `Report Status Updated - ${statusUpdate.status.replace('-', ' ')}`,
-        message: `Your report "${selectedReport.title}" ${statusMessages[statusUpdate.status] || 'status has been updated'}. ${statusUpdate.adminNotes ? `Admin notes: ${statusUpdate.adminNotes}` : ''}`,
-        type: 'status-update',
-        timestamp: new Date().toISOString(),
-        read: false,
-        reportId: selectedReport.id
-      };
-
-      localStorage.setItem('ireporter-notifications', JSON.stringify([newNotification, ...existingNotifications]));
-    }
-
-    setShowStatusModal(false);
-    setSelectedReport(null);
-    alert('Report status updated successfully!');
-  };
-
-  // Delete report (admin only)
-  const deleteReport = (reportId) => {
-    if (window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
-      const updatedReports = reports.filter(report => report.id !== reportId);
-      setReports(updatedReports);
-      localStorage.setItem('myReports', JSON.stringify(updatedReports));
-      alert('Report deleted successfully!');
-    }
-  };
-
-  // Get status color
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending': return '#ffb020';
-      case 'under-investigation': return '#d69e2e';
-      case 'resolved': return '#38a169';
-      case 'rejected': return '#e53e3e';
-      default: return '#718096';
+    switch(status) {
+      case "pending": return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "in-progress": return "bg-blue-100 text-blue-700 border-blue-300";
+      case "resolved": return "bg-green-100 text-green-700 border-green-300";
+      case "under investigation": return "bg-purple-100 text-purple-700 border-purple-300";
+      default: return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
-  // Get status icon
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending': return '⏳';
-      case 'under-investigation': return '🔍';
-      case 'resolved': return '✅';
-      case 'rejected': return '❌';
-      default: return '📄';
-    }
+  // Modal handlers
+  const openAddModal = () => {
+    setEditingReport(null);
+    setFormData({ title: "", description: "", status: "pending", location: "", date: "" });
+    setModalOpen(true);
   };
 
-  // Get type icon
-  const getTypeIcon = (type) => {
-    return type === 'red-flag' ? '🚩' : '🛠️';
+  const openEditModal = (report) => {
+    setEditingReport(report);
+    setFormData({
+      title: report.title,
+      description: report.description,
+      status: report.status,
+      location: report.location,
+      date: report.date,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (editingReport) {
+      setReports(prev => prev.map(r => r.id === editingReport.id ? { ...r, ...formData } : r));
+    } else {
+      const newReport = {
+        id: reports.length + 1,
+        ...formData,
+        history: [{ status: formData.status, note: "Created", date: new Date().toLocaleString() }],
+        evidence: "",
+      };
+      setReports(prev => [...prev, newReport]);
+    }
+    setModalOpen(false);
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this report?")) {
+      setReports(prev => prev.filter(r => r.id !== id));
+    }
   };
 
   return (
-    <div className="admin-dashboard">
-      <div className="admin-container">
-        {/* Header */}
-        <header className="admin-header">
-          <div>
-            <h1>Admin Dashboard</h1>
-            <p>Manage and monitor all reported incidents</p>
-          </div>
-          <div className="admin-actions">
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="btn btn-secondary"
-            >
-              Back to User View
-            </button>
-          </div>
-        </header>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
 
-        {/* Statistics */}
-        <div className="admin-stats">
-          <div className="stat-card">
-            <div className="stat-icon">📊</div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.total}</div>
-              <div className="stat-label">Total Reports</div>
+      <main className="pt-6 px-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h1 className="text-3xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>
+            Admin Dashboard
+          </h1>
+          
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          {[
+            { label: "Total Reports", value: stats.total, icon: <FileWarning />, color: COLOR_PRIMARY_TEAL },
+            { label: "Pending", value: stats.pending, icon: <AlertTriangle />, color: "#EAB308" },
+            { label: "In-Progress", value: stats.inProgress, icon: <Wrench />, color: "#0284C7" },
+            { label: "Resolved", value: stats.resolved, icon: <CheckCircle />, color: "#16A34A" },
+            { label: "Under Investigation", value: stats.underInvestigation, icon: <Search />, color: "#7C3AED" },
+          ].map((s) => (
+            <div key={s.label} className="bg-white p-4 rounded-xl shadow-md flex items-center gap-3 border-l-4" style={{ borderColor: s.color }}>
+              <div className="p-2 rounded-lg text-white" style={{ backgroundColor: s.color }}>{s.icon}</div>
+              <div>
+                <p className="text-xl font-bold text-gray-800">{s.value}</p>
+                <p className="text-sm text-gray-500">{s.label}</p>
+              </div>
             </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">⏳</div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.pending}</div>
-              <div className="stat-label">Pending</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">🔍</div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.underInvestigation}</div>
-              <div className="stat-label">Under Investigation</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">✅</div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.resolved}</div>
-              <div className="stat-label">Resolved</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">❌</div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.rejected}</div>
-              <div className="stat-label">Rejected</div>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Filters */}
-        <div className="admin-filters">
-          <div className="filter-group">
-            <label>Report Type:</label>
-            <select 
-              value={filters.type}
-              onChange={(e) => setFilters({...filters, type: e.target.value})}
+        <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
+          {/* Status Dropdown */}
+          <div className="relative w-48">
+            <label className="text-sm font-semibold text-gray-600">Status</label>
+            <button
+              className="w-full flex items-center justify-between px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none shadow mt-1"
+              style={{ borderColor: COLOR_PRIMARY_TEAL }}
+              onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
             >
-              <option value="all">All Types</option>
-              <option value="red-flag">Red Flags</option>
-              <option value="intervention">Interventions</option>
-            </select>
+              <span className="capitalize">{filters.status}</span>
+              <ChevronDown className="w-4 h-4 text-gray-600" />
+            </button>
+            {statusDropdownOpen && (
+              <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                {statuses.map(s => (
+                  <div
+                    key={s}
+                    onClick={() => {
+                      setFilters({ ...filters, status: s });
+                      setStatusDropdownOpen(false);
+                    }}
+                    className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
+                  >
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          
-          <div className="filter-group">
-            <label>Status:</label>
-            <select 
-              value={filters.status}
-              onChange={(e) => setFilters({...filters, status: e.target.value})}
+
+          {/* Date Dropdown */}
+          <div className="relative w-48">
+            <label className="text-sm font-semibold text-gray-600">Date</label>
+            <button
+              className="w-full flex items-center justify-between px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none shadow mt-1"
+              style={{ borderColor: COLOR_PRIMARY_TEAL }}
+              onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="under-investigation">Under Investigation</option>
-              <option value="resolved">Resolved</option>
-              <option value="rejected">Rejected</option>
-            </select>
+              {filters.date}
+              <ChevronDown className="w-4 h-4 text-gray-600" />
+            </button>
+            {dateDropdownOpen && (
+              <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                {dateOptions.map(d => (
+                  <div
+                    key={d}
+                    onClick={() => {
+                      setFilters({ ...filters, date: d });
+                      setDateDropdownOpen(false);
+                    }}
+                    className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
+                  >
+                    {d}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          
-          <div className="filter-group">
-            <label>Search:</label>
-            <input
-              type="text"
-              placeholder="Search reports..."
-              value={filters.search}
-              onChange={(e) => setFilters({...filters, search: e.target.value})}
-            />
+
+          {/* Search */}
+          <div className="flex-1 relative">
+            <label className="text-sm font-semibold text-gray-600">Search</label>
+            <div className="relative mt-1">
+              <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Search reports..."
+                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:ring-2 focus:ring-[#116E75] focus:outline-none"
+              />
+            </div>
           </div>
-          
-          <button 
-            onClick={() => setFilters({type: 'all', status: 'all', search: ''})}
-            className="btn btn-secondary"
+
+          <button
+            onClick={() => setFilters({ status: "all", date: "All Dates", search: "" })}
+            className="bg-[#116E75] text-white px-4 py-2 rounded-md hover:bg-[#0d575c] transition"
           >
-            Clear Filters
+            Clear
           </button>
         </div>
 
         {/* Reports Table */}
-        <div className="reports-table-container">
-          <h3>All Reports ({filteredReports.length})</h3>
-          
-          {filteredReports.length === 0 ? (
-            <div className="no-reports">
-              <p>No reports found matching your criteria.</p>
-            </div>
-          ) : (
-            <div className="reports-table">
-              {filteredReports.map(report => (
-                <div key={report.id} className="report-row">
-                  <div className="report-info">
-                    <div className="report-main">
-                      <h4>{getTypeIcon(report.reportType)} {report.title}</h4>
-                      <p className="report-description">{report.description}</p>
-                      <div className="report-meta">
-                        <span>📍 {report.location}</span>
-                        <span>📅 {report.date}</span>
-                        <span>👤 {report.userName || 'Anonymous'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="report-status">
-                      <span 
-                        className="status-badge"
-                        style={{backgroundColor: getStatusColor(report.status)}}
-                      >
-                        {getStatusIcon(report.status)} {report.status ? report.status.replace('-', ' ') : 'Pending'}
+        <div className="overflow-x-auto bg-white rounded-xl shadow">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-2 border-b w-8">#</th>
+                <th className="px-4 py-2 border-b w-1/4">Title</th>
+                <th className="px-4 py-2 border-b w-1/3">Description</th>
+                <th className="px-4 py-2 border-b w-1/6">Status</th>
+                <th className="px-4 py-2 border-b w-1/6">Date</th>
+                <th className="px-4 py-2 border-b">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredReports.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-4 text-gray-500">No reports found.</td>
+                </tr>
+              ) : (
+                filteredReports.map((r, idx) => (
+                  <tr key={r.id} className={`border-t ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                    <td className="px-4 py-2">{idx + 1}</td>
+                    <td className="px-4 py-2 font-semibold">{r.title}</td>
+                    <td className="px-4 py-2">{r.description}</td>
+                    <td className="px-4 py-2 capitalize">
+                      <span className={`px-2 py-1 rounded-full text-white text-xs ${getStatusColor(r.status)}`}>
+                        {r.status}
                       </span>
-                    </div>
-                  </div>
-                  
-                  <div className="report-actions">
-                    <button 
-                      onClick={() => openStatusModal(report)}
-                      className="btn btn-primary btn-sm"
-                    >
-                      Update Status
-                    </button>
-                    <button 
-                      onClick={() => deleteReport(report.id)}
-                      className="btn btn-danger btn-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                    </td>
+                    <td className="px-4 py-2">{new Date(r.date).toLocaleDateString()}</td>
+                    <td className="px-4 py-2 flex gap-2">
+                      <button onClick={() => handleDelete(r.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">Delete</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      </main>
 
-      {/* Status Update Modal */}
-      {showStatusModal && selectedReport && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Update Report Status</h3>
-              <button 
-                onClick={() => setShowStatusModal(false)}
-                className="close-btn"
+      {/* Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-lg p-6 relative">
+            <button onClick={() => setModalOpen(false)} className="absolute top-3 right-3 text-gray-500 hover:text-red-500">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-semibold mb-4">{editingReport ? "Edit Report" : "Add New Report"}</h2>
+            <div className="flex flex-col gap-3">
+              <input
+                type="text"
+                placeholder="Title"
+                value={formData.title}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Description"
+                value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value})}
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Location"
+                value={formData.location}
+                onChange={e => setFormData({...formData, location: e.target.value})}
+                className="border p-2 rounded"
+              />
+              <input
+                type="date"
+                value={formData.date}
+                onChange={e => setFormData({...formData, date: e.target.value})}
+                className="border p-2 rounded"
+              />
+              <select
+                value={formData.status}
+                onChange={e => setFormData({...formData, status: e.target.value})}
+                className="border p-2 rounded"
               >
-                ×
-              </button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="report-preview">
-                <h4>{selectedReport.title}</h4>
-                <p>{selectedReport.description}</p>
-                <div className="report-details">
-                  <span>📍 {selectedReport.location}</span>
-                  <span>📅 {selectedReport.date}</span>
-                  <span>Current Status: {selectedReport.status || 'Pending'}</span>
-                </div>
-              </div>
-              
-              <div className="status-form">
-                <div className="form-group">
-                  <label>New Status *</label>
-                  <div className="status-options">
-                    <label className="status-option">
-                      <input
-                        type="radio"
-                        value="under-investigation"
-                        checked={statusUpdate.status === 'under-investigation'}
-                        onChange={(e) => setStatusUpdate({...statusUpdate, status: e.target.value})}
-                      />
-                      <span className="status-label under-investigation">
-                        🔍 Under Investigation
-                      </span>
-                    </label>
-                    
-                    <label className="status-option">
-                      <input
-                        type="radio"
-                        value="resolved"
-                        checked={statusUpdate.status === 'resolved'}
-                        onChange={(e) => setStatusUpdate({...statusUpdate, status: e.target.value})}
-                      />
-                      <span className="status-label resolved">
-                        ✅ Resolved
-                      </span>
-                    </label>
-                    
-                    <label className="status-option">
-                      <input
-                        type="radio"
-                        value="rejected"
-                        checked={statusUpdate.status === 'rejected'}
-                        onChange={(e) => setStatusUpdate({...statusUpdate, status: e.target.value})}
-                      />
-                      <span className="status-label rejected">
-                        ❌ Rejected
-                      </span>
-                    </label>
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label>Admin Notes (Optional)</label>
-                  <textarea
-                    value={statusUpdate.adminNotes}
-                    onChange={(e) => setStatusUpdate({...statusUpdate, adminNotes: e.target.value})}
-                    placeholder="Add notes about the status update..."
-                    rows="3"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={statusUpdate.notifyUser}
-                      onChange={(e) => setStatusUpdate({...statusUpdate, notifyUser: e.target.checked})}
-                    />
-                    Notify user about this status update
-                  </label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                onClick={() => setShowStatusModal(false)}
-                className="btn btn-secondary"
+                {statuses.filter(s => s !== "all").map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleSubmit}
+                className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition mt-2"
               >
-                Cancel
-              </button>
-              <button 
-                onClick={updateReportStatus}
-                disabled={!statusUpdate.status}
-                className="btn btn-primary"
-              >
-                Update Status
+                {editingReport ? "Save Changes" : "Add Report"}
               </button>
             </div>
           </div>
