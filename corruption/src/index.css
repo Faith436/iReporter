@@ -1,13 +1,55 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* index.css */
+@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+
+.leaflet-container {
+  width: 100%;
+  height: 400px; /* Adjust height as needed */
+  border-radius: 0.5rem;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Hide the default date input calendar icon */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  /* For Chrome, Safari, Edge, Opera */
+  opacity: 0;
+  width: 0;
+  height: 0;
+  cursor: pointer; /* Keeps the input clickable, though the icon is hidden */
+}
+
+/* Hide the pointer/clear button that sometimes appears */
+input[type="date"]::-webkit-clear-button {
+  /* For Chrome, Safari, Edge, Opera */
+  display: none;
+}
+
+/* For Firefox */
+input[type="date"] {
+  -moz-appearance: textfield; /* Removes the spin button in Firefox */
+  appearance: textfield; /* Standard property for future support */
+}
+input[type="date"]::-moz-focus-inner {
+  /* Hides inner focus ring in Firefox */
+  border: 0;
+}
+
+/* Optional: To hide the down arrow that may appear in some browsers */
+input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+/* To ensure it still functions as a date input */
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
 }
