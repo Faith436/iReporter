@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import CreateReportModal from "../components/CreateReportModal";
 import QuickStats from "../components/QuickStats";
+import RecentReports from "../components/RecentReports";
 import { Bell, Map, List, X } from "lucide-react";
 
 const COLOR_PRIMARY_PURPLE = "#4D2C5E";
@@ -193,12 +194,28 @@ const Dashboard = () => {
     return <div className="p-6 text-gray-600">Please log in to access your dashboard.</div>;
 
   const handleSaveReport = (reportData) => {
-    const reportWithUser = { ...reportData, userId: currentUser.id };
-    if (editReport) updateReport(editReport.id, reportWithUser);
-    else createReport(reportWithUser);
+    const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    
+    // Add user information to the report
+    const reportWithUser = { 
+      ...reportData, 
+      userId: currentUser.id,
+      userName: currentUser.name,
+      id: Date.now(), // Generate unique ID
+      date: new Date().toLocaleDateString(),
+      timestamp: new Date().toISOString(),
+      status: "pending"
+    };
+
+    if (editReport) {
+      updateReport(editReport.id, reportWithUser);
+    } else {
+      createReport(reportWithUser);
+    }
+    
     setEditReport(null);
     setModalOpen(false);
-    alert("Report saved successfully!");
+    // Success message is now handled in the modal
   };
 
   const filteredReports =
@@ -224,6 +241,11 @@ const Dashboard = () => {
         </header>
 
         <QuickStats reports={reports} openModal={() => setModalOpen(true)} />
+
+        {/* Recent Reports Section */}
+        <div className="mb-8">
+          <RecentReports />
+        </div>
 
         {/* View toggle */}
         <div className="bg-white p-4 rounded-lg shadow border border-gray-200 mb-6 flex flex-wrap md:flex-row justify-between items-center gap-4">
