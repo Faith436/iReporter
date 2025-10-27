@@ -4,6 +4,7 @@
 
 /* index.css */
 @import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+@import "leaflet/dist/leaflet.css";
 
 .leaflet-container {
   width: 100%;
@@ -52,4 +53,7 @@ input[type="date"]::-webkit-inner-spin-button {
 input[type="date"] {
   appearance: none;
   -webkit-appearance: none;
+}
+.from-stem{
+  width: 650px !important;
 }
