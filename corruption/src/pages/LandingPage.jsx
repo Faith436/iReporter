@@ -1,231 +1,57 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext"; // ✅ use your context
-import "../styles/LandingPage.css";
-import {
-  FaFlag,
-  FaHandsHelping,
-  FaMapMarkerAlt,
-  FaPhotoVideo,
-  FaBell,
-  FaUserSecret,
-} from "react-icons/fa";
 
-const heroImage =
-  "https://images.unsplash.com/photo-1670602152500-e14c206b5335?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y29ycnVwdGlvbnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&q=60&w=1000";
+const heroImage = "https://images.unsplash.com/photo-1670602152500-e14c206b5335?ixlib=rb-4.1.0&auto=format&fit=crop&q=60&w=1000";
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth(); // ✅ from context
-
-  const handleSignIn = () => {
-    navigate("/login");
-  };
-
-  const handleGetStarted = () => {
-    navigate("/signup");
-  };
-
-  const handleStartReporting = () => {
-    if (user) {
-      // ✅ redirect using AuthContext logic
-      if (isAdmin()) {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
-    } else {
-      navigate("/signup");
-    }
-  };
 
   return (
-    <div className="landing-page">
-      {/* ===== HERO SECTION ===== */}
-      <header className="hero-section">
-        <nav className="navbar">
-          <h1 className="logo">iReporter</h1>
-          <div className="nav-buttons">
-            <button onClick={handleSignIn} className="btn-outline">
+    <div className="landing-page font-sans">
+      <header className="bg-gray-50">
+        <nav className="flex justify-between items-center px-8 py-4 shadow sticky top-0 z-50 bg-white">
+          <h1
+            className="text-2xl font-bold text-red-500 cursor-pointer"
+            onClick={() => navigate("/")}
+          >
+            iReporter
+          </h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-2 text-blue-600 border-2 border-red-500 rounded-lg hover:bg-gray-900 hover:text-white transition"
+            >
               Sign In
             </button>
-            <button onClick={handleGetStarted} className="btn-primary">
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
+            >
               Get Started
             </button>
           </div>
         </nav>
 
-        <div className="hero-content">
-          <div className="hero-text">
-            <h2>Report Corruption. Demand Action.</h2>
-            <p>
-              iReporter empowers citizens to report corruption incidents and
-              request government interventions for infrastructure issues. Make
-              your voice heard and drive positive change in your community.
+        <div className="flex flex-col lg:flex-row items-center justify-center max-w-6xl mx-auto px-6 py-16 gap-12">
+          <div className="flex-1 text-center lg:text-left">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Report Corruption. Demand Action.</h2>
+            <p className="text-gray-600 mb-6">
+              iReporter empowers citizens to report corruption incidents and request government interventions for infrastructure issues.
             </p>
-            <div className="hero-buttons">
-              <button onClick={handleStartReporting} className="btn-primary">
+            <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+              <button
+                onClick={() => navigate("/login")}
+                className="px-6 py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition"
+              >
                 Start Reporting
-              </button>
-              <button onClick={handleSignIn} className="btn-outline">
-                Sign In
               </button>
             </div>
           </div>
-          <div className="hero-image">
-            <img src={heroImage} alt="justice" />
+          <div className="flex-1 flex justify-center">
+            <img src={heroImage} alt="justice" className="rounded-xl shadow-lg max-w-full h-auto" />
           </div>
         </div>
       </header>
-
-      {/* ===== FEATURES SECTION ===== */}
-      <section className="features">
-        <h2>iReporter Platform</h2>
-        <p>Powerful Features for Civic Engagement</p>
-        <div className="feature-grid">
-          <div className="feature-card">
-            <FaFlag className="feature-icon" />
-            <h3>Red Flag Reports</h3>
-            <p>
-              Report corruption incidents, bribery, and misuse of public funds
-              with evidence and location data.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <FaHandsHelping className="feature-icon" />
-            <h3>Intervention Requests</h3>
-            <p>
-              Request government intervention for infrastructure issues like bad
-              roads, collapsed bridges, and flooding.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <FaMapMarkerAlt className="feature-icon" />
-            <h3>Geolocation Tracking</h3>
-            <p>
-              Add precise location coordinates to your reports and visualize
-              incidents on interactive maps.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <FaPhotoVideo className="feature-icon" />
-            <h3>Media Evidence</h3>
-            <p>
-              Upload images and videos to support your claims and provide
-              compelling evidence.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <FaBell className="feature-icon" />
-            <h3>Real-time Updates</h3>
-            <p>
-              Receive notifications when administrators update the status of
-              your reports.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <FaUserSecret className="feature-icon" />
-            <h3>Secure & Anonymous</h3>
-            <p>
-              Your reports are secure and you can choose to remain anonymous
-              while still tracking progress.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== HOW IT WORKS ===== */}
-      <section className="how-it-works">
-        <h2>How It Works</h2>
-        <p>Simple steps to make a difference in your community</p>
-        <div className="steps">
-          <div className="step">
-            <span>1</span>
-            <h3>Create Account</h3>
-            <p>
-              Sign up for a free account to start reporting incidents and
-              tracking their progress.
-            </p>
-          </div>
-
-          <div className="step">
-            <span>2</span>
-            <h3>Submit Report</h3>
-            <p>
-              Create detailed reports with location data, evidence, and clear
-              descriptions of the incident.
-            </p>
-          </div>
-
-          <div className="step">
-            <span>3</span>
-            <h3>Track Progress</h3>
-            <p>
-              Monitor the status of your reports and receive notifications when
-              actions are taken.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== CALL TO ACTION ===== */}
-      <section className="cta">
-        <h2>Ready to Make a Difference?</h2>
-        <p>
-          Join thousands of citizens who are using iReporter to fight corruption
-          and improve their communities.
-        </p>
-        <button onClick={handleGetStarted} className="btn-primary">
-          Get Started Today
-        </button>
-      </section>
-
-      {/* ===== FOOTER ===== */}
-      <footer className="footer">
-        <div className="footer-top">
-          <div className="footer-brand">
-            <h3>iReporter</h3>
-            <p>
-              Empowering citizens to report corruption and demand government
-              accountability.
-            </p>
-          </div>
-          <div className="footer-links">
-            <div>
-              <h4>Platform</h4>
-              <ul>
-                <li>Features</li>
-                <li>How it Works</li>
-                <li>Security</li>
-              </ul>
-            </div>
-            <div>
-              <h4>Support</h4>
-              <ul>
-                <li>Help Center</li>
-                <li>Contact Us</li>
-                <li>Community</li>
-              </ul>
-            </div>
-            <div>
-              <h4>Legal</h4>
-              <ul>
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-                <li>Cookie Policy</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <p>© 2024 iReporter. All rights reserved. | Powered by Readdy</p>
-        </div>
-      </footer>
     </div>
   );
 };

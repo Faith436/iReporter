@@ -1,37 +1,39 @@
 import React, { useEffect, useState } from "react";
 
-const NotificationToast = ({ message, type = "info", duration = 3000 }) => {
-  const [visible, setVisible] = useState(true);
+const NotificationToast = ({ message, type = "info", duration = 3000, onClose }) => {
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Fade in
+    setVisible(true);
     const timer = setTimeout(() => setVisible(false), duration);
-    return () => clearTimeout(timer);
-  }, [duration]);
-
-  if (!visible) return null;
+    // Call onClose after disappearing
+    const closeTimer = setTimeout(() => onClose && onClose(), duration + 300);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(closeTimer);
+    };
+  }, [duration, onClose]);
 
   const bgColor =
     type === "success"
-      ? "#28a745"
+      ? "bg-green-500"
       : type === "error"
-      ? "#dc3545"
-      : "#17a2b8";
+      ? "bg-red-500"
+      : "bg-blue-500";
+
+  const icon =
+    type === "success" ? "✔️" : type === "error" ? "❌" : "ℹ️";
 
   return (
     <div
-      style={{
-        position: "fixed",
-        top: "20px",
-        right: "20px",
-        background: bgColor,
-        color: "#fff",
-        padding: "12px 18px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-        zIndex: 1000,
-      }}
+      className={`fixed top-6 right-6 flex items-center gap-3 text-white px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+      } ${bgColor}`}
+      style={{ zIndex: 1000 }}
     >
-      {message}
+      <span className="text-lg">{icon}</span>
+      <span className="text-sm">{message}</span>
     </div>
   );
 };
