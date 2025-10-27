@@ -43,6 +43,46 @@ export const ReportProvider = ({ children }) => {
     localStorage.setItem("ireporter-notifications", JSON.stringify(notifications));
   }, [notifications]);
 
+  // Get stats for QuickStats
+  const getStats = (userId = null) => {
+    let filteredReports = reports;
+    
+    // If userId provided, filter by user
+    if (userId) {
+      filteredReports = reports.filter(report => report.userId === userId);
+    }
+
+    return {
+      total: filteredReports.length,
+      redFlags: filteredReports.filter(r => r.reportType === "red-flag").length,
+      interventions: filteredReports.filter(r => r.reportType === "intervention").length,
+      pending: filteredReports.filter(r => r.status === "pending").length,
+      underInvestigation: filteredReports.filter(r => r.status === "under-investigation").length,
+      resolved: filteredReports.filter(r => r.status === "resolved").length,
+    };
+  };
+
+  // Get unread count for notifications
+  const getUnreadCount = (currentUser) => {
+    if (!currentUser) return 0;
+    
+    const userNotifications = getUserNotifications(currentUser);
+    return userNotifications.filter(n => !n.read).length;
+  };
+
+  // Get filtered notifications for current user
+  const getUserNotifications = (currentUser) => {
+    if (!currentUser) return [];
+    
+    return notifications.filter(notification => {
+      if (currentUser.role === "admin") {
+        return notification.targetUser === "admin";
+      } else {
+        return notification.targetUser === currentUser.id;
+      }
+    });
+  };
+
   // Create notification function
   const createNotification = (notificationData) => {
     const newNotification = {
@@ -56,40 +96,40 @@ export const ReportProvider = ({ children }) => {
     return newNotification;
   };
 
-  // ✅ CREATE REPORT - Notify Admin
+  // CREATE REPORT
   const createReport = (reportData) => {
     const newReport = {
       id: Date.now(),
       ...reportData,
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toLocaleDateString(),
+      timestamp: new Date().toISOString(),
       status: "pending",
     };
 
     setReports(prev => [newReport, ...prev]);
 
-    // 🔔 NOTIFY ADMIN: New report submitted
+    // Notify admin
     createNotification({
       title: "New Report Submitted",
-      message: `User ${reportData.userName || "A user"} submitted a new report: "${reportData.title}"`,
+      message: `User ${reportData.userName || "A user"} submitted: "${reportData.title}"`,
       type: "new-report",
-      targetUser: "admin", // Only admins see this
+      targetUser: "admin",
       reportId: newReport.id,
-      reportTitle: reportData.title,
     });
 
-    // 🔔 NOTIFY USER: Report submitted successfully
+    // Notify user
     createNotification({
-      title: "Report Submitted Successfully",
-      message: `Your report "${reportData.title}" has been submitted and is under review.`,
-      type: "submission-confirmation",
-      targetUser: reportData.userId, // Only the submitting user sees this
+      title: "Report Submitted",
+      message: `Your report "${reportData.title}" has been submitted.`,
+      type: "submission",
+      targetUser: reportData.userId,
       reportId: newReport.id,
     });
 
     return newReport;
   };
 
-  // ✅ UPDATE REPORT - Notify User when admin changes status
+  // UPDATE REPORT
   const updateReport = (id, updates) => {
     setReports(prevReports =>
       prevReports.map(report => {
@@ -97,26 +137,13 @@ export const ReportProvider = ({ children }) => {
           const oldStatus = report.status;
           const newStatus = updates.status;
 
-          // 🔔 NOTIFY USER: Status changed by admin
+          // Notify user of status change
           if (newStatus && newStatus !== oldStatus) {
             createNotification({
-              title: "Report Status Updated",
-              message: `Your report "${report.title}" status changed from "${oldStatus}" to "${newStatus}"`,
+              title: "Status Updated",
+              message: `Your report "${report.title}" is now ${newStatus.replace("-", " ")}`,
               type: "status-update",
-              targetUser: report.userId, // Only the report owner sees this
-              reportId: id,
-              oldStatus,
-              newStatus,
-            });
-          }
-
-          // 🔔 NOTIFY ADMIN: User edited their report (only if status is pending)
-          if (report.status === "pending" && !updates.status) {
-            createNotification({
-              title: "Report Edited",
-              message: `User ${report.userName || "A user"} edited their report: "${report.title}"`,
-              type: "report-edited",
-              targetUser: "admin", // Only admins see this
+              targetUser: report.userId,
               reportId: id,
             });
           }
@@ -128,83 +155,67 @@ export const ReportProvider = ({ children }) => {
     );
   };
 
-  // ✅ DELETE REPORT - Notify Admin
+  // DELETE REPORT
   const deleteReport = (id) => {
     const reportToDelete = reports.find(r => r.id === id);
     
     setReports(prev => prev.filter(r => r.id !== id));
 
-    // 🔔 NOTIFY ADMIN: Report deleted by user
+    // Notify admin
     if (reportToDelete) {
       createNotification({
         title: "Report Deleted",
-        message: `User ${reportToDelete.userName || "A user"} deleted their report: "${reportToDelete.title}"`,
+        message: `User ${reportToDelete.userName} deleted: "${reportToDelete.title}"`,
         type: "report-deleted",
-        targetUser: "admin", // Only admins see this
+        targetUser: "admin",
         reportId: id,
-        reportTitle: reportToDelete.title,
       });
     }
   };
 
-  // ✅ MARK NOTIFICATION AS READ
+  // Get user's reports
+  const getUserReports = (userId) => {
+    return reports.filter(report => report.userId === userId);
+  };
+
+  // Get all reports (for admin)
+  const getAllReports = () => {
+    return reports;
+  };
+
+  // Mark notification as read
   const markNotificationRead = (id) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
-  // ✅ REMOVE NOTIFICATION
+  // Remove notification
   const removeNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  // ✅ GET FILTERED NOTIFICATIONS FOR CURRENT USER
-  const getUserNotifications = (currentUser) => {
-    if (!currentUser) return [];
-    
-    return notifications.filter(notification => {
-      // Admin sees all admin-targeted notifications
-      if (currentUser.role === "admin") {
-        return notification.targetUser === "admin";
-      }
-      // Users see only their own notifications
-      else {
-        return notification.targetUser === currentUser.id || 
-               (notification.targetUser === currentUser.role); // Fallback for user role
-      }
-    });
-  };
-
-  // ✅ GET UNREAD COUNT FOR CURRENT USER
-  const getUnreadCount = (currentUser) => {
-    const userNotifications = getUserNotifications(currentUser);
-    return userNotifications.filter(n => !n.read).length;
-  };
-
-  // ✅ CLEAR ALL NOTIFICATIONS FOR CURRENT USER
-  const clearAllNotifications = (currentUser) => {
-    if (currentUser.role === "admin") {
-      // Admin: clear only admin notifications
-      setNotifications(prev => prev.filter(n => n.targetUser !== "admin"));
-    } else {
-      // User: clear only their notifications
-      setNotifications(prev => prev.filter(n => n.targetUser !== currentUser.id));
-    }
-  };
-
   const value = {
+    // Data
     reports,
     notifications,
     loading,
+    
+    // Report operations
     createReport,
     updateReport,
     deleteReport,
+    getUserReports,
+    getAllReports,
+    
+    // Stats
+    getStats,
+    
+    // Notification operations
     markNotificationRead,
     removeNotification,
     getUserNotifications,
     getUnreadCount,
-    clearAllNotifications,
   };
 
   return (

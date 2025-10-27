@@ -1,12 +1,13 @@
 import React from 'react';
+import { useReports } from '../contexts/ReportContext';
+import { useUsers } from '../contexts/UserContext';
 
-const RecentReports = () => {
-  // Get current user
-  const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+const RecentReports = ({ onEditReport }) => {
+  const { currentUser } = useUsers();
+  const { getUserReports, deleteReport } = useReports();
   
-  // Get ALL reports from localStorage and filter by current user
-  const allReports = JSON.parse(localStorage.getItem("myReports")) || [];
-  const userReports = allReports.filter(report => report.userId === currentUser?.id);
+  // Get current user's reports
+  const userReports = currentUser ? getUserReports(currentUser.id) : [];
   
   // Show only recent reports (last 5) - newest first
   const recentReports = userReports
@@ -15,15 +16,21 @@ const RecentReports = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return '#f59e0b';
-      case 'under-investigation': return '#d69e2e';
-      case 'resolved': return '#38a169';
-      default: return '#718096';
+      case 'pending': return 'bg-yellow-500';
+      case 'under-investigation': return 'bg-orange-500';
+      case 'resolved': return 'bg-green-500';
+      default: return 'bg-gray-500';
     }
   };
 
   const getTypeIcon = (type) => {
     return type === 'red-flag' ? '🚩' : '🛠️';
+  };
+
+  const handleDelete = (reportId) => {
+    if (window.confirm("Are you sure you want to delete this report?")) {
+      deleteReport(reportId);
+    }
   };
 
   return (
@@ -43,8 +50,7 @@ const RecentReports = () => {
                 <h4 className="font-semibold text-gray-900">{report.title}</h4>
               </div>
               <span 
-                className="px-2 py-1 rounded-full text-xs font-semibold text-white"
-                style={{backgroundColor: getStatusColor(report.status)}}
+                className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${getStatusColor(report.status)}`}
               >
                 {report.status ? report.status.replace('-', ' ') : 'Pending'}
               </span>
@@ -52,7 +58,7 @@ const RecentReports = () => {
             
             <p className="text-gray-600 text-sm mb-3">{report.description}</p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500 mb-3">
               <div className="flex items-center gap-1">
                 <span>📍</span>
                 <span>{report.location || 'Location not specified'}</span>
@@ -73,15 +79,23 @@ const RecentReports = () => {
               </div>
             </div>
             
-            <div className="mt-3 flex gap-2">
-              <button className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition">
-                View Details
+            <div className="flex gap-2">
+              <button 
+                onClick={() => onEditReport(report)}
+                className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={report.status !== "pending"}
+              >
+                Edit
               </button>
-              {report.status === "pending" && (
-                <button className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition">
-                  Edit
-                </button>
-              )}
+              <button 
+                onClick={() => handleDelete(report.id)}
+                className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition"
+              >
+                Delete
+              </button>
+              <span className="text-xs text-gray-500 ml-auto self-center">
+                {report.status === "pending" ? "✓ Editable" : "✗ Cannot edit"}
+              </span>
             </div>
           </div>
         ))
