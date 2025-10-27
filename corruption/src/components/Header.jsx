@@ -3,7 +3,6 @@ import { Menu, Bell, X, ChevronDown, LogOut, User, Search } from "lucide-react";
 import { useReports } from "../contexts/ReportContext";
 import { useNavigate } from "react-router-dom";
 
-const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const COLOR_PRIMARY_TEAL = "#116E75";
 
 const Header = () => {

@@ -89,23 +89,23 @@ const AdminDashboard = () => {
   };
 
   // Modal handlers
-  const openAddModal = () => {
-    setEditingReport(null);
-    setFormData({ title: "", description: "", status: "pending", location: "", date: "" });
-    setModalOpen(true);
-  };
+  // const openAddModal = () => {
+  //   setEditingReport(null);
+  //   setFormData({ title: "", description: "", status: "pending", location: "", date: "" });
+  //   setModalOpen(true);
+  // };
 
-  const openEditModal = (report) => {
-    setEditingReport(report);
-    setFormData({
-      title: report.title,
-      description: report.description,
-      status: report.status,
-      location: report.location,
-      date: report.date,
-    });
-    setModalOpen(true);
-  };
+  // const openEditModal = (report) => {
+  //   setEditingReport(report);
+  //   setFormData({
+  //     title: report.title,
+  //     description: report.description,
+  //     status: report.status,
+  //     location: report.location,
+  //     date: report.date,
+  //   });
+  //   setModalOpen(true);
+  // };
 
   const handleSubmit = () => {
     if (editingReport) {
