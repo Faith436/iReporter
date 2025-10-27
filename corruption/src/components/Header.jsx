@@ -27,7 +27,7 @@ const Header = () => {
     if (user) {
       const notifications = getUserNotifications(user);
       setUserNotifications(notifications);
-      setUnreadCount(getUnreadCount(user));
+      setUnreadCount(getUnreadCount(user)); // ✅ Now this will work
     }
   }, [user, getUserNotifications, getUnreadCount]);
 
@@ -143,7 +143,7 @@ const Header = () => {
           )}
         </div>
 
-        {/* User Menu (keep your existing user menu code) */}
+        {/* User Menu */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu((prev) => !prev)}

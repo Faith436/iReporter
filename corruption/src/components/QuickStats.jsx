@@ -1,66 +1,101 @@
 import React from "react";
+import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
 
-const QuickStats = ({ reports = [], openModal }) => {
+const QuickStats = ({ openModal }) => {
   const { currentUser } = useUsers();
+  const { getStats } = useReports();
 
-  // Filter reports for current user, fallback to all if no user
-  const userReports = currentUser
-    ? reports.filter((r) => r.userId === currentUser.id)
-    : reports;
-
-  const stats = {
-    redFlags: userReports.filter(r => r.reportType === "red-flag").length,
-    interventions: userReports.filter(r => r.reportType === "intervention").length,
-    underInvestigation: userReports.filter(r => r.status === "under-investigation").length,
-    resolved: userReports.filter(r => r.status === "resolved").length,
+  // Get dynamic stats - FIXED: Check if functions exist
+  const stats = getStats ? (currentUser?.role === "admin" 
+    ? getStats() // Admin sees all reports
+    : getStats(currentUser?.id) // User sees only their reports
+  ) : {
+    total: 0, redFlags: 0, interventions: 0, pending: 0, underInvestigation: 0, resolved: 0
   };
 
   const statCards = [
-    { title: "Red Flags", value: stats.redFlags, color: "red", description: "Corruption reports" },
-    { title: "Interventions", value: stats.interventions, color: "blue", description: "Infrastructure requests" },
-    { title: "Under Investigation", value: stats.underInvestigation, color: "yellow", description: "Active investigations" },
-    { title: "Resolved", value: stats.resolved, color: "green", description: "Completed cases" },
+    { 
+      title: "Total Reports", 
+      value: stats.total, 
+      color: "teal", 
+      description: "All submissions",
+      icon: "📊"
+    },
+    { 
+      title: "Red Flags", 
+      value: stats.redFlags, 
+      color: "red", 
+      description: "Corruption reports",
+      icon: "🚩"
+    },
+    { 
+      title: "Interventions", 
+      value: stats.interventions, 
+      color: "blue", 
+      description: "Infrastructure requests",
+      icon: "🛠️"
+    },
+    { 
+      title: "Pending", 
+      value: stats.pending, 
+      color: "yellow", 
+      description: "Awaiting review",
+      icon: "⏳"
+    },
+    { 
+      title: "Resolved", 
+      value: stats.resolved, 
+      color: "green", 
+      description: "Completed cases",
+      icon: "✅"
+    },
   ];
 
   const colorClasses = {
-    red: { border: "border-t-red-500", text: "text-red-600" },
-    blue: { border: "border-t-blue-500", text: "text-blue-600" },
-    yellow: { border: "border-t-yellow-500", text: "text-yellow-600" },
-    green: { border: "border-t-green-500", text: "text-green-600" },
+    teal: { border: "border-t-teal-500", text: "text-teal-600", bg: "bg-teal-50" },
+    red: { border: "border-t-red-500", text: "text-red-600", bg: "bg-red-50" },
+    blue: { border: "border-t-blue-500", text: "text-blue-600", bg: "bg-blue-50" },
+    yellow: { border: "border-t-yellow-500", text: "text-yellow-600", bg: "bg-yellow-50" },
+    green: { border: "border-t-green-500", text: "text-green-600", bg: "bg-green-50" },
   };
 
-  // Wrapper to pass current user ID when opening modal
   const handleCreateReport = () => {
     if (!currentUser) {
       alert("Please log in to create a report.");
       return;
     }
-    openModal({ userId: currentUser.id });
+    if (openModal) {
+      openModal();
+    }
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
       {statCards.map((stat, index) => (
         <div
           key={index}
-          className={`flex flex-col items-center justify-center bg-white shadow-md rounded-2xl p-6 transition-transform hover:scale-105 hover:shadow-lg ${colorClasses[stat.color].border}`}
+          className={`flex flex-col p-4 rounded-lg shadow-md border-t-4 ${colorClasses[stat.color].border} ${colorClasses[stat.color].bg} transition-transform hover:scale-105`}
         >
-          <div className={`text-4xl font-bold mb-2 ${colorClasses[stat.color].text}`}>
-            {stat.value}
+          <div className="flex items-center justify-between mb-2">
+            <div className={`text-2xl font-bold ${colorClasses[stat.color].text}`}>
+              {stat.value}
+            </div>
+            <div className="text-2xl">{stat.icon}</div>
           </div>
-          <div className="text-gray-800 font-semibold text-lg">{stat.title}</div>
-          <div className="text-gray-500 text-sm text-center">{stat.description}</div>
+          <div className="text-gray-800 font-semibold text-sm">{stat.title}</div>
+          <div className="text-gray-500 text-xs">{stat.description}</div>
         </div>
       ))}
 
       {/* Create Report Button */}
-      <div className="flex items-center justify-center bg-white border-2 border-dashed border-gray-300 rounded-2xl p-6 hover:border-blue-400 transition">
-        <button
-          onClick={handleCreateReport}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 active:scale-95 transition"
-        >
-          + Create Report
+      <div 
+        onClick={handleCreateReport}
+        className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer"
+      >
+        <button className="text-blue-600 font-semibold flex items-center gap-2">
+          <span className="text-xl">+</span>
+          Create Report
         </button>
       </div>
     </div>
