@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Added Link import
 import { LogIn, User, Lock, CheckCircle, XCircle } from "lucide-react";
 
 // --- COLORS ---
@@ -51,7 +51,7 @@ const Login = () => {
         setStatus({
           type: "error",
           message:
-            "Invalid email or password. Try admin@example.com / admin123 or user@example.com / user123",
+            "Invalid email or password. Try wisdom@ireporter.com / wisdom or fyth@ireporter.com / fyth",
         });
       }
 
@@ -200,6 +200,7 @@ const Login = () => {
               </button>
               <button
                 type="button"
+                onClick={() => navigate("/signup")} // Changed to navigate to signup
                 className="flex-1 py-3 px-6 rounded-lg font-bold transition-all duration-300 hover:opacity-80"
                 style={{
                   backgroundColor: "white",
