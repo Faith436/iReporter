@@ -2,13 +2,12 @@ import React, { useState } from "react";
 import {
   LayoutGrid,
   List,
-  MapPin,
   Upload,
   Trash2,
   ChevronDown,
   Pencil,
   Plus,
-} from "lucide-react";
+} from "lucide-react"; // Removed MapPin import
 import { dummyReports, statuses } from "../data/reportsData";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
@@ -67,7 +66,11 @@ const Reports = () => {
         reports.map((r) => (r.id === editingReport.id ? { ...formData } : r))
       );
     } else {
-      const newReport = { ...formData, id: reports.length + 1 };
+      const newReport = { 
+        ...formData, 
+        id: reports.length + 1,
+        date: formData.date || new Date().toISOString().split('T')[0] // Add default date if empty
+      };
       setReports([...reports, newReport]);
     }
     setEditingReport(null);
@@ -92,12 +95,27 @@ const Reports = () => {
     }));
 
   const getCoordinates = (coordString) => {
-    if (!coordString) return [0, 0];
+    if (!coordString) return [6.5244, 3.3792]; // Default to Lagos coordinates
     const parts = coordString.split(",");
-    return parts.length === 2
-      ? [parseFloat(parts[0]), parseFloat(parts[1])]
-      : [0, 0];
+    if (parts.length === 2) {
+      const lat = parseFloat(parts[0].trim());
+      const lng = parseFloat(parts[1].trim());
+      return [isNaN(lat) ? 6.5244 : lat, isNaN(lng) ? 3.3792 : lng];
+    }
+    return [6.5244, 3.3792]; // Default coordinates
   };
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveStatusDropdown(null);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
@@ -117,14 +135,14 @@ const Reports = () => {
                   description: "",
                   location: "",
                   coordinates: "",
-                  date: "",
+                  date: new Date().toISOString().split('T')[0], // Set default date
                   status: "pending",
                   media: null,
                 });
                 setCurrentStep(1);
                 setShowModal(true);
               }}
-              className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 shadow text-sm"
+              className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 shadow text-sm transition duration-200"
             >
               <Plus className="w-4 h-4" /> Add Report
             </button>
@@ -133,7 +151,7 @@ const Reports = () => {
           <div className="flex gap-2 bg-gray-100 rounded-md p-1">
             <button
               onClick={() => setActiveView("list")}
-              className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
+              className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium transition duration-200 ${
                 activeView === "list"
                   ? "bg-white shadow text-teal-600"
                   : "text-gray-600 hover:text-teal-600"
@@ -143,7 +161,7 @@ const Reports = () => {
             </button>
             <button
               onClick={() => setActiveView("kanban")}
-              className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
+              className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium transition duration-200 ${
                 activeView === "kanban"
                   ? "bg-white shadow text-teal-600"
                   : "text-gray-600 hover:text-teal-600"
@@ -157,80 +175,87 @@ const Reports = () => {
 
       {/* LIST VIEW */}
       {activeView === "list" && (
-        <div className="bg-white shadow rounded-lg">
+        <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full text-sm text-left">
             <thead className="bg-gray-100">
               <tr>
-                <th className="p-3">Title</th>
-                <th className="p-3">Description</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Actions</th>
+                <th className="p-3 font-semibold">Title</th>
+                <th className="p-3 font-semibold">Description</th>
+                <th className="p-3 font-semibold">Location</th>
+                <th className="p-3 font-semibold">Date</th>
+                <th className="p-3 font-semibold">Status</th>
+                <th className="p-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {reports.length ? (
                 reports.map((report) => (
-                  <tr key={report.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">{report.title}</td>
-                    <td className="p-3">{report.description}</td>
+                  <tr key={report.id} className="border-b hover:bg-gray-50 transition duration-150">
+                    <td className="p-3 font-medium">{report.title}</td>
+                    <td className="p-3 text-gray-600 max-w-xs truncate">{report.description}</td>
                     <td className="p-3">{report.location}</td>
                     <td className="p-3">{report.date}</td>
-                    <td className="p-3 capitalize">{report.status}</td>
-                    <td className="p-3 relative flex gap-2">
-                      {role === "admin" ? (
-                        <>
-                          <div className="relative">
+                    <td className="p-3">
+                      <span className="capitalize px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        {report.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        {role === "admin" ? (
+                          <>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveStatusDropdown(
+                                    activeStatusDropdown === report.id ? null : report.id
+                                  );
+                                }}
+                                className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition text-xs"
+                              >
+                                Status <ChevronDown className="w-4 h-4" />
+                              </button>
+                              {activeStatusDropdown === report.id && (
+                                <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-32">
+                                  {statuses
+                                    .filter((s) => s !== "all")
+                                    .map((s) => (
+                                      <div
+                                        key={s}
+                                        onClick={() => handleStatusUpdate(report.id, s)}
+                                        className="px-4 py-2 text-sm cursor-pointer hover:bg-teal-100 capitalize transition duration-150"
+                                      >
+                                        {s}
+                                      </div>
+                                    ))}
+                                </div>
+                              )}
+                            </div>
                             <button
-                              onClick={() =>
-                                setActiveStatusDropdown(
-                                  activeStatusDropdown === report.id ? null : report.id
-                                )
-                              }
-                              className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition text-xs"
+                              onClick={() => handleDelete(report.id)}
+                              className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition text-xs"
                             >
-                              Status <ChevronDown className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" /> Delete
                             </button>
-                            {activeStatusDropdown === report.id && (
-                              <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                {statuses
-                                  .filter((s) => s !== "all")
-                                  .map((s) => (
-                                    <div
-                                      key={s}
-                                      onClick={() => handleStatusUpdate(report.id, s)}
-                                      className="px-4 py-2 text-sm cursor-pointer hover:bg-teal-100 capitalize"
-                                    >
-                                      {s}
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleDelete(report.id)}
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition text-xs flex items-center gap-1"
-                          >
-                            <Trash2 className="w-4 h-4" /> Delete
-                          </button>
-                        </>
-                      ) : (
-                        report.status === "pending" && (
-                          <button
-                            onClick={() => handleEdit(report)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-xs flex items-center gap-1"
-                          >
-                            <Pencil className="w-4 h-4" /> Edit
-                          </button>
-                        )
-                      )}
+                          </>
+                        ) : (
+                          report.status === "pending" && (
+                            <button
+                              onClick={() => handleEdit(report)}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-xs"
+                            >
+                              <Pencil className="w-4 h-4" /> Edit
+                            </button>
+                          )
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center p-4 text-gray-500">
+                  <td colSpan="6" className="text-center p-8 text-gray-500">
                     No reports found.
                   </td>
                 </tr>
@@ -250,13 +275,13 @@ const Reports = () => {
                 {items.map((report) => (
                   <div
                     key={report.id}
-                    className="bg-white rounded-lg shadow p-3 border border-gray-200 hover:shadow-md transition relative"
+                    className="bg-white rounded-lg shadow p-3 border border-gray-200 hover:shadow-md transition duration-300"
                   >
-                    <h3 className="font-semibold text-sm">{report.title}</h3>
-                    <p className="text-xs text-gray-600 mb-2">{report.description}</p>
+                    <h3 className="font-semibold text-sm mb-2">{report.title}</h3>
+                    <p className="text-xs text-gray-600 mb-3">{report.description}</p>
 
                     {report.media && (
-                      <div className="mb-2">
+                      <div className="mb-3">
                         {report.media.type?.startsWith("image/") ? (
                           <img
                             src={URL.createObjectURL(report.media)}
@@ -274,7 +299,7 @@ const Reports = () => {
                     )}
 
                     {report.coordinates && (
-                      <div className="h-32 mb-2">
+                      <div className="h-32 mb-3">
                         <MapContainer
                           center={getCoordinates(report.coordinates)}
                           zoom={13}
@@ -292,17 +317,23 @@ const Reports = () => {
                       </div>
                     )}
 
-                    <div className="mt-2 flex justify-between items-center">
+                    <div className="flex justify-between items-center text-xs text-gray-500">
+                      <span>{report.location}</span>
+                      <span>{report.date}</span>
+                    </div>
+
+                    <div className="mt-3 flex justify-end gap-2">
                       {role === "admin" ? (
-                        <div className="flex items-center gap-2">
+                        <>
                           <div className="relative">
                             <button
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setActiveStatusDropdown(
                                   activeStatusDropdown === report.id ? null : report.id
-                                )
-                              }
-                              className="flex items-center gap-1 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition text-xs"
+                                );
+                              }}
+                              className="p-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
                             >
                               <ChevronDown className="w-4 h-4" />
                             </button>
@@ -313,7 +344,7 @@ const Reports = () => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        </div>
+                        </>
                       ) : (
                         report.status === "pending" && (
                           <button
@@ -336,10 +367,10 @@ const Reports = () => {
       {/* MODAL WITH STEPPER */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg w-full max-w-md relative">
+          <div className="bg-white rounded-lg p-6 shadow-lg w-full max-w-md relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-2 right-3 text-gray-500 hover:text-gray-700 text-xl"
+              className="absolute top-2 right-3 text-gray-500 hover:text-gray-700 text-xl transition duration-200"
             >
               ×
             </button>
@@ -349,17 +380,17 @@ const Reports = () => {
             </h2>
 
             {/* Stepper */}
-            <div className="flex justify-between mb-4">
+            <div className="flex justify-between mb-6">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex-1 text-center">
                   <div
-                    className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white ${
+                    className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white transition duration-200 ${
                       currentStep === step ? "bg-teal-500" : "bg-gray-300"
                     }`}
                   >
                     {step}
                   </div>
-                  <p className="text-xs mt-1">
+                  <p className="text-xs mt-1 text-gray-600">
                     {step === 1
                       ? "Type & Description"
                       : step === 2
@@ -371,62 +402,80 @@ const Reports = () => {
             </div>
 
             {/* Step Content */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {currentStep === 1 && (
                 <>
-                  <select
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="border p-2 rounded w-full"
-                  >
-                    <option value="">Select Type</option>
-                    <option value="Red Flag">Red Flag</option>
-                    <option value="Intervention">Intervention</option>
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
+                    <select
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
+                      className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    >
+                      <option value="">Select Type</option>
+                      <option value="Red Flag">Red Flag</option>
+                      <option value="Intervention">Intervention</option>
+                    </select>
+                  </div>
 
-                  <textarea
-                    placeholder="Description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="border p-2 rounded w-full"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      placeholder="Provide detailed description of the incident..."
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({ ...formData, description: e.target.value })
+                      }
+                      rows="4"
+                      className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
                 </>
               )}
 
               {currentStep === 2 && (
                 <>
-                  <input
-                    type="text"
-                    placeholder="Location / Address"
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    className="border p-2 rounded w-full"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Coordinates (lat,lng)"
-                    value={formData.coordinates}
-                    onChange={(e) =>
-                      setFormData({ ...formData, coordinates: e.target.value })
-                    }
-                    className="border p-2 rounded w-full"
-                  />
-                  <div className="flex items-center gap-2">
-                    <Upload className="text-gray-500 w-5 h-5" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Location / Address</label>
                     <input
-                      type="file"
-                      accept="image/*,video/*"
+                      type="text"
+                      placeholder="Enter the location"
+                      value={formData.location}
                       onChange={(e) =>
-                        setFormData({ ...formData, media: e.target.files[0] })
+                        setFormData({ ...formData, location: e.target.value })
                       }
-                      className="border p-2 rounded w-full"
+                      className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Coordinates (lat,lng)</label>
+                    <input
+                      type="text"
+                      placeholder="6.5244, 3.3792"
+                      value={formData.coordinates}
+                      onChange={(e) =>
+                        setFormData({ ...formData, coordinates: e.target.value })
+                      }
+                      className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Evidence</label>
+                    <div className="flex items-center gap-2 border border-gray-300 rounded-md p-2">
+                      <Upload className="text-gray-500 w-5 h-5" />
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={(e) =>
+                          setFormData({ ...formData, media: e.target.files[0] })
+                        }
+                        className="w-full"
+                      />
+                    </div>
                   </div>
 
                   {formData.coordinates && (
@@ -442,7 +491,7 @@ const Reports = () => {
                           position={getCoordinates(formData.coordinates)}
                           icon={markerIcon}
                         >
-                          <Popup>{formData.location}</Popup>
+                          <Popup>{formData.location || "Selected Location"}</Popup>
                         </Marker>
                       </MapContainer>
                     </div>
@@ -451,25 +500,26 @@ const Reports = () => {
               )}
 
               {currentStep === 3 && (
-                <div className="space-y-2">
-                  <p><strong>Type:</strong> {formData.title}</p>
-                  <p><strong>Description:</strong> {formData.description}</p>
-                  <p><strong>Location:</strong> {formData.location}</p>
-                  <p><strong>Coordinates:</strong> {formData.coordinates}</p>
+                <div className="space-y-3">
+                  <div><strong>Type:</strong> {formData.title || "Not specified"}</div>
+                  <div><strong>Description:</strong> {formData.description || "Not provided"}</div>
+                  <div><strong>Location:</strong> {formData.location || "Not specified"}</div>
+                  <div><strong>Coordinates:</strong> {formData.coordinates || "Not provided"}</div>
 
                   {formData.media && (
                     <div>
+                      <strong>Evidence:</strong>
                       {formData.media.type?.startsWith("image/") ? (
                         <img
                           src={URL.createObjectURL(formData.media)}
                           alt="media"
-                          className="rounded-md w-full h-32 object-cover"
+                          className="rounded-md w-full h-32 object-cover mt-2"
                         />
                       ) : (
                         <video
                           src={URL.createObjectURL(formData.media)}
                           controls
-                          className="rounded-md w-full h-32 object-cover"
+                          className="rounded-md w-full h-32 object-cover mt-2"
                         />
                       )}
                     </div>
@@ -488,7 +538,7 @@ const Reports = () => {
                           position={getCoordinates(formData.coordinates)}
                           icon={markerIcon}
                         >
-                          <Popup>{formData.location}</Popup>
+                          <Popup>{formData.location || "Selected Location"}</Popup>
                         </Marker>
                       </MapContainer>
                     </div>
@@ -498,29 +548,28 @@ const Reports = () => {
             </div>
 
             {/* Navigation */}
-            <div className="flex justify-between mt-4">
+            <div className="flex justify-between mt-6 pt-4 border-t border-gray-200">
               {currentStep > 1 && (
                 <button
                   onClick={prevStep}
-                  className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+                  className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition duration-200"
                 >
                   Back
                 </button>
               )}
-              {currentStep < 3 && (
+              {currentStep < 3 ? (
                 <button
                   onClick={nextStep}
-                  className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-teal-600 ml-auto"
+                  className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-teal-600 transition duration-200 ml-auto"
                 >
                   Next
                 </button>
-              )}
-              {currentStep === 3 && (
+              ) : (
                 <button
                   onClick={handleSubmit}
-                  className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-teal-600 ml-auto"
+                  className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-teal-600 transition duration-200 ml-auto"
                 >
-                  Submit
+                  {editingReport ? "Save Changes" : "Submit Report"}
                 </button>
               )}
             </div>
