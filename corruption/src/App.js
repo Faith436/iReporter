@@ -5,6 +5,7 @@ import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import Reports from "./pages/Reports";
 import Login from "./pages/Login";
+import LandingPage from "./pages/LandingPage"; // Add this import
 import { useUsers } from "./contexts/UserContext";
 
 function App() {
@@ -24,7 +25,8 @@ function App() {
     <Router>
       <Routes>
         {/* Public */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LandingPage />} /> {/* Changed from Login to LandingPage */}
+        <Route path="/login" element={<Login />} />
 
         {/* Role-based redirect if path is /home */}
         <Route path="/home" element={<RedirectByRole />} />
