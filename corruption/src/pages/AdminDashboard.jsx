@@ -3,14 +3,17 @@ import React, { useState, useEffect } from "react";
 import { 
   Bell, X, Search, Trash2, Edit3, FileWarning, CheckCircle, AlertTriangle, Wrench, Plus, ChevronDown 
 } from "lucide-react";
-import { dummyReports, statuses, dateOptions } from "../data/reportsData";
 import Header from "../components/Header";
 
 const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const COLOR_PRIMARY_TEAL = "#116E75";
 
+// ✅ Define statuses and date options locally
+const statuses = ["pending", "in-progress", "resolved", "under investigation"];
+const dateOptions = ["All Dates", "Today", "Last 3 Days", "This Week", "This Month", "Last Month"];
+
 const AdminDashboard = () => {
-  const [reports, setReports] = useState(dummyReports);
+  const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [filters, setFilters] = useState({ status: "all", date: "All Dates", search: "" });
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -25,8 +28,9 @@ const AdminDashboard = () => {
     date: "",
   });
 
-  // Function to check if a report matches the date filter
+  // Filter logic based on date
   const checkDateFilter = (reportDate) => {
+    if (!reportDate) return true;
     const today = new Date();
     const report = new Date(reportDate);
     switch (filters.date) {
@@ -52,7 +56,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filter reports
+  // Filter reports whenever filters or reports change
   useEffect(() => {
     let filtered = [...reports];
     if (filters.status !== "all") filtered = filtered.filter(r => r.status === filters.status);
@@ -61,15 +65,15 @@ const AdminDashboard = () => {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(
         r =>
-          r.title.toLowerCase().includes(searchLower) ||
-          r.description.toLowerCase().includes(searchLower) ||
-          r.location.toLowerCase().includes(searchLower)
+          r.title?.toLowerCase().includes(searchLower) ||
+          r.description?.toLowerCase().includes(searchLower) ||
+          r.location?.toLowerCase().includes(searchLower)
       );
     }
     setFilteredReports(filtered);
   }, [filters, reports]);
 
-  // Stats
+  // Stats calculation
   const stats = {
     total: reports.length,
     pending: reports.filter(r => r.status === "pending").length,
@@ -80,46 +84,34 @@ const AdminDashboard = () => {
 
   const getStatusColor = (status) => {
     switch(status) {
-      case "pending": return "bg-yellow-100 text-yellow-700 border-yellow-300";
-      case "in-progress": return "bg-blue-100 text-blue-700 border-blue-300";
-      case "resolved": return "bg-green-100 text-green-700 border-green-300";
-      case "under investigation": return "bg-purple-100 text-purple-700 border-purple-300";
-      default: return "bg-gray-100 text-gray-700 border-gray-300";
+      case "pending": return "bg-yellow-500";
+      case "in-progress": return "bg-blue-500";
+      case "resolved": return "bg-green-500";
+      case "under investigation": return "bg-purple-500";
+      default: return "bg-gray-500";
     }
   };
 
-  // Modal handlers
-  // const openAddModal = () => {
-  //   setEditingReport(null);
-  //   setFormData({ title: "", description: "", status: "pending", location: "", date: "" });
-  //   setModalOpen(true);
-  // };
-
-  // const openEditModal = (report) => {
-  //   setEditingReport(report);
-  //   setFormData({
-  //     title: report.title,
-  //     description: report.description,
-  //     status: report.status,
-  //     location: report.location,
-  //     date: report.date,
-  //   });
-  //   setModalOpen(true);
-  // };
-
+  // Handle add/edit
   const handleSubmit = () => {
+    if (!formData.title || !formData.description || !formData.location || !formData.date) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
     if (editingReport) {
       setReports(prev => prev.map(r => r.id === editingReport.id ? { ...r, ...formData } : r));
     } else {
       const newReport = {
-        id: reports.length + 1,
+        id: reports.length > 0 ? reports[reports.length - 1].id + 1 : 1,
         ...formData,
-        history: [{ status: formData.status, note: "Created", date: new Date().toLocaleString() }],
-        evidence: "",
       };
       setReports(prev => [...prev, newReport]);
     }
+
     setModalOpen(false);
+    setEditingReport(null);
+    setFormData({ title: "", description: "", status: "pending", location: "", date: "" });
   };
 
   const handleDelete = (id) => {
@@ -133,12 +125,15 @@ const AdminDashboard = () => {
       <Header />
 
       <main className="pt-6 px-6">
-        {/* Header */}
+        {/* Dashboard Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>
-            Admin Dashboard
-          </h1>
-          
+          <h1 className="text-3xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>Admin Dashboard</h1>
+          <button
+            onClick={() => { setModalOpen(true); setEditingReport(null); }}
+            className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
+          >
+            <Plus className="w-4 h-4" /> Add Report
+          </button>
         </div>
 
         {/* Stats */}
@@ -149,7 +144,7 @@ const AdminDashboard = () => {
             { label: "In-Progress", value: stats.inProgress, icon: <Wrench />, color: "#0284C7" },
             { label: "Resolved", value: stats.resolved, icon: <CheckCircle />, color: "#16A34A" },
             { label: "Under Investigation", value: stats.underInvestigation, icon: <Search />, color: "#7C3AED" },
-          ].map((s) => (
+          ].map(s => (
             <div key={s.label} className="bg-white p-4 rounded-xl shadow-md flex items-center gap-3 border-l-4" style={{ borderColor: s.color }}>
               <div className="p-2 rounded-lg text-white" style={{ backgroundColor: s.color }}>{s.icon}</div>
               <div>
@@ -175,13 +170,10 @@ const AdminDashboard = () => {
             </button>
             {statusDropdownOpen && (
               <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                {statuses.map(s => (
+                {["all", ...statuses].map(s => (
                   <div
                     key={s}
-                    onClick={() => {
-                      setFilters({ ...filters, status: s });
-                      setStatusDropdownOpen(false);
-                    }}
+                    onClick={() => { setFilters({ ...filters, status: s }); setStatusDropdownOpen(false); }}
                     className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
                   >
                     {s}
@@ -207,10 +199,7 @@ const AdminDashboard = () => {
                 {dateOptions.map(d => (
                   <div
                     key={d}
-                    onClick={() => {
-                      setFilters({ ...filters, date: d });
-                      setDateDropdownOpen(false);
-                    }}
+                    onClick={() => { setFilters({ ...filters, date: d }); setDateDropdownOpen(false); }}
                     className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
                   >
                     {d}
@@ -228,7 +217,7 @@ const AdminDashboard = () => {
               <input
                 type="text"
                 value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                onChange={e => setFilters({ ...filters, search: e.target.value })}
                 placeholder="Search reports..."
                 className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:ring-2 focus:ring-[#116E75] focus:outline-none"
               />
@@ -272,7 +261,7 @@ const AdminDashboard = () => {
                         {r.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2">{new Date(r.date).toLocaleDateString()}</td>
+                    <td className="px-4 py-2">{r.date}</td>
                     <td className="px-4 py-2 flex gap-2">
                       <button onClick={() => handleDelete(r.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">Delete</button>
                     </td>
@@ -325,7 +314,7 @@ const AdminDashboard = () => {
                 onChange={e => setFormData({...formData, status: e.target.value})}
                 className="border p-2 rounded"
               >
-                {statuses.filter(s => s !== "all").map(s => (
+                {statuses.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
