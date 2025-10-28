@@ -1,14 +1,13 @@
 // src/pages/AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { 
-  Bell, X, Search, Trash2, Edit3, FileWarning, CheckCircle, AlertTriangle, Wrench, Plus, ChevronDown 
+  FileWarning, CheckCircle, AlertTriangle, Wrench, Search 
 } from "lucide-react";
 import Header from "../components/Header";
 
 const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const COLOR_PRIMARY_TEAL = "#116E75";
 
-// ✅ Define statuses and date options locally
 const statuses = ["pending", "in-progress", "resolved", "under investigation"];
 const dateOptions = ["All Dates", "Today", "Last 3 Days", "This Week", "This Month", "Last Month"];
 
@@ -18,17 +17,24 @@ const AdminDashboard = () => {
   const [filters, setFilters] = useState({ status: "all", date: "All Dates", search: "" });
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingReport, setEditingReport] = useState(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    status: "pending",
-    location: "",
-    date: "",
-  });
 
-  // Filter logic based on date
+  // Load all user reports from localStorage
+  useEffect(() => {
+    const allKeys = Object.keys(localStorage);
+    const userReportKeys = allKeys.filter(k => k.startsWith("reports_"));
+    let allReports = [];
+    userReportKeys.forEach(key => {
+      const userReports = JSON.parse(localStorage.getItem(key)) || [];
+      allReports = [...allReports, ...userReports];
+    });
+    setReports(allReports);
+  }, []);
+
+  // Save all reports back to localStorage per user (optional: for new admin-added reports)
+  useEffect(() => {
+    // Optional: skip saving if admin is only viewing
+  }, [reports]);
+
   const checkDateFilter = (reportDate) => {
     if (!reportDate) return true;
     const today = new Date();
@@ -52,11 +58,10 @@ const AdminDashboard = () => {
         const lastMonth = today.getMonth() - 1;
         return report.getMonth() === lastMonth && report.getFullYear() === today.getFullYear();
       default:
-        return true; // "All Dates"
+        return true;
     }
   };
 
-  // Filter reports whenever filters or reports change
   useEffect(() => {
     let filtered = [...reports];
     if (filters.status !== "all") filtered = filtered.filter(r => r.status === filters.status);
@@ -73,7 +78,6 @@ const AdminDashboard = () => {
     setFilteredReports(filtered);
   }, [filters, reports]);
 
-  // Stats calculation
   const stats = {
     total: reports.length,
     pending: reports.filter(r => r.status === "pending").length,
@@ -92,31 +96,19 @@ const AdminDashboard = () => {
     }
   };
 
-  // Handle add/edit
-  const handleSubmit = () => {
-    if (!formData.title || !formData.description || !formData.location || !formData.date) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    if (editingReport) {
-      setReports(prev => prev.map(r => r.id === editingReport.id ? { ...r, ...formData } : r));
-    } else {
-      const newReport = {
-        id: reports.length > 0 ? reports[reports.length - 1].id + 1 : 1,
-        ...formData,
-      };
-      setReports(prev => [...prev, newReport]);
-    }
-
-    setModalOpen(false);
-    setEditingReport(null);
-    setFormData({ title: "", description: "", status: "pending", location: "", date: "" });
-  };
-
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this report?")) {
-      setReports(prev => prev.filter(r => r.id !== id));
+      // Delete from global reports
+      const updatedReports = reports.filter(r => r.id !== id);
+      setReports(updatedReports);
+
+      // Also remove from respective user localStorage
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith("reports_"));
+      allKeys.forEach(key => {
+        const userReports = JSON.parse(localStorage.getItem(key)) || [];
+        const filteredUserReports = userReports.filter(r => r.id !== id);
+        localStorage.setItem(key, JSON.stringify(filteredUserReports));
+      });
     }
   };
 
@@ -128,12 +120,6 @@ const AdminDashboard = () => {
         {/* Dashboard Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-3xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>Admin Dashboard</h1>
-          <button
-            onClick={() => { setModalOpen(true); setEditingReport(null); }}
-            className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600"
-          >
-            <Plus className="w-4 h-4" /> Add Report
-          </button>
         </div>
 
         {/* Stats */}
@@ -166,7 +152,7 @@ const AdminDashboard = () => {
               onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
             >
               <span className="capitalize">{filters.status}</span>
-              <ChevronDown className="w-4 h-4 text-gray-600" />
+              <Search className="w-4 h-4 text-gray-600" />
             </button>
             {statusDropdownOpen && (
               <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
@@ -192,7 +178,7 @@ const AdminDashboard = () => {
               onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
             >
               {filters.date}
-              <ChevronDown className="w-4 h-4 text-gray-600" />
+              <Search className="w-4 h-4 text-gray-600" />
             </button>
             {dateDropdownOpen && (
               <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
@@ -263,7 +249,9 @@ const AdminDashboard = () => {
                     </td>
                     <td className="px-4 py-2">{r.date}</td>
                     <td className="px-4 py-2 flex gap-2">
-                      <button onClick={() => handleDelete(r.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">Delete</button>
+                      <button onClick={() => handleDelete(r.id)} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -272,62 +260,6 @@ const AdminDashboard = () => {
           </table>
         </div>
       </main>
-
-      {/* Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-lg p-6 relative">
-            <button onClick={() => setModalOpen(false)} className="absolute top-3 right-3 text-gray-500 hover:text-red-500">
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-xl font-semibold mb-4">{editingReport ? "Edit Report" : "Add New Report"}</h2>
-            <div className="flex flex-col gap-3">
-              <input
-                type="text"
-                placeholder="Title"
-                value={formData.title}
-                onChange={e => setFormData({...formData, title: e.target.value})}
-                className="border p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Description"
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-                className="border p-2 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Location"
-                value={formData.location}
-                onChange={e => setFormData({...formData, location: e.target.value})}
-                className="border p-2 rounded"
-              />
-              <input
-                type="date"
-                value={formData.date}
-                onChange={e => setFormData({...formData, date: e.target.value})}
-                className="border p-2 rounded"
-              />
-              <select
-                value={formData.status}
-                onChange={e => setFormData({...formData, status: e.target.value})}
-                className="border p-2 rounded"
-              >
-                {statuses.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleSubmit}
-                className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition mt-2"
-              >
-                {editingReport ? "Save Changes" : "Add Report"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -3,19 +3,20 @@ import { Upload } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 
-// Fix default marker
+// Default Leaflet marker
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
 
+// Step completion check
 const isStepComplete = (step, formData) => {
   switch (step) {
     case 1:
       return formData.title && formData.specificTitle && formData.description;
     case 2:
-      return formData.location && formData.lat !== "" && formData.lng !== "" && formData.media;
+      return formData.location && formData.lat !== "" && formData.lng !== "";
     case 3:
       return true;
     default:
@@ -30,6 +31,15 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
     { label: "Review & Submit" },
   ];
 
+  // Convert file to Base64 for persistence
+  const handleMediaChange = (file) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({ ...prev, media: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleNext = () => {
     if (isStepComplete(currentStep, formData)) {
       nextStep();
@@ -40,7 +50,7 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
 
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md max-h-[90vh] overflow-y-auto">
-      
+
       {/* Step indicators */}
       <div className="flex justify-between mb-6 relative">
         {steps.map((step, index) => {
@@ -49,7 +59,11 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
           return (
             <React.Fragment key={index}>
               <div className="flex flex-col items-center relative z-10 w-1/3">
-                <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white ${complete ? "bg-teal-500" : inProgress ? "bg-blue-500" : "bg-gray-300"} transition-colors duration-500`}>
+                <div
+                  className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white ${
+                    complete ? "bg-teal-500" : inProgress ? "bg-blue-500" : "bg-gray-300"
+                  } transition-colors duration-500`}
+                >
                   {index + 1}
                 </div>
                 <p className="text-xs mt-1 text-center">{step.label}</p>
@@ -58,10 +72,7 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
                 <div className="absolute top-3 left-1/3 w-1/3 h-1 bg-gray-300 rounded-full z-0">
                   <div
                     className="h-1 rounded-full transition-all duration-500"
-                    style={{
-                      width: complete ? "100%" : "0%",
-                      backgroundColor: "green",
-                    }}
+                    style={{ width: complete ? "100%" : "0%", backgroundColor: "green" }}
                   />
                 </div>
               )}
@@ -76,9 +87,7 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
         {currentStep === 1 && (
           <div className="space-y-6 p-6 bg-white border border-gray-200 rounded-lg shadow-md">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-3 border-b">
-              <label className="text-gray-700 font-semibold text-base whitespace-nowrap">
-                Report Type:
-              </label>
+              <label className="text-gray-700 font-semibold text-base whitespace-nowrap">Report Type:</label>
               <label className="flex items-center space-x-2 cursor-pointer text-red-600 hover:text-red-700">
                 <input
                   type="radio"
@@ -127,7 +136,7 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
         {/* Step 2 */}
         {currentStep === 2 && (
           <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col md:flex-row gap-4 max-h-[70vh] overflow-hidden">
-            {/* Left: Inputs */}
+            {/* Inputs */}
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2">
               <input
                 type="text"
@@ -157,31 +166,23 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
                 <input
                   type="file"
                   accept="image/*,video/*"
-                  onChange={(e) => setFormData({ ...formData, media: e.target.files[0] })}
+                  onChange={(e) => e.target.files[0] && handleMediaChange(e.target.files[0])}
                   className="border p-2 rounded w-full"
                 />
               </div>
 
               {formData.media && (
                 <div>
-                  {formData.media.type.startsWith("image/") ? (
-                    <img
-                      src={URL.createObjectURL(formData.media)}
-                      alt="media"
-                      className="rounded-md w-full h-32 object-cover mt-2"
-                    />
+                  {formData.media.startsWith("data:image") ? (
+                    <img src={formData.media} alt="media" className="rounded-md w-full h-32 object-cover mt-2" />
                   ) : (
-                    <video
-                      src={URL.createObjectURL(formData.media)}
-                      controls
-                      className="rounded-md w-full h-32 object-cover mt-2"
-                    />
+                    <video src={formData.media} controls className="rounded-md w-full h-32 object-cover mt-2" />
                   )}
                 </div>
               )}
             </div>
 
-            {/* Right: Map */}
+            {/* Map */}
             <div className="flex-1 min-h-0 h-64 md:h-auto">
               <MapContainer
                 center={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
@@ -211,21 +212,11 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
             <p><strong>Coordinates:</strong> {formData.lat}, {formData.lng}</p>
 
             {formData.media && (
-              <div>
-                {formData.media.type.startsWith("image/") ? (
-                  <img
-                    src={URL.createObjectURL(formData.media)}
-                    alt="media"
-                    className="rounded-md w-full h-48 object-cover"
-                  />
-                ) : (
-                  <video
-                    src={URL.createObjectURL(formData.media)}
-                    controls
-                    className="rounded-md w-full h-48 object-cover"
-                  />
-                )}
-              </div>
+              formData.media.startsWith("data:image") ? (
+                <img src={formData.media} alt="media" className="rounded-md w-full h-48 object-cover" />
+              ) : (
+                <video src={formData.media} controls className="rounded-md w-full h-48 object-cover" />
+              )
             )}
           </div>
         )}
@@ -234,19 +225,13 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
       {/* Navigation */}
       <div className="flex justify-between mt-4">
         {currentStep > 1 && (
-          <button onClick={prevStep} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">
-            Back
-          </button>
+          <button onClick={prevStep} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Back</button>
         )}
         {currentStep < 3 && (
-          <button onClick={handleNext} className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 ml-auto">
-            Next
-          </button>
+          <button onClick={handleNext} className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 ml-auto">Next</button>
         )}
         {currentStep === 3 && (
-          <button onClick={handleSubmit} className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-green-600 ml-auto">
-            Submit
-          </button>
+          <button onClick={handleSubmit} className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-green-600 ml-auto">Submit</button>
         )}
       </div>
     </div>

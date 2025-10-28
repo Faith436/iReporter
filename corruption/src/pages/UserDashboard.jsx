@@ -19,7 +19,6 @@ const markerIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-// ✅ Define report statuses once
 const statuses = ["pending", "under investigation", "resolved", "rejected"];
 
 const Reports = () => {
@@ -41,37 +40,41 @@ const Reports = () => {
     media: null,
   });
 
-  // ✅ logged-in user
+  // Get logged-in user
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser")) || {};
   const role = loggedInUser?.role || "user";
   const userEmail = loggedInUser?.email || "";
 
-  // ✅ Load reports from localStorage
+  // Load all reports once on mount
   useEffect(() => {
-    const savedReports = JSON.parse(localStorage.getItem("reports")) || [];
-    setReports(savedReports);
-  }, []);
+    const allReports = JSON.parse(localStorage.getItem("allReports")) || [];
+    const userReports = allReports.filter((r) => r.createdBy === userEmail);
+    setReports(userReports);
+  }, [userEmail]);
 
-  // ✅ Sync reports with localStorage
+  // Sync changes back to localStorage
   useEffect(() => {
-    localStorage.setItem("reports", JSON.stringify(reports));
-  }, [reports]);
+    if (!userEmail) return;
+
+    const allReports = JSON.parse(localStorage.getItem("allReports")) || [];
+    const othersReports = allReports.filter((r) => r.createdBy !== userEmail);
+    const mergedReports = [...othersReports, ...reports];
+    localStorage.setItem("allReports", JSON.stringify(mergedReports));
+  }, [reports, userEmail]);
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this report?")) {
-      const updatedReports = reports.filter((r) => r.id !== id);
-      setReports(updatedReports);
+      setReports((prev) => prev.filter((r) => r.id !== id));
     }
   };
 
   const handleStatusUpdate = (id, newStatus) => {
-    const updatedReports = reports.map((r) =>
-      r.id === id ? { ...r, status: newStatus } : r
+    setReports((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
     );
-    setReports(updatedReports);
     setActiveStatusDropdown(null);
   };
 
@@ -89,19 +92,20 @@ const Reports = () => {
     }
 
     if (editingReport) {
-      const updatedReports = reports.map((r) =>
-        r.id === editingReport.id ? { ...formData, createdBy: editingReport.createdBy } : r
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === editingReport.id ? { ...formData, createdBy: editingReport.createdBy } : r
+        )
       );
-      setReports(updatedReports);
     } else {
       const newReport = {
         ...formData,
-        id: Date.now(), // unique ID
+        id: Date.now(),
         coordinates: `${formData.lat},${formData.lng}`,
         date: new Date().toLocaleDateString(),
         createdBy: userEmail,
       };
-      setReports([...reports, newReport]);
+      setReports((prev) => [...prev, newReport]);
     }
 
     setEditingReport(null);
@@ -119,24 +123,21 @@ const Reports = () => {
     setShowModal(false);
   };
 
-  // ✅ Group reports for Kanban view
   const groupedReports = statuses.map((status) => ({
     status,
-    items: (role === "admin" ? reports : reports.filter((r) => r.createdBy === userEmail))
-      .filter((r) => r.status === status),
+    items:
+      role === "admin"
+        ? reports
+        : reports.filter((r) => r.createdBy === userEmail).filter((r) => r.status === status),
   }));
 
-  // ✅ Filter reports for list view (per role)
   const visibleReports =
     role === "admin" ? reports : reports.filter((r) => r.createdBy === userEmail);
 
-  // ✅ Convert coordinates string to [lat, lng]
   const getCoordinates = (coordString) => {
     if (!coordString) return [0, 0];
     const parts = coordString.split(",");
-    return parts.length === 2
-      ? [parseFloat(parts[0]), parseFloat(parts[1])]
-      : [0, 0];
+    return parts.length === 2 ? [parseFloat(parts[0]), parseFloat(parts[1])] : [0, 0];
   };
 
   return (
@@ -175,9 +176,7 @@ const Reports = () => {
             <button
               onClick={() => setActiveView("list")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "list"
-                  ? "bg-white shadow text-teal-600"
-                  : "text-gray-600 hover:text-teal-600"
+                activeView === "list" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
               }`}
             >
               <List className="w-4 h-4" /> List
@@ -185,9 +184,7 @@ const Reports = () => {
             <button
               onClick={() => setActiveView("kanban")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "kanban"
-                  ? "bg-white shadow text-teal-600"
-                  : "text-gray-600 hover:text-teal-600"
+                activeView === "kanban" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
               }`}
             >
               <LayoutGrid className="w-4 h-4" /> Kanban
@@ -196,7 +193,7 @@ const Reports = () => {
         </div>
       </div>
 
-      {/* LIST VIEW */}
+      {/* List and Kanban views */}
       {activeView === "list" && (
         <div className="bg-white shadow rounded-lg">
           <table className="min-w-full text-sm text-left">
@@ -279,14 +276,11 @@ const Reports = () => {
         </div>
       )}
 
-      {/* KANBAN VIEW */}
       {activeView === "kanban" && (
         <div className="grid md:grid-cols-3 gap-6">
           {groupedReports.map(({ status, items }) => (
             <div key={status} className="bg-gray-100 p-4 rounded-lg shadow-sm">
-              <h2 className="font-semibold capitalize mb-3 text-gray-700">
-                {status}
-              </h2>
+              <h2 className="font-semibold capitalize mb-3 text-gray-700">{status}</h2>
               <div className="space-y-3">
                 {items.map((report) => (
                   <div
@@ -305,10 +299,7 @@ const Reports = () => {
                           className="w-full h-full rounded"
                         >
                           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          <Marker
-                            position={getCoordinates(report.coordinates)}
-                            icon={markerIcon}
-                          >
+                          <Marker position={getCoordinates(report.coordinates)} icon={markerIcon}>
                             <Popup>{report.location}</Popup>
                           </Marker>
                         </MapContainer>
@@ -342,7 +333,7 @@ const Reports = () => {
         </div>
       )}
 
-      {/* MODAL WITH STEPPER */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg relative w-[90%] lg:max-w-[900px] max-h-[90vh] overflow-y-auto">

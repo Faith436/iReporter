@@ -15,18 +15,21 @@ const COLOR_PRIMARY_TEAL = "#116E75";
 // Fix Leaflet icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 // Sidebar Component
 const Side = ({ user }) => {
-  const { getUserNotifications, markNotificationRead, getUnreadCount } = useReports();
+  const { getUserNotifications, markNotificationRead, getUnreadCount } =
+    useReports();
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const unreadCount = getUnreadCount ? getUnreadCount(user) : 0;
-  const userNotifications = getUserNotifications ? getUserNotifications(user) : [];
+  const unreadCount = getUnreadCount(user);
+  const userNotifications = getUserNotifications(user);
 
   return (
     <>
@@ -63,7 +66,6 @@ const Side = ({ user }) => {
         </ul>
       </aside>
 
-      {/* Notifications dropdown */}
       {showNotifications && (
         <div className="fixed left-80 top-20 w-80 bg-white rounded-xl shadow-2xl z-50 max-h-[80vh] overflow-y-auto border border-gray-200 animate-slideDown">
           <div className="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-xl">
@@ -75,12 +77,9 @@ const Side = ({ user }) => {
               <X className="w-4 h-4" />
             </button>
           </div>
-
           <div className="p-2">
             {userNotifications.length === 0 ? (
-              <div className="text-gray-500 p-4 text-center">
-                No notifications
-              </div>
+              <div className="text-gray-500 p-4 text-center">No notifications</div>
             ) : (
               userNotifications.map((n) => (
                 <div
@@ -88,7 +87,7 @@ const Side = ({ user }) => {
                   className={`p-3 border-b cursor-pointer hover:bg-gray-50 transition ${
                     !n.read ? "bg-teal-50" : ""
                   }`}
-                  onClick={() => markNotificationRead && markNotificationRead(n.id)}
+                  onClick={() => markNotificationRead(n.id)}
                 >
                   <div className="font-medium text-gray-800">{n.title}</div>
                   <div className="text-sm text-gray-600">{n.message}</div>
@@ -105,54 +104,50 @@ const Side = ({ user }) => {
   );
 };
 
-// Main Dashboard Component
+// Main Dashboard
 const Dashboard = () => {
   const { currentUser } = useUsers();
   const { reports, createReport, updateReport, getUserReports } = useReports();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [activeView, setActiveView] = useState("list");
   const [reportType, setReportType] = useState("all");
   const [editReport, setEditReport] = useState(null);
 
-  if (!currentUser) {
+  if (!currentUser)
     return <div className="p-6 text-gray-600">Please log in to access your dashboard.</div>;
-  }
 
-  // Handle report submission
   const handleSaveReport = (reportData) => {
-    const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
-    
-    const reportWithUser = { 
-      ...reportData, 
-      userId: currentUser.id,
-      userName: currentUser.name,
-      id: Date.now(),
-      date: new Date().toLocaleDateString(),
-      timestamp: new Date().toISOString(),
-      status: "pending"
-    };
-
     if (editReport) {
-      updateReport(editReport.id, reportWithUser);
+      // Update report
+      updateReport(editReport.id, {
+        ...reportData,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        status: editReport.status || "pending",
+      });
     } else {
-      createReport(reportWithUser);
+      // Create new report
+      createReport({
+        ...reportData,
+        userId: currentUser.id,
+        userName: currentUser.name,
+      });
     }
-    
     setEditReport(null);
     setModalOpen(false);
   };
 
-  // Get filtered reports for current view
-  const userReports = getUserReports ? getUserReports(currentUser.id) : [];
-  const filteredReports = reportType === "all" 
-    ? userReports 
-    : userReports.filter((r) => r.reportType === reportType);
+  const userReports = getUserReports(currentUser.id);
+  const filteredReports =
+    reportType === "all"
+      ? userReports
+      : userReports.filter((r) => r.reportType === reportType);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Side user={currentUser} />
       <div className="flex-1 p-8 ml-72">
-        {/* Header */}
         <header className="mb-6">
           <h1 className="text-2xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>
             Incident Reports Dashboard
@@ -162,23 +157,17 @@ const Dashboard = () => {
           </p>
         </header>
 
-        {/* QuickStats */}
         <QuickStats reports={reports} openModal={() => setModalOpen(true)} />
-
-        {/* Recent Reports */}
         <div className="mb-8">
           <RecentReports onEditReport={setEditReport} />
         </div>
 
-        {/* View Toggle */}
         <div className="bg-white p-4 rounded-lg shadow border border-gray-200 mb-6 flex flex-wrap md:flex-row justify-between items-center gap-4">
           <div className="flex gap-2 bg-gray-100 rounded-md p-1">
             <button
               onClick={() => setActiveView("list")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "list"
-                  ? "bg-white shadow text-teal-600"
-                  : "text-gray-600 hover:text-teal-600"
+                activeView === "list" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
               }`}
             >
               <List className="w-4 h-4" /> List
@@ -186,9 +175,7 @@ const Dashboard = () => {
             <button
               onClick={() => setActiveView("map")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "map"
-                  ? "bg-white shadow text-teal-600"
-                  : "text-gray-600 hover:text-teal-600"
+                activeView === "map" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
               }`}
             >
               <Map className="w-4 h-4" /> Map
@@ -206,40 +193,33 @@ const Dashboard = () => {
           </select>
         </div>
 
-        {/* Map View */}
         {activeView === "map" && filteredReports.length > 0 && (
-          <div className="mb-6">
-            <MapContainer
-              center={[6.5244, 3.3792]}
-              zoom={6}
-              className="leaflet-container h-96 rounded-md"
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution="&copy; OpenStreetMap contributors"
-              />
-              {filteredReports.map((r) => (
-                <Marker
-                  key={r.id}
-                  position={[
-                    r.coordinates?.lat || 6.5244,
-                    r.coordinates?.lng || 3.3792,
-                  ]}
-                >
-                  <Popup>
-                    <strong>{r.title}</strong>
-                    <br />
-                    {r.description}
-                    <br />
-                    <em>{r.reportType}</em>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
+          <MapContainer
+            center={[6.5244, 3.3792]}
+            zoom={6}
+            className="leaflet-container h-96 rounded-md"
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors"
+            />
+            {filteredReports.map((r) => (
+              <Marker
+                key={r.id}
+                position={[r.coordinates?.lat || 6.5244, r.coordinates?.lng || 3.3792]}
+              >
+                <Popup>
+                  <strong>{r.title}</strong>
+                  <br />
+                  {r.description}
+                  <br />
+                  <em>{r.reportType}</em>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         )}
 
-        {/* List View */}
         {activeView === "list" && (
           <div className="space-y-6">
             {filteredReports.length === 0 ? (
@@ -255,16 +235,24 @@ const Dashboard = () => {
                   <div className="flex flex-col md:flex-row justify-between gap-4 mb-3">
                     <h3 className="text-lg font-semibold text-gray-900">{report.title}</h3>
                     <div className="flex gap-2 flex-wrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        report.status === "pending" ? "bg-yellow-100 text-yellow-700" :
-                        report.status === "under-investigation" ? "bg-blue-100 text-blue-700" :
-                        "bg-green-100 text-green-700"
-                      }`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          report.status === "pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : report.status === "under-investigation"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
                         {report.status?.replace("-", " ") || "Pending"}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        report.reportType === "red-flag" ? "bg-red-100 text-red-700" : "bg-teal-100 text-teal-700"
-                      }`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          report.reportType === "red-flag"
+                            ? "bg-red-100 text-red-700"
+                            : "bg-teal-100 text-teal-700"
+                        }`}
+                      >
                         {report.reportType === "red-flag" ? "🚩 Red Flag" : "🛠️ Intervention"}
                       </span>
                       {report.status === "pending" && (
@@ -295,7 +283,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Create/Edit Report Modal */}
         <CreateReportModal
           isOpen={modalOpen}
           onClose={() => {
