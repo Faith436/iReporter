@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import { useReports } from "../contexts/ReportContext";
 
 // Fix default marker icon for leaflet
 const markerIcon = new L.Icon({
@@ -10,12 +11,13 @@ const markerIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
+// Helper to check if step is complete
 const isStepComplete = (step, formData) => {
   switch (step) {
     case 1:
       return formData.title && formData.specificTitle && formData.description;
     case 2:
-      return formData.location && formData.lat !== "" && formData.lng !== "" && formData.media;
+      return formData.location && formData.lat && formData.lng;
     case 3:
       return true;
     default:
@@ -23,20 +25,63 @@ const isStepComplete = (step, formData) => {
   }
 };
 
-const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData, handleSubmit }) => {
+const ReportStepper = ({ reportToEdit = null, onClose }) => {
+  const { createReport, updateReport } = useReports();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: "",
+    specificTitle: "",
+    description: "",
+    location: "",
+    lat: "",
+    lng: "",
+    media: null,
+  });
+
+  // Load report to edit
+  useEffect(() => {
+    if (reportToEdit) {
+      setFormData({
+        title: reportToEdit.reportType === "red-flag" ? "Red Flag" : "Intervention",
+        specificTitle: reportToEdit.title,
+        description: reportToEdit.description,
+        location: reportToEdit.location || "",
+        lat: reportToEdit.coordinates?.lat || "",
+        lng: reportToEdit.coordinates?.lng || "",
+        media: reportToEdit.media || null,
+      });
+    }
+  }, [reportToEdit]);
+
+  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
+
+  const handleNext = () => {
+    if (isStepComplete(currentStep, formData)) nextStep();
+    else alert("Please complete all fields in this step before proceeding.");
+  };
+
+  const handleSubmit = () => {
+    const reportPayload = {
+      title: formData.specificTitle,
+      reportType: formData.title.toLowerCase() === "red flag" ? "red-flag" : "intervention",
+      description: formData.description,
+      location: formData.location,
+      coordinates: { lat: parseFloat(formData.lat), lng: parseFloat(formData.lng) },
+      media: formData.media,
+    };
+
+    if (reportToEdit) updateReport(reportToEdit.id, reportPayload);
+    else createReport(reportPayload);
+
+    onClose(); // close modal after submission
+  };
+
   const steps = [
     { label: "Type & Description" },
     { label: "Location & Map" },
     { label: "Review & Submit" },
   ];
-
-  const handleNext = () => {
-    if (isStepComplete(currentStep, formData)) {
-      nextStep();
-    } else {
-      alert("Please complete all fields in this step before proceeding.");
-    }
-  };
 
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md max-h-[90vh] overflow-y-auto">
@@ -101,7 +146,7 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
               <label className="block text-sm font-medium text-gray-700">Report Title</label>
               <input
                 type="text"
-                placeholder="E.g., Unauthorized Server Access in West Wing"
+                placeholder="E.g., Unauthorized Server Access"
                 value={formData.specificTitle || ""}
                 onChange={(e) => setFormData({ ...formData, specificTitle: e.target.value })}
                 className="border border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-md w-full text-lg font-medium shadow-sm"
@@ -153,14 +198,14 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
                 <input
                   type="file"
                   accept="image/*,video/*"
-                  onChange={(e) => setFormData({ ...formData, media: e.target.files && e.target.files[0] })}
+                  onChange={(e) => setFormData({ ...formData, media: e.target.files?.[0] })}
                   className="border p-2 rounded w-full"
                 />
               </div>
 
               {formData.media && (
                 <div>
-                  {formData.media.type && formData.media.type.startsWith("image/") ? (
+                  {formData.media.type.startsWith("image/") ? (
                     <img
                       src={URL.createObjectURL(formData.media)}
                       alt="media"
@@ -208,7 +253,7 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
 
             {formData.media && (
               <div>
-                {formData.media.type && formData.media.type.startsWith("image/") ? (
+                {formData.media.type.startsWith("image/") ? (
                   <img
                     src={URL.createObjectURL(formData.media)}
                     alt="media"

@@ -57,3 +57,11 @@ input[type="date"] {
 .from-stem{
   width: 650px !important;
 }
+
+body {
+    background-color: #211e2f; 
+}
+
+.sidebar-gradient {
+    background: linear-gradient(135deg, #6c4b9d 0%, #30264d 100%);
+}
