@@ -3,27 +3,33 @@ import { Menu, Bell, X, ChevronDown, LogOut, User, Search } from "lucide-react";
 import { useReports } from "../contexts/ReportContext";
 import { useNavigate } from "react-router-dom";
 
-const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const COLOR_PRIMARY_TEAL = "#116E75";
 
 const Header = () => {
-  const { notifications, markNotificationRead, removeNotification } = useReports();
+  const { getUserNotifications, markNotificationRead, removeNotification, getUnreadCount } = useReports();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userNotifications, setUserNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   // Get user from localStorage
   const [user, setUser] = useState({ name: "User", email: "", role: "user" });
+  
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
     if (storedUser) setUser(storedUser);
   }, []);
 
+  // Update notifications when user changes or notifications update
   useEffect(() => {
-    setUnreadCount(notifications.filter((n) => !n.read).length);
-  }, [notifications]);
+    if (user) {
+      const notifications = getUserNotifications(user);
+      setUserNotifications(notifications);
+      setUnreadCount(getUnreadCount(user));
+    }
+  }, [user, getUserNotifications, getUnreadCount]);
 
   const handleLogout = () => {
     localStorage.removeItem("loggedInUser");
@@ -33,7 +39,22 @@ const Header = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     console.log("Searching for:", searchQuery);
-    // You can implement actual search logic here
+  };
+
+  const handleNotificationClick = (notificationId) => {
+    markNotificationRead(notificationId);
+    setShowNotifications(false);
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "new-report": return "📋";
+      case "status-update": return "🔄";
+      case "report-edited": return "✏️";
+      case "report-deleted": return "🗑️";
+      case "submission-confirmation": return "✅";
+      default: return "🔔";
+    }
   };
 
   return (
@@ -73,46 +94,56 @@ const Header = () => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+            <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
               <div className="flex justify-between items-center p-3 border-b bg-gray-50">
                 <h3 className="font-semibold text-gray-700 text-sm">Notifications</h3>
                 <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-red-500">
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              {notifications.length === 0 ? (
+              
+              {userNotifications.length === 0 ? (
                 <p className="p-4 text-sm text-gray-500 text-center">No notifications</p>
               ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => markNotificationRead(n.id)}
-                    className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${n.read ? "bg-white" : "bg-blue-50"}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold text-gray-800">{n.title}</p>
-                        <p className="text-sm text-gray-600">{n.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">{new Date(n.timestamp).toLocaleString()}</p>
+                <div className="divide-y">
+                  {userNotifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification.id)}
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
+                        !notification.read ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                            <p className="font-semibold text-gray-800 text-sm">{notification.title}</p>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{notification.message}</p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(notification.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeNotification(notification.id);
+                          }}
+                          className="text-gray-400 hover:text-red-500 ml-2"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeNotification(n.id);
-                        }}
-                        className="text-gray-400 hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* User Menu */}
+        {/* User Menu (keep your existing user menu code) */}
         <div className="relative">
           <button
             onClick={() => setShowUserMenu((prev) => !prev)}
@@ -121,8 +152,8 @@ const Header = () => {
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white font-semibold">
               {user.name ? user.name[0].toUpperCase() : user.role[0].toUpperCase()}
             </div>
-             <div className="px-1 py-3 text-left">
-                <p className="font-semibold text-gray-800">{user.name || "Nanvule Faith"}</p>
+            <div className="px-1 py-3 text-left">
+              <p className="font-semibold text-gray-800">{user.name || "User"}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-600" />
           </button>
@@ -130,7 +161,7 @@ const Header = () => {
           {showUserMenu && (
             <div className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
               <div className="px-4 py-3 border-b">
-                <p className="font-semibold text-gray-800">{user.name || "Nanvule Faith"}</p>
+                <p className="font-semibold text-gray-800">{user.name || "User"}</p>
                 <p className="text-sm text-gray-500">{user.email}</p>
               </div>
               <ul className="py-2">
