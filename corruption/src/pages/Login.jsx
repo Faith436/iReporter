@@ -1,172 +1,437 @@
+// import React, { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { Eye, ArrowRight } from "lucide-react";
+
+// const SocialButton = ({ icon, text }) => (
+//   <button className="flex items-center justify-center w-full py-2 border border-gray-600 rounded-lg hover:bg-gray-700 transition duration-200 text-sm font-medium">
+//     {icon}
+//     <span className="ml-2">{text}</span>
+//   </button>
+// );
+
+// const LoginForm = () => {
+//   const navigate = useNavigate();
+//   const [email, setEmail] = useState("");
+//   const [password, setPassword] = useState("");
+//   const [error, setError] = useState("");
+
+//   const handleLogin = (e) => {
+//     e.preventDefault();
+//     setError("");
+
+//     // Admin login
+//     if (email === "wisdom@example.com" && password === "12345") {
+//       localStorage.setItem(
+//         "loggedInUser",
+//         JSON.stringify({ name: "Wisdom", email, role: "admin" })
+//       );
+//       navigate("/admin", { replace: true });
+//       return;
+//     }
+
+//     // Check registered user from localStorage
+//     const registeredUser = JSON.parse(localStorage.getItem("registeredUser"));
+//     if (
+//       registeredUser &&
+//       email === registeredUser.email &&
+//       password === registeredUser.password
+//     ) {
+//       localStorage.setItem(
+//         "loggedInUser",
+//         JSON.stringify({ ...registeredUser })
+//       );
+//       navigate("/dashboard", { replace: true });
+//       return;
+//     }
+
+//     // Invalid credentials
+//     setError("Invalid credentials. Please try again.");
+//   };
+
+//   return (
+//     <div
+//       className="flex items-center justify-center min-h-screen p-4"
+//       style={{ backgroundColor: "#211e2f" }}
+//     >
+//       <div
+//         className="flex w-full max-w-5xl rounded-xl shadow-2xl overflow-hidden"
+//         style={{ backgroundColor: "#211e2f" }}
+//       >
+//         {/* Left Sidebar */}
+//         <div
+//           className="hidden lg:block w-5/12 p-8 relative"
+//           style={{
+//             background: "linear-gradient(135deg, #6c4b9d 0%, #30264d 100%)",
+//           }}
+//         >
+//           <div className="text-3xl font-bold tracking-widest text-white mb-6">
+//             AMU
+//           </div>
+//           <button className="absolute top-8 right-8 flex items-center px-4 py-2 bg-white bg-opacity-10 rounded-full text-white text-sm hover:bg-opacity-20 transition duration-200">
+//             Back to website <ArrowRight className="w-4 h-4 ml-2" />
+//           </button>
+
+//           {/* Placeholder Image */}
+//           <div className="absolute inset-0 z-0 opacity-70">
+//             <div
+//               className="w-full h-full"
+//               style={{
+//                 backgroundImage:
+//                   'url("https://media.istockphoto.com/id/1766260321/photo/dark-money.webp?a=1&b=1&s=612x612&w=0&k=20&c=aXwUcoh-ZPTtAXw2SYwlxeBIZ5SvEMPsIMBe4eef9lA=")',
+//                 backgroundSize: "cover",
+//                 backgroundPosition: "center",
+//                 filter: "brightness(0.6)",
+//               }}
+//             ></div>
+//           </div>
+
+//           {/* Text Overlay */}
+//           <div className="absolute bottom-12 left-8 right-8 z-10 text-white">
+//             <h1 className="text-3xl font-semibold leading-snug mb-4">
+//               Capturing Moments,
+//               <br />
+//               Creating Memories
+//             </h1>
+//             <div className="flex space-x-2 mt-4">
+//               <div className="w-5 h-1 bg-white rounded-full"></div>
+//               <div className="w-5 h-1 bg-white bg-opacity-50 rounded-full"></div>
+//               <div className="w-5 h-1 bg-white bg-opacity-50 rounded-full"></div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Right Form */}
+//         <div className="w-full lg:w-7/12 p-12 text-white">
+//           <h2 className="text-4xl font-semibold mb-2">Log in</h2>
+//           <p className="mb-8 text-gray-400">
+//             Don't have an account?{" "}
+//             <a href="signup" className="text-purple-400 hover:underline">
+//               Create one
+//             </a>
+//           </p>
+
+//           <form className="space-y-4" onSubmit={handleLogin}>
+//             <input
+//               type="email"
+//               placeholder="Email"
+//               value={email}
+//               onChange={(e) => setEmail(e.target.value)}
+//               className="w-full px-4 py-3 bg-gray-700 bg-opacity-50 border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400"
+//               required
+//             />
+
+//             <div className="relative">
+//               <input
+//                 type="password"
+//                 placeholder="Password"
+//                 value={password}
+//                 onChange={(e) => setPassword(e.target.value)}
+//                 className="w-full px-4 py-3 bg-gray-700 bg-opacity-50 border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 pr-10"
+//                 required
+//               />
+//               <Eye className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer" />
+//             </div>
+
+//             {error && <p className="text-red-500 text-sm">{error}</p>}
+
+//             <div className="flex justify-between items-center text-sm pt-2">
+//               <label className="flex items-center text-gray-400">
+//                 <input
+//                   type="checkbox"
+//                   className="mr-2 h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+//                 />
+//                 Remember me
+//               </label>
+//               <a
+//                 href="#"
+//                 className="text-gray-400 hover:text-purple-400 hover:underline"
+//               >
+//                 Forgot password?
+//               </a>
+//             </div>
+
+//             <button
+//               type="submit"
+//               className="w-full py-3 mt-4 text-lg font-semibold rounded-lg transition duration-200 bg-purple-700 hover:bg-purple-800"
+//             >
+//               Log in
+//             </button>
+//           </form>
+
+//           <div className="flex items-center my-6">
+//             <div className="flex-grow border-t border-gray-600"></div>
+//             <span className="mx-4 text-sm text-gray-400">Or log in with</span>
+//             <div className="flex-grow border-t border-gray-600"></div>
+//           </div>
+
+//           <div className="flex space-x-4">
+//             <SocialButton icon={<span>G</span>} text="Google" />
+//             <SocialButton icon={<span>A</span>} text="Apple" />
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginForm;
+
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, ArrowRight } from "lucide-react";
+import { LogIn, User, Lock, CheckCircle, XCircle } from "lucide-react";
+import apiService from "../services/api";
 
-const SocialButton = ({ icon, text }) => (
-  <button className="flex items-center justify-center w-full py-2 border border-gray-600 rounded-lg hover:bg-gray-700 transition duration-200 text-sm font-medium">
-    {icon}
-    <span className="ml-2">{text}</span>
-  </button>
-);
+// --- COLORS ---
+const COLOR_PRIMARY_PURPLE = "#4D2C5E";
+const COLOR_PRIMARY_TEAL = "#116E75";
+const COLOR_LIGHT_TEAL = "#B3D8DB";
 
-const LoginForm = () => {
+const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [status, setStatus] = useState({ type: null, message: "" });
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
+    setStatus({ type: null, message: "" });
+    setLoading(true);
 
-    // Admin login
-    if (email === "wisdom@example.com" && password === "12345") {
-      localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify({ name: "Wisdom", email, role: "admin" })
-      );
-      navigate("/admin", { replace: true });
-      return;
+    try {
+      const response = await apiService.login(email, password);
+      
+      setStatus({
+        type: "success",
+        message: `Login successful! Redirecting as ${response.user.role}...`,
+      });
+
+      // Save token and user to localStorage
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      // Redirect based on role
+      setTimeout(() => {
+        if (response.user.role === "admin") navigate("/admin");
+        else navigate("/dashboard");
+      }, 1200);
+
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.message || "Invalid email or password",
+      });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Check registered user from localStorage
-    const registeredUser = JSON.parse(localStorage.getItem("registeredUser"));
-    if (
-      registeredUser &&
-      email === registeredUser.email &&
-      password === registeredUser.password
-    ) {
-      localStorage.setItem(
-        "loggedInUser",
-        JSON.stringify({ ...registeredUser })
-      );
-      navigate("/dashboard", { replace: true });
-      return;
-    }
+  const AuthInput = ({ label, type, value, onChange, placeholder, icon: Icon }) => (
+    <div className="mb-6">
+      <label
+        className="block text-xs font-semibold uppercase mb-1"
+        style={{ color: COLOR_PRIMARY_TEAL }}
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full p-3 pl-10 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2"
+          style={{
+            border: `1px solid ${COLOR_LIGHT_TEAL}`,
+            borderRadius: "10px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+          }}
+          required
+        />
+        <Icon
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+          style={{ color: COLOR_PRIMARY_TEAL }}
+        />
+      </div>
+    </div>
+  );
 
-    // Invalid credentials
-    setError("Invalid credentials. Please try again.");
+  const StatusMessage = ({ type, message }) => {
+    if (!message) return null;
+    const isSuccess = type === "success";
+    const Icon = isSuccess ? CheckCircle : XCircle;
+
+    return (
+      <div
+        className={`flex items-center p-3 mb-4 rounded-lg text-sm transition-all duration-300 ${
+          isSuccess ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}
+      >
+        <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+        <p className="font-medium">{message}</p>
+      </div>
+    );
   };
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen p-4"
-      style={{ backgroundColor: "#211e2f" }}
-    >
-      <div
-        className="flex w-full max-w-5xl rounded-xl shadow-2xl overflow-hidden"
-        style={{ backgroundColor: "#211e2f" }}
-      >
-        {/* Left Sidebar */}
-        <div
-          className="hidden lg:block w-5/12 p-8 relative"
-          style={{
-            background: "linear-gradient(135deg, #6c4b9d 0%, #30264d 100%)",
-          }}
-        >
-          <div className="text-3xl font-bold tracking-widest text-white mb-6">
-            AMU
-          </div>
-          <button className="absolute top-8 right-8 flex items-center px-4 py-2 bg-white bg-opacity-10 rounded-full text-white text-sm hover:bg-opacity-20 transition duration-200">
-            Back to website <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
+    <div className="min-h-screen font-sans antialiased text-gray-800">
+      <div className="grid md:grid-cols-[1fr_1fr] min-h-screen">
+        <div className="flex flex-col p-6 sm:p-10 lg:p-16 xl:p-20 justify-center">
+          <header className="mb-10">
+            <h2
+              className="text-4xl font-extrabold mb-2"
+              style={{ color: COLOR_PRIMARY_PURPLE }}
+            >
+              Welcome Back!
+            </h2>
+            <p className="text-gray-600">Please log in to your account.</p>
+          </header>
 
-          {/* Placeholder Image */}
-          <div className="absolute inset-0 z-0 opacity-70">
-            <div
-              className="w-full h-full"
-              style={{
-                backgroundImage:
-                  'url("https://media.istockphoto.com/id/1766260321/photo/dark-money.webp?a=1&b=1&s=612x612&w=0&k=20&c=aXwUcoh-ZPTtAXw2SYwlxeBIZ5SvEMPsIMBe4eef9lA=")',
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "brightness(0.6)",
-              }}
-            ></div>
-          </div>
+          <StatusMessage type={status.type} message={status.message} />
 
-          {/* Text Overlay */}
-          <div className="absolute bottom-12 left-8 right-8 z-10 text-white">
-            <h1 className="text-3xl font-semibold leading-snug mb-4">
-              Capturing Moments,
-              <br />
-              Creating Memories
-            </h1>
-            <div className="flex space-x-2 mt-4">
-              <div className="w-5 h-1 bg-white rounded-full"></div>
-              <div className="w-5 h-1 bg-white bg-opacity-50 rounded-full"></div>
-              <div className="w-5 h-1 bg-white bg-opacity-50 rounded-full"></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Form */}
-        <div className="w-full lg:w-7/12 p-12 text-white">
-          <h2 className="text-4xl font-semibold mb-2">Log in</h2>
-          <p className="mb-8 text-gray-400">
-            Don't have an account?{" "}
-            <a href="signup" className="text-purple-400 hover:underline">
-              Create one
-            </a>
-          </p>
-
-          <form className="space-y-4" onSubmit={handleLogin}>
-            <input
+          <form onSubmit={handleLogin} className="w-full">
+            <AuthInput
+              label="Email Address"
               type="email"
-              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 bg-opacity-50 border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400"
-              required
+              placeholder="user@example.com"
+              icon={User}
+            />
+            <AuthInput
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              icon={Lock}
             />
 
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 bg-opacity-50 border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 pr-10"
-                required
-              />
-              <Eye className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 cursor-pointer" />
-            </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <div className="flex justify-between items-center text-sm pt-2">
-              <label className="flex items-center text-gray-400">
+            <div className="flex justify-between items-center mb-10 text-sm">
+              <label className="flex items-center text-gray-600 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="mr-2 h-4 w-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="mr-2 h-4 w-4 rounded"
+                  style={{ accentColor: COLOR_PRIMARY_TEAL }}
                 />
                 Remember me
               </label>
               <a
                 href="#"
-                className="text-gray-400 hover:text-purple-400 hover:underline"
+                className="font-medium hover:underline"
+                style={{ color: COLOR_PRIMARY_TEAL }}
               >
                 Forgot password?
               </a>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 mt-4 text-lg font-semibold rounded-lg transition duration-200 bg-purple-700 hover:bg-purple-800"
-            >
-              Log in
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                type="submit"
+                className="flex-1 text-white py-3 px-6 rounded-lg font-bold shadow-lg transition-all duration-300 flex items-center justify-center disabled:opacity-50"
+                style={{
+                  backgroundColor: COLOR_PRIMARY_TEAL,
+                  borderRadius: "10px",
+                }}
+                disabled={loading}
+              >
+                {loading ? (
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5 mr-2" />
+                    Login
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/signup")}
+                className="flex-1 py-3 px-6 rounded-lg font-bold transition-all duration-300 hover:opacity-80"
+                style={{
+                  backgroundColor: "white",
+                  color: COLOR_PRIMARY_TEAL,
+                  border: `2px solid ${COLOR_PRIMARY_TEAL}`,
+                  borderRadius: "10px",
+                }}
+              >
+                Create account
+              </button>
+            </div>
           </form>
 
-          <div className="flex items-center my-6">
-            <div className="flex-grow border-t border-gray-600"></div>
-            <span className="mx-4 text-sm text-gray-400">Or log in with</span>
-            <div className="flex-grow border-t border-gray-600"></div>
+          <div className="mt-10 pt-4 border-t border-gray-100 text-xs text-gray-500">
+            <p className="font-semibold" style={{ color: COLOR_PRIMARY_PURPLE }}>
+              Demo Credentials:
+            </p>
+            <p>
+              Admin: <span className="font-mono">admin@ireporter.com / admin123</span>
+            </p>
+            <p>
+              User: <span className="font-mono">user@ireporter.com / user123</span>
+            </p>
           </div>
+        </div>
 
-          <div className="flex space-x-4">
-            <SocialButton icon={<span>G</span>} text="Google" />
-            <SocialButton icon={<span>A</span>} text="Apple" />
+        <div
+          className="relative hidden md:block overflow-hidden p-10 lg:p-16"
+          style={{
+            background: "linear-gradient(135deg, #10B981, #065F46)",
+            boxShadow: "inset 0 0 20px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-80"
+            style={{
+              backgroundImage:
+                "url('https://img.freepik.com/free-photo/stylish-black-girl_1157-15553.jpg?ga=GA1.1.570788838.1761371184&semt=ais_hybrid&w=740&q=80')",
+              mixBlendMode: "multiply",
+            }}
+          ></div>
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: "#A7F3D0", stopOpacity: 0.2 }} />
+                <stop offset="100%" style={{ stopColor: "#065F46", stopOpacity: 0.5 }} />
+              </linearGradient>
+            </defs>
+            <path d="M 10 0 L 90 20 L 80 80 L 20 100 Z" fill="url(#leafGradient)" opacity="0.4" />
+            <circle cx="95" cy="5" r="15" fill="#34D399" opacity="0.3" />
+            <path d="M 0 50 C 30 20, 70 20, 100 50 L 100 100 L 0 100 Z" fill="#059669" opacity="0.3" />
+          </svg>
+          <div className="relative z-10 flex flex-col justify-end items-end h-full p-4">
+            <h3 className="text-white text-3xl font-serif italic drop-shadow-lg">
+              "Connecting you to nature's knowledge."
+            </h3>
           </div>
         </div>
       </div>
@@ -174,4 +439,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm;
+export default Login;
