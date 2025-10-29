@@ -1,5 +1,17 @@
 const db = require('../config/database');
 
+// In models/init.js, update the admin user insertion:
+const insertAdmin = `
+  INSERT IGNORE INTO users (first_name, last_name, email, password, role) 
+  VALUES ('Admin', 'User', 'admin@ireporter.com', 'admin123', 'admin')
+`;
+
+// And the test user:
+const insertTestUser = `
+  INSERT IGNORE INTO users (first_name, last_name, email, password, role) 
+  VALUES ('Test', 'User', 'user@ireporter.com', 'user123', 'user')
+`;
+
 const initDatabase = () => {
   // Create Users table
   const createUsersTable = `
