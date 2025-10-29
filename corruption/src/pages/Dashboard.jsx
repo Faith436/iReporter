@@ -1,3 +1,4 @@
+// Dashboard.jsx - REFACTORED & FIXED VERSION
 import React, { useState } from "react";
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
@@ -18,8 +19,7 @@ L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 // Sidebar Component
@@ -47,6 +47,9 @@ const Side = ({ user }) => {
           </div>
           <h3 className="font-semibold text-white">{user?.name || "User"}</h3>
           <p className="text-gray-200 text-sm">{user?.email || ""}</p>
+          <p className="text-gray-200 text-xs mt-1 capitalize">
+            ({user?.role || "user"})
+          </p>
         </div>
 
         <ul className="flex-1 space-y-2 overflow-y-auto">
@@ -79,7 +82,9 @@ const Side = ({ user }) => {
           </div>
           <div className="p-2">
             {userNotifications.length === 0 ? (
-              <div className="text-gray-500 p-4 text-center">No notifications</div>
+              <div className="text-gray-500 p-4 text-center">
+                No notifications
+              </div>
             ) : (
               userNotifications.map((n) => (
                 <div
@@ -115,11 +120,14 @@ const Dashboard = () => {
   const [editReport, setEditReport] = useState(null);
 
   if (!currentUser)
-    return <div className="p-6 text-gray-600">Please log in to access your dashboard.</div>;
+    return (
+      <div className="p-6 text-gray-600">
+        Please log in to access your dashboard.
+      </div>
+    );
 
   const handleSaveReport = (reportData) => {
     if (editReport) {
-      // Update report
       updateReport(editReport.id, {
         ...reportData,
         userId: currentUser.id,
@@ -127,13 +135,13 @@ const Dashboard = () => {
         status: editReport.status || "pending",
       });
     } else {
-      // Create new report
       createReport({
         ...reportData,
         userId: currentUser.id,
         userName: currentUser.name,
       });
     }
+
     setEditReport(null);
     setModalOpen(false);
   };
@@ -149,7 +157,10 @@ const Dashboard = () => {
       <Side user={currentUser} />
       <div className="flex-1 p-8 ml-72">
         <header className="mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: COLOR_PRIMARY_PURPLE }}
+          >
             Incident Reports Dashboard
           </h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -158,6 +169,7 @@ const Dashboard = () => {
         </header>
 
         <QuickStats reports={reports} openModal={() => setModalOpen(true)} />
+
         <div className="mb-8">
           <RecentReports onEditReport={setEditReport} />
         </div>
@@ -167,7 +179,9 @@ const Dashboard = () => {
             <button
               onClick={() => setActiveView("list")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "list" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
+                activeView === "list"
+                  ? "bg-white shadow text-teal-600"
+                  : "text-gray-600 hover:text-teal-600"
               }`}
             >
               <List className="w-4 h-4" /> List
@@ -175,7 +189,9 @@ const Dashboard = () => {
             <button
               onClick={() => setActiveView("map")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "map" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
+                activeView === "map"
+                  ? "bg-white shadow text-teal-600"
+                  : "text-gray-600 hover:text-teal-600"
               }`}
             >
               <Map className="w-4 h-4" /> Map
@@ -197,7 +213,7 @@ const Dashboard = () => {
           <MapContainer
             center={[6.5244, 3.3792]}
             zoom={6}
-            className="leaflet-container h-96 rounded-md"
+            className="leaflet-container h-96 rounded-md mb-6"
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -206,14 +222,25 @@ const Dashboard = () => {
             {filteredReports.map((r) => (
               <Marker
                 key={r.id}
-                position={[r.coordinates?.lat || 6.5244, r.coordinates?.lng || 3.3792]}
+                position={[
+                  r.coordinates?.lat || 6.5244,
+                  r.coordinates?.lng || 3.3792,
+                ]}
               >
                 <Popup>
                   <strong>{r.title}</strong>
                   <br />
                   {r.description}
                   <br />
-                  <em>{r.reportType}</em>
+                  <em>
+                    {r.reportType === "red-flag"
+                      ? "🚩 Red Flag"
+                      : "🛠️ Intervention"}
+                  </em>
+                  <br />
+                  <span>
+                    Status: {r.status?.replace("-", " ") || "Pending"}
+                  </span>
                 </Popup>
               </Marker>
             ))}
@@ -224,7 +251,9 @@ const Dashboard = () => {
           <div className="space-y-6">
             {filteredReports.length === 0 ? (
               <div className="text-center p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-gray-500">
-                No reports found. Create your first report to see it here.
+                {userReports.length === 0
+                  ? "No reports yet. Create your first report to see it here."
+                  : "No reports match your current filter."}
               </div>
             ) : (
               filteredReports.map((report) => (
@@ -233,7 +262,9 @@ const Dashboard = () => {
                   className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition duration-300"
                 >
                   <div className="flex flex-col md:flex-row justify-between gap-4 mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{report.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {report.title}
+                    </h3>
                     <div className="flex gap-2 flex-wrap">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -253,7 +284,9 @@ const Dashboard = () => {
                             : "bg-teal-100 text-teal-700"
                         }`}
                       >
-                        {report.reportType === "red-flag" ? "🚩 Red Flag" : "🛠️ Intervention"}
+                        {report.reportType === "red-flag"
+                          ? "🚩 Red Flag"
+                          : "🛠️ Intervention"}
                       </span>
                       {report.status === "pending" && (
                         <button
@@ -268,11 +301,15 @@ const Dashboard = () => {
                       )}
                     </div>
                   </div>
-                  <p className="text-gray-700 text-sm mb-4">{report.description}</p>
+                  <p className="text-gray-700 text-sm mb-4">
+                    {report.description}
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 p-4 rounded-lg text-gray-600">
                     <div>📍 {report.location || "Not specified"}</div>
                     {report.coordinates && (
-                      <div>🌐 {report.coordinates.lat}, {report.coordinates.lng}</div>
+                      <div>
+                        🌐 {report.coordinates.lat}, {report.coordinates.lng}
+                      </div>
                     )}
                     <div>📅 {report.date}</div>
                     <div>👤 {report.userName || "You"}</div>
