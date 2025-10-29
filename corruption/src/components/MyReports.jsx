@@ -1,10 +1,19 @@
-import React, { useState } from "react";
-import { useReports } from "../contexts/ReportContext";
+
+// MyReports.jsx - COMPLETE FIXED VERSION
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useReports } from "../contexts/ReportContext";
+import { useUsers } from "../contexts/UserContext";
 
 const MyReports = () => {
   const navigate = useNavigate();
-  const { reports, updateReport, deleteReport } = useReports(); // Use context
+
+  const { updateReport, deleteReport, getUserReports } = useReports(); // Use context
+
+  const { currentUser } = useUsers();
+ 
+
+  const [reports, setReports] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({
     reportType: "",
@@ -16,9 +25,25 @@ const MyReports = () => {
   });
   const [currentStep, setCurrentStep] = useState(1);
 
+
   // Step navigation
   const nextStep = () => setCurrentStep((s) => Math.min(s + 1, 3));
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 1));
+
+  // Load user's reports from context
+  useEffect(() => {
+    if (currentUser) {
+      const userReports = getUserReports(currentUser.id);
+      setReports(userReports);
+    }
+  }, [currentUser, getUserReports]);
+
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this report?")) {
+      deleteReport(id);
+      // The reports will update automatically via context
+    }
+  };
 
   const startEdit = (report) => {
     setEditingId(report.id);
@@ -186,7 +211,7 @@ const MyReports = () => {
             <p className="text-gray-500">Manage and track your submitted reports</p>
           </div>
           <button
-            onClick={() => navigate("/create-report")}
+            onClick={() => navigate("/dashboard")}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
             + Create New Report
@@ -198,7 +223,7 @@ const MyReports = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-2">No reports submitted yet</h3>
             <p className="text-gray-500 mb-4">Create your first report to see it here</p>
             <button
-              onClick={() => navigate("/create-report")}
+              onClick={() => navigate("/dashboard")}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
             >
               Create First Report
@@ -311,12 +336,14 @@ const MyReports = () => {
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-2 mt-2">
-                      <button
-                        onClick={() => startEdit(report)}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                      >
-                        Edit Report
-                      </button>
+                      {report.status === "pending" && (
+                        <button
+                          onClick={() => startEdit(report)}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                        >
+                          Edit Report
+                        </button>
+                      )}
                       <button
                         onClick={() => deleteReport(report.id)}
                         className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
