@@ -1,67 +1,129 @@
-import axios from "axios";
+const API_BASE_URL = 'http://localhost:5000/api';
 
-const API_URL = "http://localhost:5000/api";
-const AUTH_URL = `${API_URL}/auth`;
-const REPORTS_URL = `${API_URL}/reports`;
-const USERS_URL = `${API_URL}/users`;
-const NOTIFICATIONS_URL = `${API_URL}/notifications`; // <- new
+class ApiService {
+  constructor() {
+    this.baseURL = API_BASE_URL;
+  }
 
-const apiService = {
-  // --- Auth ---
-  register: async (userData) => {
-    const res = await axios.post(`${AUTH_URL}/signup`, userData, { withCredentials: true });
-    return res.data;
-  },
-  login: async (email, password) => {
-    const res = await axios.post(`${AUTH_URL}/login`, { email, password }, { withCredentials: true });
-    return res.data;
-  },
-  getCurrentUser: async () => {
-    const res = await axios.get(`${AUTH_URL}/me`, { withCredentials: true });
-    return res.data;
-  },
-  logout: async () => {
-    const res = await axios.post(`${AUTH_URL}/logout`, {}, { withCredentials: true });
-    return res.data;
-  },
+  async request(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
 
-  // --- Reports ---
-  getReports: async () => {
-    const res = await axios.get(REPORTS_URL, { withCredentials: true });
-    return res.data;
-  },
-  createReport: async (data) => {
-    const res = await axios.post(REPORTS_URL, data, { withCredentials: true });
-    return res.data;
-  },
-  updateReport: async (reportId, data) => {
-    const res = await axios.put(`${REPORTS_URL}/${reportId}`, data, { withCredentials: true });
-    return res.data;
-  },
-  deleteReport: async (reportId) => {
-    const res = await axios.delete(`${REPORTS_URL}/${reportId}`, { withCredentials: true });
-    return res.data;
-  },
+    const config = {
+      headers: {
+        ...options.headers,
+      },
+      ...options,
+    };
 
-  // --- Users (admin) ---
-  getUsers: async () => {
-    const res = await axios.get(USERS_URL, { withCredentials: true });
-    return res.data;
-  },
+    if (!(options.body instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json';
+    }
 
-  // --- Notifications ---
-getNotifications: async () => {
-  const res = await axios.get(NOTIFICATIONS_URL, { withCredentials: true });
-  return res.data.notifications; // now returns array directly
-},
-markNotificationRead: async (id) => {
-    const res = await axios.patch(`${NOTIFICATIONS_URL}/${id}/read`, {}, { withCredentials: true });
-    return res.data;
-  },
-  deleteNotification: async (id) => {
-    const res = await axios.delete(`${NOTIFICATIONS_URL}/${id}`, { withCredentials: true });
-    return res.data;
-  },
-};
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
+    try {
+      console.log(`🌐 API ${options.method || 'GET'} ${endpoint}`);
+      const response = await fetch(url, config);
+
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      console.log(`📨 API Response:`, data);
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ API Request failed:', error);
+      throw error;
+    }
+  }
+
+  // ---------- Auth ----------
+  async login(email, password) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async register(userData) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async getCurrentUser() {
+    return this.request('/auth/me');
+  }
+
+  async logout() {
+    return this.request('/auth/logout', { method: 'POST' });
+  }
+
+  // ---------- Reports ----------
+  async getReports(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString();
+    const endpoint = `/reports${queryParams ? `?${queryParams}` : ''}`;
+    return this.request(endpoint);
+  }
+
+  async getReport(id) {
+    return this.request(`/reports/${id}`);
+  }
+
+  async createReport(formData) {
+    return this.request('/reports', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async updateReport(id, reportData) {
+    return this.request(`/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(reportData),
+    });
+  }
+
+  async updateReportStatus(id, statusData) {
+    return this.request(`/reports/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(statusData),
+    });
+  }
+
+  async deleteReport(id) {
+    return this.request(`/reports/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ---------- Notifications (merged from your Axios version) ----------
+  async getNotifications() {
+    const data = await this.request('/notifications');
+    return data.notifications;
+  }
+
+  async markNotificationRead(id) {
+    return this.request(`/notifications/${id}/read`, { method: 'PATCH' });
+  }
+
+  async deleteNotification(id) {
+    return this.request(`/notifications/${id}`, { method: 'DELETE' });
+  }
+}
+
+const apiService = new ApiService();
 export default apiService;
