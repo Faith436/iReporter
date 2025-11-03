@@ -171,7 +171,7 @@ class ApiService {
       console.error('❌ API Request failed:', error);
       throw error;
     }
-  }
+  } 
 
   // Auth methods
   async login(email, password) {
@@ -230,7 +230,9 @@ class ApiService {
       method: 'DELETE',
     });
   }
-}
+}  
+
+
 
 // Create and export instance
 const apiService = new ApiService();
