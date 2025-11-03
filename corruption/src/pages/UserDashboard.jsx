@@ -1,34 +1,28 @@
 import React, { useState, useEffect } from "react";
-import {
-  LayoutGrid,
-  List,
-  Trash2,
-  ChevronDown,
-  Pencil,
-  Plus,
-} from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import ReportStepper from "../components/ReportStepper";
-
-const COLOR_PRIMARY_PURPLE = "#4D2C5E";
-
-const markerIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+import { Plus } from "lucide-react";
+import { useReports } from "../contexts/ReportContext";
+import ListView from "../components/ListView";
+import KanbanView from "../components/KanbanView";
+import ReportModal from "../components/ReportModal";
 
 const statuses = ["pending", "under investigation", "resolved", "rejected"];
+const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 
-const Reports = () => {
+const Dashboard = () => {
+  const {
+    reports,
+    createReport,
+    updateReport,
+    deleteReport,
+    loading,
+    fetchAllReports,
+    fetchUserReports,
+  } = useReports();
+
   const [activeView, setActiveView] = useState("list");
-  const [reports, setReports] = useState([]);
-  const [editingReport, setEditingReport] = useState(null);
-  const [activeStatusDropdown, setActiveStatusDropdown] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-
+  const [editingReport, setEditingReport] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     specificTitle: "",
@@ -37,115 +31,73 @@ const Reports = () => {
     lat: "",
     lng: "",
     status: "pending",
-    media: null,
+    media: [],
   });
 
-  // Get logged-in user
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser")) || {};
-  const role = loggedInUser?.role || "user";
-  const userEmail = loggedInUser?.email || "";
+  const role = loggedInUser.role || "user";
+  const userEmail = loggedInUser.email || "";
 
-  // Load all reports once on mount
   useEffect(() => {
-    const allReports = JSON.parse(localStorage.getItem("allReports")) || [];
-    const userReports = allReports.filter((r) => r.createdBy === userEmail);
-    setReports(userReports);
-  }, [userEmail]);
-
-  // Sync changes back to localStorage
-  useEffect(() => {
-    if (!userEmail) return;
-
-    const allReports = JSON.parse(localStorage.getItem("allReports")) || [];
-    const othersReports = allReports.filter((r) => r.createdBy !== userEmail);
-    const mergedReports = [...othersReports, ...reports];
-    localStorage.setItem("allReports", JSON.stringify(mergedReports));
-  }, [reports, userEmail]);
+    role === "admin" ? fetchAllReports() : fetchUserReports();
+  }, [role]);
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this report?")) {
-      setReports((prev) => prev.filter((r) => r.id !== id));
-    }
-  };
-
-  const handleStatusUpdate = (id, newStatus) => {
-    setReports((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    );
-    setActiveStatusDropdown(null);
-  };
-
   const handleEdit = (report) => {
     setEditingReport(report);
-    setFormData(report);
+    setFormData({ ...report, media: report.media || [] });
+    setCurrentStep(1);
     setShowModal(true);
-    setCurrentStep(1);
   };
 
-  const handleSubmit = () => {
-    if (!formData.title || !formData.description || !formData.location) {
-      alert("Please fill in all required fields.");
-      return;
+  const handleSubmit = async () => {
+    if (!formData.title || !formData.description || !formData.location)
+      return alert("Please fill in all required fields.");
+    try {
+      const submitData = new FormData();
+      [
+        "title",
+        "specificTitle",
+        "description",
+        "location",
+        "lat",
+        "lng",
+        "status",
+      ].forEach((f) => submitData.append(f, formData[f] || ""));
+      formData.media?.forEach((file) => submitData.append("media", file));
+      editingReport
+        ? await updateReport(editingReport.id, submitData)
+        : await createReport(submitData);
+      setFormData({
+        title: "",
+        specificTitle: "",
+        description: "",
+        location: "",
+        lat: "",
+        lng: "",
+        status: "pending",
+        media: [],
+      });
+      setEditingReport(null);
+      setCurrentStep(1);
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit report. See console for details.");
     }
-
-    if (editingReport) {
-      setReports((prev) =>
-        prev.map((r) =>
-          r.id === editingReport.id ? { ...formData, createdBy: editingReport.createdBy } : r
-        )
-      );
-    } else {
-      const newReport = {
-        ...formData,
-        id: Date.now(),
-        coordinates: `${formData.lat},${formData.lng}`,
-        date: new Date().toLocaleDateString(),
-        createdBy: userEmail,
-      };
-      setReports((prev) => [...prev, newReport]);
-    }
-
-    setEditingReport(null);
-    setFormData({
-      title: "",
-      specificTitle: "",
-      description: "",
-      location: "",
-      lat: "",
-      lng: "",
-      status: "pending",
-      media: null,
-    });
-    setCurrentStep(1);
-    setShowModal(false);
-  };
-
-  const groupedReports = statuses.map((status) => ({
-    status,
-    items:
-      role === "admin"
-        ? reports
-        : reports.filter((r) => r.createdBy === userEmail).filter((r) => r.status === status),
-  }));
-
-  const visibleReports =
-    role === "admin" ? reports : reports.filter((r) => r.createdBy === userEmail);
-
-  const getCoordinates = (coordString) => {
-    if (!coordString) return [0, 0];
-    const parts = coordString.split(",");
-    return parts.length === 2 ? [parseFloat(parts[0]), parseFloat(parts[1])] : [0, 0];
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-4">
       {/* Header */}
       <div className="flex flex-wrap justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>
-          Reports Management
+        <h1
+          className="text-2xl font-bold"
+          style={{ color: COLOR_PRIMARY_PURPLE }}
+        >
+          {role === "admin" ? "Admin Dashboard" : "My Reports"}
         </h1>
 
         <div className="flex items-center gap-3">
@@ -161,7 +113,7 @@ const Reports = () => {
                   lat: "",
                   lng: "",
                   status: "pending",
-                  media: null,
+                  media: [],
                 });
                 setCurrentStep(1);
                 setShowModal(true);
@@ -171,196 +123,65 @@ const Reports = () => {
               <Plus className="w-4 h-4" /> Add Report
             </button>
           )}
-
           <div className="flex gap-2 bg-gray-100 rounded-md p-1">
             <button
               onClick={() => setActiveView("list")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "list" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
+                activeView === "list"
+                  ? "bg-white shadow text-teal-600"
+                  : "text-gray-600 hover:text-teal-600"
               }`}
             >
-              <List className="w-4 h-4" /> List
+              List
             </button>
             <button
               onClick={() => setActiveView("kanban")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
-                activeView === "kanban" ? "bg-white shadow text-teal-600" : "text-gray-600 hover:text-teal-600"
+                activeView === "kanban"
+                  ? "bg-white shadow text-teal-600"
+                  : "text-gray-600 hover:text-teal-600"
               }`}
             >
-              <LayoutGrid className="w-4 h-4" /> Kanban
+              Kanban
             </button>
           </div>
         </div>
       </div>
 
-      {/* List and Kanban views */}
       {activeView === "list" && (
-        <div className="bg-white shadow rounded-lg">
-          <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3">Title</th>
-                <th className="p-3">Description</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleReports.length ? (
-                visibleReports.map((report) => (
-                  <tr key={report.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3">{report.title}</td>
-                    <td className="p-3">{report.description}</td>
-                    <td className="p-3">{report.location}</td>
-                    <td className="p-3">{report.date}</td>
-                    <td className="p-3 capitalize">{report.status}</td>
-                    <td className="p-3 relative flex gap-2">
-                      {role === "admin" ? (
-                        <>
-                          <div className="relative">
-                            <button
-                              onClick={() =>
-                                setActiveStatusDropdown(
-                                  activeStatusDropdown === report.id ? null : report.id
-                                )
-                              }
-                              className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition text-xs"
-                            >
-                              Status <ChevronDown className="w-4 h-4" />
-                            </button>
-                            {activeStatusDropdown === report.id && (
-                              <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                                {statuses.map((s) => (
-                                  <div
-                                    key={s}
-                                    onClick={() => handleStatusUpdate(report.id, s)}
-                                    className="px-4 py-2 text-sm cursor-pointer hover:bg-teal-100 capitalize"
-                                  >
-                                    {s}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleDelete(report.id)}
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition text-xs flex items-center gap-1"
-                          >
-                            <Trash2 className="w-4 h-4" /> Delete
-                          </button>
-                        </>
-                      ) : (
-                        report.status === "pending" && (
-                          <button
-                            onClick={() => handleEdit(report)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition text-xs flex items-center gap-1"
-                          >
-                            <Pencil className="w-4 h-4" /> Edit
-                          </button>
-                        )
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center p-4 text-gray-500">
-                    No reports found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <ListView
+          reports={reports}
+          role={role}
+          userEmail={userEmail}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={deleteReport}
+        />
       )}
-
       {activeView === "kanban" && (
-        <div className="grid md:grid-cols-3 gap-6">
-          {groupedReports.map(({ status, items }) => (
-            <div key={status} className="bg-gray-100 p-4 rounded-lg shadow-sm">
-              <h2 className="font-semibold capitalize mb-3 text-gray-700">{status}</h2>
-              <div className="space-y-3">
-                {items.map((report) => (
-                  <div
-                    key={report.id}
-                    className="bg-white rounded-lg shadow p-3 border border-gray-200 hover:shadow-md transition relative"
-                  >
-                    <h3 className="font-semibold text-sm">{report.title}</h3>
-                    <p className="text-xs text-gray-600 mb-2">{report.description}</p>
-
-                    {report.coordinates && (
-                      <div className="h-32 mb-2">
-                        <MapContainer
-                          center={getCoordinates(report.coordinates)}
-                          zoom={13}
-                          scrollWheelZoom={false}
-                          className="w-full h-full rounded"
-                        >
-                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          <Marker position={getCoordinates(report.coordinates)} icon={markerIcon}>
-                            <Popup>{report.location}</Popup>
-                          </Marker>
-                        </MapContainer>
-                      </div>
-                    )}
-
-                    <div className="mt-2 flex justify-between items-center">
-                      {role === "admin" ? (
-                        <button
-                          onClick={() => handleDelete(report.id)}
-                          className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        report.status === "pending" && (
-                          <button
-                            onClick={() => handleEdit(report)}
-                            className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <KanbanView
+          reports={reports}
+          statuses={statuses}
+          role={role}
+          userEmail={userEmail}
+          onEdit={handleEdit}
+          onDelete={deleteReport}
+        />
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg relative w-[90%] lg:max-w-[900px] max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-2 right-3 text-gray-500 hover:text-gray-700 text-xl"
-            >
-              ×
-            </button>
-
-            <h2 className="text-lg font-semibold mb-4">
-              {editingReport ? "Edit Report" : "Add Report"}
-            </h2>
-
-            <ReportStepper
-              currentStep={currentStep}
-              nextStep={nextStep}
-              prevStep={prevStep}
-              formData={formData}
-              setFormData={setFormData}
-              handleSubmit={handleSubmit}
-            />
-          </div>
-        </div>
-      )}
+      <ReportModal
+        showModal={showModal}
+        onClose={() => setShowModal(false)}
+        editingReport={editingReport}
+        formData={formData}
+        setFormData={setFormData}
+        currentStep={currentStep}
+        nextStep={nextStep}
+        prevStep={prevStep}
+        handleSubmit={handleSubmit}
+      />
     </div>
   );
 };
 
-export default Reports;
+export default Dashboard;
