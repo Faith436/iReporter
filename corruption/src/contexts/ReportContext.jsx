@@ -1,191 +1,161 @@
-// ReportContext.jsx - REFACTORED & FIXED VERSION
-import React, { createContext, useContext, useState, useEffect } from "react";
+// src/contexts/ReportContext.jsx
+import React, { createContext, useContext, useState } from "react";
+import axios from "axios";
+import { useUsers } from "./UserContext";
 
 const ReportContext = createContext();
-
-// Key for localStorage
-const REPORTS_KEY = "ireporter-reports";
-const NOTIFICATIONS_KEY = "ireporter-notifications";
-
-export const useReports = () => {
-  const context = useContext(ReportContext);
-  if (!context) throw new Error("useReports must be used within a ReportProvider");
-  return context;
-};
+export const useReports = () => useContext(ReportContext);
 
 export const ReportProvider = ({ children }) => {
+  const { currentUser } = useUsers();
   const [reports, setReports] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Load reports and notifications from localStorage
-  useEffect(() => {
+  // --- Fetch user's own reports
+  const fetchUserReports = async () => {
+    if (!currentUser) return;
     try {
-      const storedReports = JSON.parse(localStorage.getItem(REPORTS_KEY)) || [];
-      const storedNotifications = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY)) || [];
-      setReports(storedReports);
-      setNotifications(storedNotifications);
-    } catch (error) {
-      console.error("Error loading data:", error);
+      setLoading(true);
+      const { data } = await axios.get(
+        "http://localhost:5000/api/reports/user",
+        { withCredentials: true }
+      );
+      setReports(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch user reports error:", err);
       setReports([]);
-      setNotifications([]);
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  // Save reports to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
-  }, [reports]);
-
-  // Save notifications to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-  }, [notifications]);
-
-  // Create a new report
-  const createReport = (reportData) => {
-    const newReport = {
-      id: Date.now(),
-      ...reportData,
-      date: new Date().toLocaleDateString(),
-      timestamp: new Date().toISOString(),
-      status: "pending",
-    };
-
-    setReports((prev) => [newReport, ...prev]);
-
-    // Notify admin
-    createNotification({
-      title: "New Report Submitted",
-      message: `User ${reportData.userName || "A user"} submitted: "${reportData.title}"`,
-      type: "new-report",
-      targetUser: "admin",
-      reportId: newReport.id,
-    });
-
-    // Notify user
-    createNotification({
-      title: "Report Submitted",
-      message: `Your report "${reportData.title}" has been submitted.`,
-      type: "submission",
-      targetUser: reportData.userId,
-      reportId: newReport.id,
-    });
-
-    return newReport;
   };
 
-  // Update a report
-  const updateReport = (id, updates) => {
-    setReports((prevReports) =>
-      prevReports.map((report) => {
-        if (report.id === id) {
-          const oldStatus = report.status;
-          const newStatus = updates.status;
+  // --- Fetch all reports (admin only)
+  const fetchAllReports = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axios.get(
+        "http://localhost:5000/api/reports/all",
+        { withCredentials: true }
+      );
+      setReports(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch all reports error:", err);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          // Notify user if status changed
-          if (newStatus && newStatus !== oldStatus) {
-            createNotification({
-              title: "Status Updated",
-              message: `Your report "${report.title}" is now ${newStatus.replace("-", " ")}`,
-              type: "status-update",
-              targetUser: report.userId,
-              reportId: id,
-            });
-          }
+  // --- Create a new report
+  const createReport = async (reportData) => {
+    try {
+      const formData = new FormData();
 
-          return { ...report, ...updates };
+      Object.keys(reportData).forEach((key) => {
+        if (key === "media" && Array.isArray(reportData.media)) {
+          reportData.media.forEach((file) => formData.append("media", file));
+        } else {
+          formData.append(key, reportData[key]);
         }
-        return report;
-      })
-    );
-  };
-
-  // Delete a report
-  const deleteReport = (id) => {
-    const reportToDelete = reports.find((r) => r.id === id);
-    setReports((prev) => prev.filter((r) => r.id !== id));
-
-    if (reportToDelete) {
-      createNotification({
-        title: "Report Deleted",
-        message: `User ${reportToDelete.userName} deleted: "${reportToDelete.title}"`,
-        type: "report-deleted",
-        targetUser: "admin",
-        reportId: id,
       });
+
+      const { data } = await axios.post(
+        "http://localhost:5000/api/reports",
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+
+      setReports((prev) => [data.report, ...(prev || [])]);
+      return data;
+    } catch (err) {
+      console.error("Create report error:", err);
+      throw err;
     }
   };
 
-  // Create a notification
-  const createNotification = (notificationData) => {
-    const newNotification = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      read: false,
-      ...notificationData,
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
-    return newNotification;
+  // --- Update an existing report
+  const updateReport = async (reportId, reportData) => {
+    try {
+      const formData = new FormData();
+
+      Object.keys(reportData).forEach((key) => {
+        if (key === "media" && Array.isArray(reportData.media)) {
+          reportData.media.forEach((file) => formData.append("media", file));
+        } else {
+          formData.append(key, reportData[key]);
+        }
+      });
+
+      const { data } = await axios.put(
+        `http://localhost:5000/api/reports/${reportId}`,
+        formData,
+        { withCredentials: true }
+      );
+
+      setReports((prev) =>
+        (prev || []).map((r) => (r.id === reportId ? data.report : r))
+      );
+
+      return data;
+    } catch (err) {
+      console.error("Update report error:", err);
+      throw err;
+    }
   };
 
-  // Get reports for a specific user
-  const getUserReports = (userId) => reports.filter((r) => r.userId === userId);
+  // --- Update report status (admin only)
+  const updateReportStatus = async (reportId, status) => {
+    try {
+      const { data } = await axios.put(
+        `http://localhost:5000/api/reports/${reportId}/status`,
+        { status },
+        { withCredentials: true }
+      );
 
-  // Get all reports (admin)
-  const getAllReports = () => reports;
+      setReports((prev) =>
+        (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
+      );
 
-  // Get notifications for current user
-  const getUserNotifications = (currentUser) => {
-    if (!currentUser) return [];
-    return notifications.filter((n) =>
-      currentUser.role === "admin" ? n.targetUser === "admin" : n.targetUser === currentUser.id
-    );
+      const reportOwnerId = data.report.user_id;
+      const message = `Your report "${data.report.title}" status has been updated to "${status.toUpperCase()}"`;
+
+      await axios.post(
+        "http://localhost:5000/api/notifications",
+        { userId: reportOwnerId, message },
+        { withCredentials: true }
+      );
+    } catch (err) {
+      console.error("Update report status error:", err);
+      throw err;
+    }
   };
 
-  // Get unread notifications count for user
-  const getUnreadCount = (currentUser) =>
-    getUserNotifications(currentUser).filter((n) => !n.read).length;
-
-  // Mark a notification as read
-  const markNotificationRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  };
-
-  // Remove a notification
-  const removeNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  // Get quick stats
-  const getStats = (userId = null) => {
-    let filteredReports = reports;
-    if (userId) filteredReports = reports.filter((r) => r.userId === userId);
-
-    return {
-      total: filteredReports.length,
-      redFlags: filteredReports.filter((r) => r.reportType === "red-flag").length,
-      interventions: filteredReports.filter((r) => r.reportType === "intervention").length,
-      pending: filteredReports.filter((r) => r.status === "pending").length,
-      underInvestigation: filteredReports.filter((r) => r.status === "under-investigation").length,
-      resolved: filteredReports.filter((r) => r.status === "resolved").length,
-    };
+  // --- Delete a report
+  const deleteReport = async (reportId) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/reports/${reportId}`, {
+        withCredentials: true,
+      });
+      setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
+    } catch (err) {
+      console.error("Delete report error:", err);
+      throw err;
+    }
   };
 
   return (
     <ReportContext.Provider
       value={{
         reports,
-        notifications,
+        loading,
+        fetchUserReports,
+        fetchAllReports,
         createReport,
         updateReport,
+        updateReportStatus,
         deleteReport,
-        getUserReports,
-        getAllReports,
-        getStats,
-        getUserNotifications,
-        getUnreadCount,
-        markNotificationRead,
-        removeNotification,
       }}
     >
       {children}

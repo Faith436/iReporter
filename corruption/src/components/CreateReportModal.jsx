@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, CheckCircle } from "lucide-react";
-import ReportStepper from "./ReportStepper"; // the stepper we refactored
+import ReportStepper from "./ReportStepper"; // stepper form
 import { useReports } from "../contexts/ReportContext";
 
 const CreateReportModal = ({ isOpen, onClose, reportToEdit }) => {
@@ -9,18 +9,27 @@ const CreateReportModal = ({ isOpen, onClose, reportToEdit }) => {
 
   if (!isOpen) return null;
 
-  const handleSave = (reportData) => {
-    if (reportToEdit) updateReport(reportToEdit.id, reportData);
-    else createReport(reportData);
+  const handleSave = async (reportData) => {
+    try {
+      if (reportToEdit) {
+        await updateReport(reportToEdit.id, reportData);
+      } else {
+        await createReport(reportData); // should send FormData with mediaFile
+      }
 
-    setShowSuccess(true);
+      setShowSuccess(true);
 
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 2000);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 2000);
+    } catch (err) {
+      console.error("Error saving report:", err);
+      alert("Failed to submit report. Please try again.");
+    }
   };
 
+  // Success screen
   if (showSuccess) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -38,6 +47,7 @@ const CreateReportModal = ({ isOpen, onClose, reportToEdit }) => {
     );
   }
 
+  // Form modal
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
