@@ -86,7 +86,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
       });
     }
   }, [reportToEdit]);
-
+}
   // Field validation
   const validateField = (name, value) => {
     switch (name) {
@@ -158,7 +158,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
   };
 
   // Submit handler
-  const handleFormSubmit = async () => {
+  const handleFormSubmit = async () =>{
     if (!isValidCoordinate(formData.lat, formData.lng)) {
       alert(
         "Please enter valid coordinates. Latitude: -90 to 90, Longitude: -180 to 180"
@@ -166,27 +166,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
       setCurrentStep(2);
       return;
     }
-
-    const reportPayload = {
-      title: formData.specificTitle,
-      reportType:
-        formData.title.toLowerCase() === "red flag"
-          ? "red-flag"
-          : "intervention",
-      description: formData.description,
-      location: formData.location,
-      coordinates: `${formData.lat},${formData.lng}`,
-      date: new Date().toISOString().split("T")[0],
-    };
-
-    const formDataToSend = new FormData();
-    Object.keys(reportPayload).forEach((key) =>
-      formDataToSend.append(key, reportPayload[key])
-    );
-    if (formData.media) formDataToSend.append("evidence", formData.media);
-
-    await handleSubmit(formDataToSend);
-  };
 
   const steps = [
     { label: "Type & Description" },
@@ -472,7 +451,9 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
           >
             Submit
           </button>
+          
         )}
+        
       </div>
     </div>
   );
