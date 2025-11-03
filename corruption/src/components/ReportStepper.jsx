@@ -16,7 +16,7 @@ const isStepComplete = (step, formData) => {
     case 1:
       return formData.title && formData.specificTitle && formData.description;
     case 2:
-      return formData.location && formData.lat !== "" && formData.lng !== "";
+      return formData.location && formData.lat && formData.lng;
     case 3:
       return true;
     default:
@@ -24,29 +24,27 @@ const isStepComplete = (step, formData) => {
   }
 };
 
-const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData, handleSubmit }) => {
+const ReportStepper = ({
+  currentStep,
+  nextStep,
+  prevStep,
+  formData,
+  setFormData,
+  handleSubmit,
+}) => {
   const steps = [
     { label: "Type & Description" },
     { label: "Location & Map" },
     { label: "Review & Submit" },
   ];
 
-  // Convert file to Base64 for persistence
-  const handleMediaChange = (file) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, media: reader.result }));
-    };
-    reader.readAsDataURL(file);
+  const handleNext = () => {
+    if (isStepComplete(currentStep, formData)) nextStep();
+    else alert("Please complete all fields in this step before proceeding.");
   };
 
-  const handleNext = () => {
-    if (isStepComplete(currentStep, formData)) {
-      nextStep();
-    } else {
-      alert("Please complete all fields in this step before proceeding.");
-    }
-  };
+  const lat = parseFloat(formData.lat) || 0;
+  const lng = parseFloat(formData.lng) || 0;
 
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md max-h-[90vh] overflow-y-auto">
@@ -83,11 +81,14 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
 
       {/* Step content */}
       <div className="flex-1 overflow-y-auto space-y-4">
+
         {/* Step 1 */}
         {currentStep === 1 && (
           <div className="space-y-6 p-6 bg-white border border-gray-200 rounded-lg shadow-md">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-3 border-b">
-              <label className="text-gray-700 font-semibold text-base whitespace-nowrap">Report Type:</label>
+              <label className="text-gray-700 font-semibold text-base whitespace-nowrap">
+                Report Type:
+              </label>
               <label className="flex items-center space-x-2 cursor-pointer text-red-600 hover:text-red-700">
                 <input
                   type="radio"
@@ -136,7 +137,6 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
         {/* Step 2 */}
         {currentStep === 2 && (
           <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col md:flex-row gap-4 max-h-[70vh] overflow-hidden">
-            {/* Inputs */}
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2">
               <input
                 type="text"
@@ -147,54 +147,66 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
               />
               <div className="flex gap-2">
                 <input
-                  type="text"
+                  type="number"
                   placeholder="Latitude"
                   value={formData.lat}
                   onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
                   className="border p-2 rounded w-1/2"
                 />
                 <input
-                  type="text"
+                  type="number"
                   placeholder="Longitude"
                   value={formData.lng}
                   onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
                   className="border p-2 rounded w-1/2"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Upload className="text-gray-500 w-5 h-5" />
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={(e) => e.target.files[0] && handleMediaChange(e.target.files[0])}
-                  className="border p-2 rounded w-full"
-                />
-              </div>
 
-              {formData.media && (
-                <div>
-                  {formData.media.startsWith("data:image") ? (
-                    <img src={formData.media} alt="media" className="rounded-md w-full h-32 object-cover mt-2" />
-                  ) : (
-                    <video src={formData.media} controls className="rounded-md w-full h-32 object-cover mt-2" />
-                  )}
+              {/* File Upload */}
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer border p-2 rounded hover:bg-gray-100">
+                  <Upload className="text-gray-500 w-5 h-5" />
+                  <span className="text-sm text-gray-600">Upload images/videos</span>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      setFormData(prev => ({ ...prev, media: [...prev.media, ...files] }));
+                    }}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Previews */}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.media.map((file, idx) => {
+                    const isImage = file.type.startsWith("image/");
+                    const isVideo = file.type.startsWith("video/");
+                    const url = URL.createObjectURL(file);
+
+                    return (
+                      <div key={idx} className="relative w-24 h-24 border rounded overflow-hidden">
+                        {isImage && <img src={url} alt={file.name} className="w-full h-full object-cover" />}
+                        {isVideo && <video src={url} className="w-full h-full object-cover" controls />}
+                        <button
+                          onClick={() => setFormData(prev => ({ ...prev, media: prev.media.filter((_, i) => i !== idx) }))}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Map */}
             <div className="flex-1 min-h-0 h-64 md:h-auto">
-              <MapContainer
-                center={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
-                zoom={13}
-                scrollWheelZoom={false}
-                className="w-full h-full rounded"
-              >
+              <MapContainer center={[lat, lng]} zoom={13} scrollWheelZoom={false} className="w-full h-full rounded">
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker
-                  position={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
-                  icon={markerIcon}
-                >
+                <Marker position={[lat, lng]} icon={markerIcon}>
                   <Popup>{formData.location || "No Location"}</Popup>
                 </Marker>
               </MapContainer>
@@ -209,17 +221,20 @@ const ReportStepper = ({ currentStep, nextStep, prevStep, formData, setFormData,
             <p><strong>Title:</strong> {formData.specificTitle}</p>
             <p><strong>Description:</strong> {formData.description}</p>
             <p><strong>Location:</strong> {formData.location}</p>
-            <p><strong>Coordinates:</strong> {formData.lat}, {formData.lng}</p>
+            <p><strong>Coordinates:</strong> {lat}, {lng}</p>
 
-            {formData.media && (
-              formData.media.startsWith("data:image") ? (
-                <img src={formData.media} alt="media" className="rounded-md w-full h-48 object-cover" />
-              ) : (
-                <video src={formData.media} controls className="rounded-md w-full h-48 object-cover" />
-              )
+            {formData.media.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.media.map((file, idx) => (
+                  <div key={idx} className="w-24 h-24 border rounded overflow-hidden flex items-center justify-center text-xs text-gray-700">
+                    {file.name}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
+
       </div>
 
       {/* Navigation */}
