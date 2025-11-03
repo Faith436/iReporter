@@ -384,7 +384,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
         setCurrentStep(2); // Go back to location step
         return;
       }
-
+console.log('Form data before submit:', formData);
       // Fix coordinates format for backend - send as string "lat,lng"
       const reportPayload = {
         title: formData.specificTitle,
@@ -718,7 +718,9 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
           >
             Submit Report
           </button>
+          
         )}
+        
       </div>
     </div>
   );
