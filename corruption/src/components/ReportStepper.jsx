@@ -86,7 +86,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
       });
     }
   }, [reportToEdit]);
-}
+
   // Field validation
   const validateField = (name, value) => {
     switch (name) {
@@ -158,7 +158,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
   };
 
   // Submit handler
-  const handleFormSubmit = async () =>{
+  const handleFormSubmit = async () => {
     if (!isValidCoordinate(formData.lat, formData.lng)) {
       alert(
         "Please enter valid coordinates. Latitude: -90 to 90, Longitude: -180 to 180"
@@ -166,6 +166,12 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
       setCurrentStep(2);
       return;
     }
+
+    if (handleSubmit) {
+      await handleSubmit(formData);
+    }
+    alert("Report submitted!");
+  };
 
   const steps = [
     { label: "Type & Description" },
@@ -232,9 +238,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
                   }
                   className="form-radio h-5 w-5 border-red-400 text-red-600 focus:ring-red-500"
                 />
-                <span className="text-sm font-medium">
-                  Red Flag (Urgent)
-                </span>
+                <span className="text-sm font-medium">Red Flag (Urgent)</span>
               </label>
               <label className="flex items-center space-x-2 cursor-pointer text-blue-600 hover:text-blue-700">
                 <input
@@ -451,9 +455,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, handleSubmit }) => {
           >
             Submit
           </button>
-          
         )}
-        
       </div>
     </div>
   );

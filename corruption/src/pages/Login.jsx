@@ -1,20 +1,16 @@
-
 // src/pages/Login.jsx
-import React from "react";
-import LoginForm from "../components/LoginForm";
-import LoginBackground from "../components/LoginBackground";
-
-import React, { useState } from "react";
+import React, { useState } from "react"; // <- only one import now
 import { useNavigate } from "react-router-dom";
 import { LogIn, User, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api";
 
+import LoginForm from "../components/LoginForm";
+import LoginBackground from "../components/LoginBackground";
 
 // --- COLORS ---
 const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const COLOR_PRIMARY_TEAL = "#116E75";
 const COLOR_LIGHT_TEAL = "#B3D8DB";
- 
 
 const Login = () => {
   return (
