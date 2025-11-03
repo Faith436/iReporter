@@ -1,17 +1,17 @@
 // src/pages/Login.jsx
 import React from "react";
-import LoginForm from "../components/LoginForm";
+import RegistrationForm from "../components/RegistrationForm";
 import LoginBackground from "../components/LoginBackground";
 
-const Login = () => {
+const Registration = () => {
   return (
     <div className="min-h-screen font-sans antialiased text-gray-800">
       <div className="grid md:grid-cols-[1fr_1fr] min-h-screen">
-        <LoginForm />
         <LoginBackground />
+        <RegistrationForm />
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Registration;
