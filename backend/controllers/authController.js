@@ -1,7 +1,7 @@
 // controllers/authController.js
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const db = require("../db");
+const db = require("../config/db");
 
 // --- REGISTER USER ---
 const registerUser = async (req, res) => {
@@ -69,6 +69,7 @@ const loginUser = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -118,7 +119,7 @@ const getCurrentUser = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
 // --- LOGOUT ---
 const logoutUser = (req, res) => {
   res.clearCookie("token", {
