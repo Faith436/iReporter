@@ -47,7 +47,7 @@ class ApiService {
       console.error('❌ API Request failed:', error);
       throw error;
     }
-  }
+  } 
 
   // ---------- Auth ----------
   async login(email, password) {
@@ -110,6 +110,7 @@ class ApiService {
     });
   }
 
+
   // ---------- Notifications (merged from your Axios version) ----------
   async getNotifications() {
     const data = await this.request('/notifications');
@@ -125,5 +126,3 @@ class ApiService {
   }
 }
 
-const apiService = new ApiService();
-export default apiService;
