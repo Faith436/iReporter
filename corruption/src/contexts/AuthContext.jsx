@@ -15,24 +15,23 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if user is authenticated on app load
   const checkAuth = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const savedUser = localStorage.getItem('user');
 
       if (token && savedUser) {
-        try {
-          // Verify token is still valid by making API call
-          const response = await apiService.getCurrentUser();
-          setUser(response.user);
-          localStorage.setItem('user', JSON.stringify(response.user));
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          logout();
-        }
+        // Verify token with API
+        const response = await apiService.getCurrentUser();
+        setUser(response.user || JSON.parse(savedUser));
+        localStorage.setItem('user', JSON.stringify(response.user || JSON.parse(savedUser)));
+      } else {
+        logout();
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Token validation failed:', error);
       logout();
     } finally {
       setLoading(false);
@@ -43,12 +42,15 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  // Login sets user & token
   const login = (userData, token) => {
-    setUser(userData);
+    if (!userData || !token) return;
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
   };
 
+  // Logout clears user & token
   const logout = () => {
     setUser(null);
     localStorage.removeItem('token');
@@ -60,12 +62,12 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     loading,
-    checkAuth
+    checkAuth,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {loading ? <div>Loading...</div> : children}
     </AuthContext.Provider>
   );
 };

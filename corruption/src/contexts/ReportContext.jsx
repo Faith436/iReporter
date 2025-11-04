@@ -1,4 +1,3 @@
-// src/contexts/ReportContext.jsx
 import React, { createContext, useContext, useState } from "react";
 import axios from "axios";
 import { useUsers } from "./UserContext";
@@ -20,7 +19,9 @@ export const ReportProvider = ({ children }) => {
         "http://localhost:5000/api/reports/user",
         { withCredentials: true }
       );
-      setReports(Array.isArray(data) ? data : []);
+      // ✅ FIXED: Handle object response with reports property
+      const reportsData = data.reports || data || [];
+      setReports(reportsData);
     } catch (err) {
       console.error("Fetch user reports error:", err);
       setReports([]);
@@ -37,7 +38,9 @@ export const ReportProvider = ({ children }) => {
         "http://localhost:5000/api/reports/all",
         { withCredentials: true }
       );
-      setReports(Array.isArray(data) ? data : []);
+      // ✅ FIXED: Handle array response directly
+      const reportsData = Array.isArray(data) ? data : data.reports || data || [];
+      setReports(reportsData);
     } catch (err) {
       console.error("Fetch all reports error:", err);
       setReports([]);
@@ -49,28 +52,28 @@ export const ReportProvider = ({ children }) => {
   // --- Create a new report
   const createReport = async (reportData) => {
     try {
-      const formData = new FormData();
-
-      Object.keys(reportData).forEach((key) => {
-        if (key === "media" && Array.isArray(reportData.media)) {
-          reportData.media.forEach((file) => formData.append("media", file));
-        } else {
-          formData.append(key, reportData[key]);
-        }
-      });
-
+      console.log("📤 Creating report with data:", reportData);
+      
+      // ✅ SIMPLIFIED: Always use JSON with proper headers
       const { data } = await axios.post(
         "http://localhost:5000/api/reports",
-        formData,
+        reportData,
         {
           withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
       );
 
-      setReports((prev) => [data.report, ...(prev || [])]);
+      console.log("✅ Report created successfully:", data);
+
+      // ✅ FIXED: Handle response format
+      const newReport = data.report || data;
+      setReports((prev) => [newReport, ...(prev || [])]);
       return data;
     } catch (err) {
-      console.error("Create report error:", err);
+      console.error("❌ Create report error:", err.response?.data || err);
       throw err;
     }
   };
@@ -78,29 +81,29 @@ export const ReportProvider = ({ children }) => {
   // --- Update an existing report
   const updateReport = async (reportId, reportData) => {
     try {
-      const formData = new FormData();
-
-      Object.keys(reportData).forEach((key) => {
-        if (key === "media" && Array.isArray(reportData.media)) {
-          reportData.media.forEach((file) => formData.append("media", file));
-        } else {
-          formData.append(key, reportData[key]);
-        }
-      });
-
+      console.log("📤 Updating report:", reportId, reportData);
+      
       const { data } = await axios.put(
         `http://localhost:5000/api/reports/${reportId}`,
-        formData,
-        { withCredentials: true }
+        reportData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
 
+      console.log("✅ Report updated successfully:", data);
+
+      const updatedReport = data.report || data;
       setReports((prev) =>
-        (prev || []).map((r) => (r.id === reportId ? data.report : r))
+        (prev || []).map((r) => (r.id === reportId ? updatedReport : r))
       );
 
       return data;
     } catch (err) {
-      console.error("Update report error:", err);
+      console.error("❌ Update report error:", err);
       throw err;
     }
   };
@@ -111,23 +114,32 @@ export const ReportProvider = ({ children }) => {
       const { data } = await axios.put(
         `http://localhost:5000/api/reports/${reportId}/status`,
         { status },
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
 
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
       );
 
-      const reportOwnerId = data.report.user_id;
-      const message = `Your report "${data.report.title}" status has been updated to "${status.toUpperCase()}"`;
+      // Create notification
+      const report = reports.find(r => r.id === reportId);
+      if (report) {
+        const reportOwnerId = report.user_id || report.userId;
+        const message = `Your report "${report.title}" status has been updated to "${status}"`;
 
-      await axios.post(
-        "http://localhost:5000/api/notifications",
-        { userId: reportOwnerId, message },
-        { withCredentials: true }
-      );
+        await axios.post(
+          "http://localhost:5000/api/notifications",
+          { userId: reportOwnerId, message },
+          { withCredentials: true }
+        );
+      }
+
+      return data;
     } catch (err) {
-      console.error("Update report status error:", err);
+      console.error("❌ Update report status error:", err);
       throw err;
     }
   };
@@ -140,9 +152,14 @@ export const ReportProvider = ({ children }) => {
       });
       setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
     } catch (err) {
-      console.error("Delete report error:", err);
+      console.error("❌ Delete report error:", err);
       throw err;
     }
+  };
+
+  // ✅ ADDED: Helper function to get user's reports
+  const getUserReports = (userId) => {
+    return reports.filter(report => report.user_id === userId || report.userId === userId);
   };
 
   return (
@@ -156,6 +173,7 @@ export const ReportProvider = ({ children }) => {
         updateReport,
         updateReportStatus,
         deleteReport,
+        getUserReports,
       }}
     >
       {children}
