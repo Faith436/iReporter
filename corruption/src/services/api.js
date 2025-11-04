@@ -1,4 +1,4 @@
-// src/services/api.js
+// src/services/api.js - FIXED VERSION
 const API_BASE_URL = 'http://localhost:5000/api';
 
 class ApiService {
@@ -10,23 +10,27 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
 
     const config = {
+      method: options.method || 'GET',
       headers: { ...options.headers },
-      ...options,
+      credentials: 'include', // ✅ ADD THIS - sends cookies with requests
     };
 
-    // Set Content-Type only if body is not FormData
-    if (!(options.body instanceof FormData)) {
-      config.headers['Content-Type'] = 'application/json';
-    }
+    // ✅ REMOVE Authorization header - backend uses cookies
+    // const token = localStorage.getItem('token');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
 
-    // Add auth token if available
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Only set Content-Type if body exists and is NOT FormData
+    if (options.body && !(options.body instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json';
+      config.body = JSON.stringify(options.body);
+    } else if (options.body) {
+      config.body = options.body; // FormData goes as is
     }
 
     try {
-      console.log(`🌐 API ${options.method || 'GET'} ${endpoint}`);
+      console.log(`🌐 API ${config.method} ${endpoint}`);
       const response = await fetch(url, config);
 
       let data;
@@ -37,10 +41,12 @@ class ApiService {
         data = await response.text();
       }
 
-      console.log(`📨 API Response:`, data);
+      console.log('📨 API Response:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          data?.message || `HTTP error! status: ${response.status} | ${JSON.stringify(data)}`
+        );
       }
 
       return data;
@@ -51,61 +57,60 @@ class ApiService {
   }
 
   // ---------- Auth ----------
-  async login(email, password) {
+  login(email, password) {
     return this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: { email, password },
     });
   }
 
-  async register(userData) {
+  register(userData) {
     return this.request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(userData),
+      body: userData,
     });
   }
 
-  async getCurrentUser() {
+  getCurrentUser() {
     return this.request('/auth/me');
   }
 
-  async logout() {
+  logout() {
     return this.request('/auth/logout', { method: 'POST' });
   }
 
   // ---------- Reports ----------
-  async getReports(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString();
-    const endpoint = `/reports${queryParams ? `?${queryParams}` : ''}`;
-    return this.request(endpoint);
+  getReports(filters = {}) {
+    const query = new URLSearchParams(filters).toString();
+    return this.request(`/reports${query ? `?${query}` : ''}`);
   }
 
-  async getReport(id) {
+  getReport(id) {
     return this.request(`/reports/${id}`);
   }
 
-  async createReport(formData) {
+  createReport(formData) {
     return this.request('/reports', {
       method: 'POST',
-      body: formData, // FormData handled directly
+      body: formData,
     });
   }
 
-  async updateReport(id, reportData) {
+  updateReport(id, reportData) {
     return this.request(`/reports/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(reportData),
+      body: reportData,
     });
   }
 
-  async updateReportStatus(id, statusData) {
+  updateReportStatus(id, statusData) {
     return this.request(`/reports/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify(statusData),
+      body: statusData,
     });
   }
 
-  async deleteReport(id) {
+  deleteReport(id) {
     return this.request(`/reports/${id}`, { method: 'DELETE' });
   }
 
@@ -115,15 +120,15 @@ class ApiService {
     return data.notifications;
   }
 
-  async markNotificationRead(id) {
+  markNotificationRead(id) {
     return this.request(`/notifications/${id}/read`, { method: 'PATCH' });
   }
 
-  async deleteNotification(id) {
+  deleteNotification(id) {
     return this.request(`/notifications/${id}`, { method: 'DELETE' });
   }
 }
 
-// Create and export single instance
+// Single instance
 const apiService = new ApiService();
 export default apiService;

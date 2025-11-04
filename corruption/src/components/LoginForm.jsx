@@ -1,8 +1,8 @@
-// src/components/LoginForm.jsx
+// src/components/LoginForm.jsx - FIXED VERSION
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogIn,Mail, Lock, CheckCircle, XCircle } from "lucide-react";
-import axios from "axios";
+import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
+import apiService from "../services/api"; // ✅ Use your API service
 import { useUsers } from "../contexts/UserContext";
 
 const COLOR_PRIMARY_TEAL = "#116E75";
@@ -40,7 +40,7 @@ const StatusMessage = ({ type, message }) => {
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { setCurrentUser } = useUsers(); // correctly from UserContext
+  const { setCurrentUser } = useUsers();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,11 +53,8 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const { data } = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        { email, password },
-        { withCredentials: true } // send cookies
-      );
+      // ✅ Use your apiService instead of axios directly
+      const data = await apiService.login(email, password);
 
       // Set current user in context
       setCurrentUser(data.user);
@@ -69,13 +66,19 @@ const LoginForm = () => {
       setPassword("");
 
       // Redirect based on role
-      if (data.user.role === "admin") navigate("/admin");
-      else navigate("/dashboard");
+      setTimeout(() => {
+        if (data.user.role === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 1000);
+
     } catch (err) {
       console.error("Login error:", err);
       setStatus({
         type: "error",
-        message: err.response?.data?.error || "Invalid email or password",
+        message: err.message || "Invalid email or password",
       });
     } finally {
       setLoading(false);
@@ -92,8 +95,22 @@ const LoginForm = () => {
       <StatusMessage type={status.type} message={status.message} />
 
       <form onSubmit={handleLogin} className="w-full" noValidate>
-        <AuthInput label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="faith@example.com" icon={Mail} />
-        <AuthInput label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" icon={Lock} />
+        <AuthInput 
+          label="Email Address" 
+          type="email" 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)} 
+          placeholder="faith@example.com" 
+          icon={Mail} 
+        />
+        <AuthInput 
+          label="Password" 
+          type="password" 
+          value={password} 
+          onChange={(e) => setPassword(e.target.value)} 
+          placeholder="••••••••" 
+          icon={Lock} 
+        />
 
         <button
           type="submit"
