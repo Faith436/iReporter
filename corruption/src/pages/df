@@ -9,11 +9,10 @@ import ReportModal from "../components/ReportModal";
 const statuses = ["pending", "under investigation", "resolved", "rejected"];
 const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 
-const Reports = () => {
+const Dashboard = () => {
   const {
     reports,
     currentUser, // fetched from backend via context
-    userLoading,
     createReport,
     updateReport,
     deleteReport,
@@ -88,9 +87,6 @@ const Reports = () => {
       alert("Failed to submit report. See console for details.");
     }
   };
-
-  if (userLoading)
-    return <div className="p-6 text-gray-600">Loading your dashboard...</div>;
 
   if (!currentUser)
     return (
@@ -192,4 +188,4 @@ const Reports = () => {
   );
 };
 
-export default Reports;
+export default Dashboard;

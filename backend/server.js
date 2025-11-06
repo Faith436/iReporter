@@ -30,14 +30,18 @@ app.use(
   })
 );
 
-// --- Middleware ---
-app.use(express.json());
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
+
+// --- Static and cookies ---
 app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
 
-// --- Routes ---
-app.use("/api/auth", authRoutes);
+// --- Routes that need multer (multipart/form-data) ---
 app.use("/api/reports", reportRoutes); 
+
+// --- JSON-parsed routes (normal APIs like auth/notifications) ---
+app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 // --- Test route ---
