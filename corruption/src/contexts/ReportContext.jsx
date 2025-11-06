@@ -1,72 +1,61 @@
-// src/contexts/ReportContext.jsx
-import React, { createContext, useContext, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import axios from "axios";
-import { useUsers } from "./UserContext";
+import apiService from "../services/api";
 
 const ReportContext = createContext();
 export const useReports = () => useContext(ReportContext);
 
+
+
 export const ReportProvider = ({ children }) => {
-  const { currentUser } = useUsers();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
 
-  // --- Fetch user's own reports
-  const fetchUserReports = async () => {
+  // --- Fetch logged-in user from backend
+  const fetchCurrentUser = useCallback(async () => {
+    setUserLoading(true);
+    try {
+      const user = await apiService.getCurrentUser(); // /api/auth/me
+      setCurrentUser(user);
+    } catch (err) {
+      console.error("Failed to fetch current user:", err);
+      setCurrentUser(null);
+    }finally {
+    setUserLoading(false);
+  }
+  }, []);
+
+  // --- Unified fetch reports for admin or user
+  const fetchReports = useCallback(async () => {
     if (!currentUser) return;
     try {
       setLoading(true);
-      const { data } = await axios.get(
-        "http://localhost:5000/api/reports/user",
-        { withCredentials: true }
-      );
+      const data = await apiService.getReports(currentUser.id);
       setReports(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Fetch user reports error:", err);
+      console.error("Fetch reports error:", err);
       setReports([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser]);
 
-  // --- Fetch all reports (admin only)
-  const fetchAllReports = async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get(
-        "http://localhost:5000/api/reports/all",
-        { withCredentials: true }
-      );
-      setReports(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Fetch all reports error:", err);
-      setReports([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- Create a new report
+  // --- Create, update, delete, updateStatus remain the same
   const createReport = async (reportData) => {
     try {
-      const formData = new FormData();
-
-      Object.keys(reportData).forEach((key) => {
-        if (key === "media" && Array.isArray(reportData.media)) {
-          reportData.media.forEach((file) => formData.append("media", file));
-        } else {
-          formData.append(key, reportData[key]);
-        }
-      });
-
       const { data } = await axios.post(
-        "http://localhost:5000/api/reports",
-        formData,
-        {
-          withCredentials: true,
-        }
+        `${process.env.REACT_APP_API_URL}/reports`,
+        reportData,
+        { withCredentials: true }
       );
-
       setReports((prev) => [data.report, ...(prev || [])]);
       return data;
     } catch (err) {
@@ -75,29 +64,16 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
-  // --- Update an existing report
   const updateReport = async (reportId, reportData) => {
     try {
-      const formData = new FormData();
-
-      Object.keys(reportData).forEach((key) => {
-        if (key === "media" && Array.isArray(reportData.media)) {
-          reportData.media.forEach((file) => formData.append("media", file));
-        } else {
-          formData.append(key, reportData[key]);
-        }
-      });
-
       const { data } = await axios.put(
-        `http://localhost:5000/api/reports/${reportId}`,
-        formData,
+        `${process.env.REACT_APP_API_URL}/reports/${reportId}`,
+        reportData,
         { withCredentials: true }
       );
-
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? data.report : r))
       );
-
       return data;
     } catch (err) {
       console.error("Update report error:", err);
@@ -105,25 +81,25 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
-  // --- Update report status (admin only)
   const updateReportStatus = async (reportId, status) => {
     try {
       const { data } = await axios.put(
-        `http://localhost:5000/api/reports/${reportId}/status`,
+        `${process.env.REACT_APP_API_URL}/reports/${reportId}/status`,
         { status },
         { withCredentials: true }
       );
-
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
       );
 
       const reportOwnerId = data.report.user_id;
-      const message = `Your report "${data.report.title}" status has been updated to "${status.toUpperCase()}"`;
+      const message = `Your report "${
+        data.report.title
+      }" status has been updated to "${status.toUpperCase()}"`;
 
       await axios.post(
-        "http://localhost:5000/api/notifications",
-        { userId: reportOwnerId, message },
+        `${process.env.REACT_APP_API_URL}/notifications`,
+        { user_id: reportOwnerId, message },
         { withCredentials: true }
       );
     } catch (err) {
@@ -132,12 +108,14 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
-  // --- Delete a report
   const deleteReport = async (reportId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/reports/${reportId}`, {
-        withCredentials: true,
-      });
+      await axios.delete(
+        `${process.env.REACT_APP_API_URL}/reports/${reportId}`,
+        {
+          withCredentials: true,
+        }
+      );
       setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
     } catch (err) {
       console.error("Delete report error:", err);
@@ -145,13 +123,25 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
+  // --- Load current user on mount
+  useEffect(() => {
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
+
+  // --- Fetch reports whenever currentUser changes
+  useEffect(() => {
+    if (!currentUser) return;
+    fetchReports();
+  }, [currentUser, fetchReports]);
+
   return (
     <ReportContext.Provider
       value={{
         reports,
         loading,
-        fetchUserReports,
-        fetchAllReports,
+        currentUser,
+        userLoading,
+        fetchReports,
         createReport,
         updateReport,
         updateReportStatus,

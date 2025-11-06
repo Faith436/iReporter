@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import DashboardLayout from "./pages/DashboardLayout";
 import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -8,6 +13,7 @@ import Login from "./pages/Login";
 import LandingPage from "./pages/LandingPage";
 import Signup from "./pages/Signup";
 import Registration from "./pages/Registration";
+import Notifications from "./pages/Notifications";
 import { useUsers } from "./contexts/UserContext";
 
 function App() {
@@ -25,9 +31,11 @@ function App() {
   const ProtectedRoute = ({ children, allowedRoles }) => {
     if (!currentUser) return <Navigate to="/login" replace />;
     if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
-      return currentUser.role === "admin"
-        ? <Navigate to="/admin" replace />
-        : <Navigate to="/dashboard" replace />;
+      return currentUser.role === "admin" ? (
+        <Navigate to="/admin" replace />
+      ) : (
+        <Navigate to="/dashboard" replace />
+      );
     }
     return children;
   };
@@ -35,9 +43,11 @@ function App() {
   // --- Public route ---
   const PublicRoute = ({ children }) => {
     if (currentUser) {
-      return currentUser.role === "admin"
-        ? <Navigate to="/admin" replace />
-        : <Navigate to="/dashboard" replace />;
+      return currentUser.role === "admin" ? (
+        <Navigate to="/admin" replace />
+      ) : (
+        <Navigate to="/dashboard" replace />
+      );
     }
     return children;
   };
@@ -46,41 +56,80 @@ function App() {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-        <Route path="/registration" element={<PublicRoute><Registration /></PublicRoute>} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <LandingPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <Signup />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/registration"
+          element={
+            <PublicRoute>
+              <Registration />
+            </PublicRoute>
+          }
+        />
 
         {/* User dashboard */}
-        <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={["user"]}>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["user"]}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<UserDashboard />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="notifications" element={<div>Notifications Page</div>} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
 
         {/* Admin dashboard */}
-        <Route path="/admin" element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<AdminDashboard />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="notifications" element={<div>Notifications Page</div>} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
 
         {/* Catch-all route */}
-        <Route path="*" element={
-          !currentUser
-            ? <Navigate to="/" replace />
-            : currentUser.role === "admin"
-              ? <Navigate to="/admin" replace />
-              : <Navigate to="/dashboard" replace />
-        } />
+        <Route
+          path="*"
+          element={
+            !currentUser ? (
+              <Navigate to="/" replace />
+            ) : currentUser.role === "admin" ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <Navigate to="/dashboard" replace />
+            )
+          }
+        />
       </Routes>
     </Router>
   );

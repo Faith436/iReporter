@@ -2,12 +2,19 @@ import React, { useState, useEffect } from "react";
 import { Search, ChevronDown, Trash2 } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import Header from "../components/Header";
-import apiService from "../services/api"; // axios service with /users, /reports endpoints
+import apiService from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const COLOR_PRIMARY_TEAL = "#116E75";
-const statusOptions = ["pending", "under-investigation", "resolved"];
+
+// 🟢 Added "rejected" status
+const statusOptions = [
+  "pending",
+  "under-investigation",
+  "resolved",
+  "rejected",
+];
 
 const AdminDashboard = () => {
   const { currentUser } = useUsers();
@@ -18,17 +25,11 @@ const AdminDashboard = () => {
   const [filters, setFilters] = useState({ status: "all", search: "" });
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
 
-  // --- Fetch reports from backend ---
+  // --- Fetch reports ---
   const fetchReports = async () => {
     try {
-      let res = await apiService.getReports(); // GET /reports
-      if (currentUser.role !== "admin") {
-        // filter only current user's reports
-        res.reports = res.reports.filter(
-          (r) => r.createdBy === currentUser.email
-        );
-      }
-      setReports(res.reports);
+      const reportsData = await apiService.getReports();
+      setReports(reportsData);
     } catch (err) {
       console.error("Error fetching reports:", err);
     }
@@ -36,7 +37,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/login"); // redirect if not logged in
+      navigate("/login");
       return;
     }
     fetchReports();
@@ -64,29 +65,44 @@ const AdminDashboard = () => {
     setFilteredReports(filtered);
   }, [filters, reports]);
 
+  // --- Update report status ---
   const handleStatusUpdate = async (reportId, newStatus) => {
     try {
-      // 1. Update report status
-      await apiService.updateReport(reportId, { status: newStatus });
+      // 1️⃣ Update report status on the backend
+      await apiService.updateReportStatus(reportId, newStatus);
+
+      // 2️⃣ Update local state immediately
       setReports((prev) =>
         prev.map((r) => (r.id === reportId ? { ...r, status: newStatus } : r))
       );
 
-      // 2. Find the report owner
+      // 3️⃣ Find the updated report
       const report = reports.find((r) => r.id === reportId);
       if (!report) return;
 
-      const userId = report.userId; // or report.createdBy if that's the user's id
+      // 4️⃣ Extract the correct user ID
+      const userId = report.user_id;
+      if (!userId) {
+        console.warn(
+          "No createdBy found for this report; skipping notification."
+        );
+        return;
+      }
+
       const reportTitle = report.title || "Untitled Report";
 
-      // 3. Create a notification for the user
+      // 5️⃣ Send notification
       await apiService.createNotification({
-        user_id: userId,
+        user_id: userId, // must match backend expected field
         message: `The status of your report "${reportTitle}" has been updated to "${newStatus.replace(
           "-",
           " "
         )}".`,
       });
+
+      console.log(
+        `✅ Status updated and notification sent for report ${reportId}`
+      );
     } catch (err) {
       console.error("Failed to update status or create notification:", err);
     }
@@ -103,6 +119,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // 🟢 Added "rejected" color handling
   const getStatusColor = (status) => {
     switch (status) {
       case "pending":
@@ -111,6 +128,8 @@ const AdminDashboard = () => {
         return "bg-blue-100 text-blue-700";
       case "resolved":
         return "bg-green-100 text-green-700";
+      case "rejected":
+        return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -131,7 +150,7 @@ const AdminDashboard = () => {
           </h1>
         </div>
 
-        {/* Filters */}
+        {/* --- Filters --- */}
         <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
           <div className="relative w-48">
             <label className="text-sm font-semibold text-gray-600">
@@ -176,6 +195,7 @@ const AdminDashboard = () => {
             )}
           </div>
 
+          {/* --- Search --- */}
           <div className="flex-1 relative">
             <label className="text-sm font-semibold text-gray-600">
               Search
@@ -202,7 +222,7 @@ const AdminDashboard = () => {
           </button>
         </div>
 
-        {/* Reports Table */}
+        {/* --- Reports Table --- */}
         <div className="overflow-x-auto bg-white rounded-xl shadow">
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-100">
@@ -268,6 +288,8 @@ const AdminDashboard = () => {
                     <td className="px-4 py-3">
                       {r.location || "Not specified"}
                     </td>
+
+                    {/* --- Updated Status Dropdown --- */}
                     <td className="px-4 py-3 capitalize">
                       <select
                         value={r.status || "pending"}
@@ -277,7 +299,7 @@ const AdminDashboard = () => {
                         className={`px-3 py-1 rounded text-sm border-none focus:ring-2 focus:ring-blue-300 cursor-pointer ${getStatusColor(
                           r.status
                         )}`}
-                        disabled={currentUser.role !== "admin"} // only admin can change
+                        disabled={currentUser.role !== "admin"}
                       >
                         {statusOptions.map((s) => (
                           <option key={s} value={s}>
@@ -286,6 +308,7 @@ const AdminDashboard = () => {
                         ))}
                       </select>
                     </td>
+
                     <td className="px-4 py-3">{r.date || "Unknown"}</td>
                     <td className="px-4 py-3">
                       {currentUser.role === "admin" ? (

@@ -81,17 +81,6 @@ const Header = () => {
       {/* Left: Menu + Search */}
       <div className="flex items-center gap-4 flex-1">
         <Menu className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" />
-        <form onSubmit={handleSearch} className="relative flex-1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search reports..."
-            className="w-1/3 p-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 text-gray-700"
-            style={{ borderColor: COLOR_PRIMARY_TEAL }}
-          />
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-        </form>
       </div>
 
       {/* Right: Notifications + User */}

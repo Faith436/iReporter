@@ -5,6 +5,7 @@ import App from "./App";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { ReportProvider } from "./contexts/ReportContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import reportWebVitals from "./reportWebVitals";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -13,9 +14,11 @@ root.render(
   <React.StrictMode>
     <UserProvider>
       <ReportProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </NotificationProvider>
       </ReportProvider>
     </UserProvider>
   </React.StrictMode>
