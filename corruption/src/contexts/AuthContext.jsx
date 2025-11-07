@@ -15,42 +15,32 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is authenticated on app load
-  const checkAuth = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-
-      if (token && savedUser) {
-        // Verify token with API
-        const response = await apiService.getCurrentUser();
-        setUser(response.user || JSON.parse(savedUser));
-        localStorage.setItem('user', JSON.stringify(response.user || JSON.parse(savedUser)));
-      } else {
-        logout();
-      }
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     checkAuth();
   }, []);
 
-  // Login sets user & token
-  const login = (userData, token) => {
-    if (!userData || !token) return;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
+    if (token && savedUser) {
+      try {
+        // Verify token is still valid
+        const response = await apiService.getCurrentUser();
+        setUser(response.user);
+      } catch (error) {
+        logout();
+      }
+    }
+    setLoading(false);
   };
 
-  // Logout clears user & token
+  const login = (userData, token) => {
+    setUser(userData);
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('token');
@@ -61,13 +51,12 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
-    loading,
-    checkAuth,
+    loading
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? <div>Loading...</div> : children}
+      {children}
     </AuthContext.Provider>
   );
 };
