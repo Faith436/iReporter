@@ -1,4 +1,4 @@
-const db = require("../config/db");
+const db = require("../db");
 
 // --- Get all notifications for the logged-in user ---
 const getUserNotifications = async (req, res) => {

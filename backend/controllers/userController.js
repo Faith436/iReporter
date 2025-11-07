@@ -1,5 +1,5 @@
 // controllers/userController.js
-const db = require("../config/db");
+const db = require("../db");
 
 // --- GET LOGGED-IN USER PROFILE ---
 const getProfile = async (req, res) => {

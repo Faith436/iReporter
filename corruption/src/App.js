@@ -15,6 +15,7 @@ import Signup from "./pages/Signup";
 import Registration from "./pages/Registration";
 import Notifications from "./pages/Notifications";
 import { useUsers } from "./contexts/UserContext";
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { currentUser, loading } = useUsers();
@@ -53,7 +54,9 @@ function App() {
   };
 
   return (
-    <Router>
+    <>
+      <Toaster position="top-right" />
+      <Router>
       <Routes>
         {/* Public routes */}
         <Route
@@ -132,6 +135,7 @@ function App() {
         />
       </Routes>
     </Router>
+    </>
   );
 }
 
