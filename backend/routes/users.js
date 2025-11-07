@@ -1,45 +1,53 @@
-const express = require('express');
-const { auth, adminAuth } = require('../middleware/auth');
-const db = require('../config/database');
+// routes/users.js
+const express = require("express");
+const { authMiddleware, adminAuth } = require("../middleware/authMiddleware");
+const db = require("../db"); // ensure consistent db import
 
 const router = express.Router();
 
-// Get all users (Admin only)
-router.get('/', auth, adminAuth, async (req, res) => {
+// --- Get all users (Admin only) ---
+router.get("/", authMiddleware, adminAuth, async (req, res) => {
   try {
-    const [users] = await db.promise().query(
-      'SELECT id, name, email, role, phone, is_active, created_at FROM users'
+    const [users] = await db.query(
+      "SELECT id, first_name, last_name, email, phone, role FROM users"
     );
-    res.json({ users });
+
+    res.json(
+      users.map((u) => ({
+        id: u.id,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+      }))
+    );
   } catch (error) {
-    console.error('Get users error:', error);
-    res.status(500).json({ message: 'Server error fetching users' });
+    console.error("Get users error:", error);
+    res.status(500).json({ message: "Server error fetching users" });
   }
 });
 
-// Update user role (Admin only)
-router.patch('/:id/role', auth, adminAuth, async (req, res) => {
+// --- Update user role (Admin only) ---
+router.patch("/:id/role", authMiddleware, adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!['user', 'admin'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role' });
+    if (!["user", "admin"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
     }
 
-    const [result] = await db.promise().query(
-      'UPDATE users SET role = ? WHERE id = ?',
-      [role, id]
-    );
+    const [result] = await db.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ message: 'User role updated successfully' });
+    res.json({ message: "User role updated successfully" });
   } catch (error) {
-    console.error('Update role error:', error);
-    res.status(500).json({ message: 'Server error updating role' });
+    console.error("Update role error:", error);
+    res.status(500).json({ message: "Server error updating role" });
   }
 });
 

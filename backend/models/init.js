@@ -35,7 +35,7 @@ const initDatabase = () => {
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       description TEXT NOT NULL,
-      report_type ENUM('Red-Flag', 'Intervention') NOT NULL,
+      report_type ENUM('red-Flag', 'Intervention') NOT NULL,
       status ENUM('pending', 'under investigation', 'resolved', 'rejected') DEFAULT 'pending',
       location VARCHAR(500) NOT NULL,
       latitude DECIMAL(10, 8),

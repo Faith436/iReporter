@@ -1,714 +1,275 @@
-// import React, { useState, useEffect } from "react";
-// import { Search, ChevronDown, Trash2 } from "lucide-react";
-// import { useUsers } from "../contexts/UserContext";
-// import Header from "../components/Header";
-// import apiService from "../services/api"; // axios service with /users, /reports endpoints
-// import { useNavigate } from "react-router-dom";
-
-// const COLOR_PRIMARY_PURPLE = "#4D2C5E";
-// const COLOR_PRIMARY_TEAL = "#116E75";
-// const statusOptions = ["pending", "under-investigation", "resolved"];
-
-// const AdminDashboard = () => {
-//   const { currentUser } = useUsers();
-//   const navigate = useNavigate();
-
-//   const [reports, setReports] = useState([]);
-//   const [filteredReports, setFilteredReports] = useState([]);
-//   const [filters, setFilters] = useState({ status: "all", search: "" });
-//   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-
-//   // --- Fetch reports from backend ---
-//   const fetchReports = async () => {
-//     try {
-//       let res = await apiService.getReports(); // GET /reports
-//       if (currentUser.role !== "admin") {
-//         // filter only current user's reports
-//         res.reports = res.reports.filter(
-//           (r) => r.createdBy === currentUser.email
-//         );
-//       }
-//       setReports(res.reports);
-//     } catch (err) {
-//       console.error("Error fetching reports:", err);
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (!currentUser) {
-//       navigate("/login"); // redirect if not logged in
-//       return;
-//     }
-//     fetchReports();
-//   }, [currentUser]);
-
-//   // --- Filter reports ---
-//   useEffect(() => {
-//     let filtered = [...reports];
-
-//     if (filters.status !== "all") {
-//       filtered = filtered.filter((r) => r.status === filters.status);
-//     }
-
-//     if (filters.search) {
-//       const searchLower = filters.search.toLowerCase();
-//       filtered = filtered.filter(
-//         (r) =>
-//           r.title?.toLowerCase().includes(searchLower) ||
-//           r.description?.toLowerCase().includes(searchLower) ||
-//           r.location?.toLowerCase().includes(searchLower) ||
-//           r.userName?.toLowerCase().includes(searchLower)
-//       );
-//     }
-
-//     setFilteredReports(filtered);
-//   }, [filters, reports]);
-
-//   const handleStatusUpdate = async (reportId, newStatus) => {
-//     try {
-//       // 1. Update report status
-//       await apiService.updateReport(reportId, { status: newStatus });
-//       setReports((prev) =>
-//         prev.map((r) => (r.id === reportId ? { ...r, status: newStatus } : r))
-//       );
-
-//       // 2. Find the report owner
-//       const report = reports.find((r) => r.id === reportId);
-//       if (!report) return;
-
-//       const userId = report.userId; // or report.createdBy if that's the user's id
-//       const reportTitle = report.title || "Untitled Report";
-
-//       // 3. Create a notification for the user
-//       await apiService.createNotification({
-//         user_id: userId,
-//         message: `The status of your report "${reportTitle}" has been updated to "${newStatus.replace(
-//           "-",
-//           " "
-//         )}".`,
-//       });
-//     } catch (err) {
-//       console.error("Failed to update status or create notification:", err);
-//     }
-//   };
-
-//   // --- Delete report ---
-//   const handleDelete = async (reportId) => {
-//     if (!window.confirm("Are you sure you want to delete this report?")) return;
-//     try {
-//       await apiService.deleteReport(reportId);
-//       setReports((prev) => prev.filter((r) => r.id !== reportId));
-//     } catch (err) {
-//       console.error("Failed to delete report:", err);
-//     }
-//   };
-
-//   const getStatusColor = (status) => {
-//     switch (status) {
-//       case "pending":
-//         return "bg-yellow-100 text-yellow-700";
-//       case "under-investigation":
-//         return "bg-blue-100 text-blue-700";
-//       case "resolved":
-//         return "bg-green-100 text-green-700";
-//       default:
-//         return "bg-gray-100 text-gray-700";
-//     }
-//   };
-
-//   const getStatusDisplay = (status) => status.replace("-", " ");
-
-//   return (
-//     <div className="min-h-screen bg-gray-50">
-//       <Header />
-//       <main className="pt-20 px-6">
-//         <div className="flex justify-between items-center mb-6">
-//           <h1
-//             className="text-3xl font-bold"
-//             style={{ color: COLOR_PRIMARY_PURPLE }}
-//           >
-//             {currentUser.role === "admin" ? "Admin Dashboard" : "My Reports"}
-//           </h1>
-//         </div>
-
-//         {/* Filters */}
-//         <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
-//           <div className="relative w-48">
-//             <label className="text-sm font-semibold text-gray-600">
-//               Status
-//             </label>
-//             <button
-//               className="w-full flex items-center justify-between px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none shadow mt-1"
-//               style={{ borderColor: COLOR_PRIMARY_TEAL }}
-//               onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-//             >
-//               <span className="capitalize">
-//                 {filters.status === "all"
-//                   ? "All Status"
-//                   : getStatusDisplay(filters.status)}
-//               </span>
-//               <ChevronDown className="w-4 h-4 text-gray-600" />
-//             </button>
-//             {statusDropdownOpen && (
-//               <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-//                 <div
-//                   onClick={() => {
-//                     setFilters({ ...filters, status: "all" });
-//                     setStatusDropdownOpen(false);
-//                   }}
-//                   className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
-//                 >
-//                   All Status
-//                 </div>
-//                 {statusOptions.map((s) => (
-//                   <div
-//                     key={s}
-//                     onClick={() => {
-//                       setFilters({ ...filters, status: s });
-//                       setStatusDropdownOpen(false);
-//                     }}
-//                     className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
-//                   >
-//                     {getStatusDisplay(s)}
-//                   </div>
-//                 ))}
-//               </div>
-//             )}
-//           </div>
-
-//           <div className="flex-1 relative">
-//             <label className="text-sm font-semibold text-gray-600">
-//               Search
-//             </label>
-//             <div className="relative mt-1">
-//               <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
-//               <input
-//                 type="text"
-//                 value={filters.search}
-//                 onChange={(e) =>
-//                   setFilters({ ...filters, search: e.target.value })
-//                 }
-//                 placeholder="Search reports by title, description, location, or user..."
-//                 className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:ring-2 focus:ring-[#116E75] focus:outline-none"
-//               />
-//             </div>
-//           </div>
-
-//           <button
-//             onClick={() => setFilters({ status: "all", search: "" })}
-//             className="bg-[#116E75] text-white px-4 py-2 rounded-md hover:bg-[#0d575c] transition"
-//           >
-//             Clear Filters
-//           </button>
-//         </div>
-
-//         {/* Reports Table */}
-//         <div className="overflow-x-auto bg-white rounded-xl shadow">
-//           <table className="w-full text-left border-collapse">
-//             <thead className="bg-gray-100">
-//               <tr>
-//                 <th className="px-4 py-3 border-b">#</th>
-//                 <th className="px-4 py-3 border-b">Title</th>
-//                 <th className="px-4 py-3 border-b">Description</th>
-//                 <th className="px-4 py-3 border-b">Type</th>
-//                 {currentUser.role === "admin" && (
-//                   <th className="px-4 py-3 border-b">User</th>
-//                 )}
-//                 <th className="px-4 py-3 border-b">Location</th>
-//                 <th className="px-4 py-3 border-b">Status</th>
-//                 <th className="px-4 py-3 border-b">Date</th>
-//                 <th className="px-4 py-3 border-b">Actions</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {filteredReports.length === 0 ? (
-//                 <tr>
-//                   <td
-//                     colSpan={currentUser.role === "admin" ? 9 : 8}
-//                     className="text-center py-8 text-gray-500"
-//                   >
-//                     {reports.length === 0
-//                       ? "No reports submitted yet."
-//                       : "No reports match your filters."}
-//                   </td>
-//                 </tr>
-//               ) : (
-//                 filteredReports.map((r, idx) => (
-//                   <tr
-//                     key={r.id}
-//                     className={`border-t ${
-//                       idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-//                     } hover:bg-gray-100`}
-//                   >
-//                     <td className="px-4 py-3">{idx + 1}</td>
-//                     <td className="px-4 py-3 font-semibold">
-//                       {r.title || "Untitled Report"}
-//                     </td>
-//                     <td className="px-4 py-3 max-w-xs">
-//                       <div className="truncate" title={r.description}>
-//                         {r.description || "No description"}
-//                       </div>
-//                     </td>
-//                     <td className="px-4 py-3">
-//                       <span
-//                         className={`px-3 py-1 rounded-full text-xs font-medium ${
-//                           r.reportType === "red-flag"
-//                             ? "bg-red-100 text-red-700"
-//                             : "bg-blue-100 text-blue-700"
-//                         }`}
-//                       >
-//                         {r.reportType === "red-flag"
-//                           ? "🚩 Red Flag"
-//                           : "🛠️ Intervention"}
-//                       </span>
-//                     </td>
-//                     {currentUser.role === "admin" && (
-//                       <td className="px-4 py-3">{r.userName || r.createdBy}</td>
-//                     )}
-//                     <td className="px-4 py-3">
-//                       {r.location || "Not specified"}
-//                     </td>
-//                     <td className="px-4 py-3 capitalize">
-//                       <select
-//                         value={r.status || "pending"}
-//                         onChange={(e) =>
-//                           handleStatusUpdate(r.id, e.target.value)
-//                         }
-//                         className={`px-3 py-1 rounded text-sm border-none focus:ring-2 focus:ring-blue-300 cursor-pointer ${getStatusColor(
-//                           r.status
-//                         )}`}
-//                         disabled={currentUser.role !== "admin"} // only admin can change
-//                       >
-//                         {statusOptions.map((s) => (
-//                           <option key={s} value={s}>
-//                             {s.replace("-", " ")}
-//                           </option>
-//                         ))}
-//                       </select>
-//                     </td>
-//                     <td className="px-4 py-3">{r.date || "Unknown"}</td>
-//                     <td className="px-4 py-3">
-//                       {currentUser.role === "admin" ? (
-//                         <button
-//                           onClick={() => handleDelete(r.id)}
-//                           className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs transition-colors"
-//                           title="Delete Report"
-//                         >
-//                           <Trash2 className="w-4 h-4 inline" /> Delete
-//                         </button>
-//                       ) : (
-//                         <span className="text-gray-400 text-xs">
-//                           No actions
-//                         </span>
-//                       )}
-//                     </td>
-//                   </tr>
-//                 ))
-//               )}
-//             </tbody>
-//           </table>
-//         </div>
-
-//         <div className="mt-4 text-sm text-gray-600">
-//           Showing {filteredReports.length} of {reports.length} total reports
-//         </div>
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default AdminDashboard;
-
-import React, { useState, useEffect } from "react";
-import { FileWarning, CheckCircle, AlertTriangle, Wrench, Search, ChevronDown } from "lucide-react";
+import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { useReports } from "../contexts/ReportContext";
-import { useUsers } from "../contexts/UserContext";
-import Header from "../components/Header";
-<<<<<<< Updated upstream
+import {
+  Flag,
+  Zap,
+  Search,
+  Clock,
+  CheckCircle,
+  XCircle,
+  ArrowUp,
+  ArrowDown,
+  Bell,
+  Trash2,
+} from "lucide-react";
+import api from "../services/api";
+import toast, { Toaster } from "react-hot-toast";
 
-const COLOR_PRIMARY_PURPLE = "#4D2C5E";
-const COLOR_PRIMARY_TEAL = "#116E75";
+// --- Utility Functions ---
+const normalizeStatus = (status) =>
+  status?.toLowerCase().replace(/\s+/g, "-") || "pending";
 
-const statusOptions = ["pending", "under-investigation", "resolved"];
+const calculateMetrics = (reports) => {
+  const counts = reports.reduce(
+    (acc, report) => {
+      const type = report.type || "Red-Flag";
+      const status = normalizeStatus(report.status);
 
-const AdminDashboard = () => {
-  const { reports, updateReport, deleteReport, getStats } = useReports();
-=======
-import apiService from "../services/api";
-import { useNavigate } from "react-router-dom";
-import SimpleAdminDashboard from "../components/SimpleAdminDashboard";
+      if (status === "pending") acc.pending++;
+      if (status === "resolved") acc.resolved++;
+      if (status === "rejected") acc.rejected++;
+      if (status === "under-investigation") acc.underInvestigation++;
 
-const COLOR_PRIMARY_PURPLE = "#4D2C5E";
-const COLOR_PRIMARY_TEAL = "#116E75";
-const statusOptions = ["pending", "under investigation", "resolved", "rejected"];
-
-const AdminDashboard = () => {
-  
->>>>>>> Stashed changes
-  const { currentUser } = useUsers();
-
-  const [filteredReports, setFilteredReports] = useState([]);
-  const [filters, setFilters] = useState({ status: "all", search: "" });
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-<<<<<<< Updated upstream
-  // Filter reports in real-time
-=======
-  // --- Fetch reports from backend ---
-  const fetchReports = async () => {
-    try {
-      setLoading(true);
-      let allReports;
-      
-      if (currentUser.role === "admin") {
-        // Use getAllReports for admin
-        allReports = await apiService.getAllReports();
-      } else {
-        // Use getUserReports for regular users
-        allReports = await apiService.getUserReports();
-      }
-      
-      setReports(allReports);
-    } catch (err) {
-      console.error("Error fetching reports:", err);
-    } finally {
-      setLoading(false);
+      if (type === "Red-Flag") acc.totalRedFlags++;
+      if (type === "Intervention") acc.interventions++;
+      return acc;
+    },
+    {
+      pending: 0,
+      resolved: 0,
+      rejected: 0,
+      underInvestigation: 0,
+      totalRedFlags: 0,
+      interventions: 0,
     }
+  );
+
+  return {
+    ...counts,
+    pendingTrend: { value: "+15%", color: "text-green-500", icon: ArrowUp },
+    resolvedTrend: { value: "+10%", color: "text-green-500", icon: ArrowUp },
+    rejectedTrend: { value: "-5%", color: "text-red-500", icon: ArrowDown },
+    totalRedFlagsTrend: { value: "+12%", color: "text-green-500", icon: ArrowUp },
+    interventionsTrend: { value: "+8%", color: "text-green-500", icon: ArrowUp },
+    underInvestigationTrend: { value: "3 new this week", color: "text-yellow-600", icon: Clock },
   };
+};
 
-  useEffect(() => {
-    if (!currentUser) {
-      navigate("/login");
-      return;
-    }
-    fetchReports();
-  }, [currentUser]);
-
-  // --- Filter reports ---
->>>>>>> Stashed changes
-  useEffect(() => {
-    let filtered = [...reports];
-    
-    if (filters.status !== "all") {
-      filtered = filtered.filter(r => r.status === filters.status);
-    }
-    
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(
-        r =>
-          r.title?.toLowerCase().includes(searchLower) ||
-          r.description?.toLowerCase().includes(searchLower) ||
-          r.location?.toLowerCase().includes(searchLower) ||
-          (r.user_name && r.user_name.toLowerCase().includes(searchLower)) ||
-          (r.email && r.email.toLowerCase().includes(searchLower))
-      );
-    }
-
-    setFilteredReports(filtered);
-  }, [filters, reports]);
-
-<<<<<<< Updated upstream
-  const stats = getStats();
-
-  const getStatusColor = (status) => {
-    switch(status) {
-      case "pending": return "bg-yellow-100 text-yellow-700";
-      case "under-investigation": return "bg-blue-100 text-blue-700";
-      case "resolved": return "bg-green-100 text-green-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const handleStatusUpdate = (reportId, newStatus) => {
-    updateReport(reportId, { status: newStatus });
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this report?")) {
-      deleteReport(id);
-=======
-  const handleStatusUpdate = async (reportId, newStatus) => {
-    try {
-      // Update report status
-      await apiService.updateReportStatus(reportId, { status: newStatus });
-      
-      // Update local state
-      setReports((prev) =>
-        prev.map((r) => (r.id === reportId ? { ...r, status: newStatus } : r))
-      );
-
-      // Find the report to get user info for notification
-      const report = reports.find((r) => r.id === reportId);
-      if (!report) return;
-
-      // Create a notification for the user
-      await apiService.createNotification({
-        user_id: report.user_id,
-        message: `The status of your report "${report.title}" has been updated to "${newStatus}".`,
-      });
-    } catch (err) {
-      console.error("Failed to update status or create notification:", err);
-      alert("Failed to update report status");
-    }
-  };
-
-  // --- Delete report ---
-  const handleDelete = async (reportId) => {
-    if (!window.confirm("Are you sure you want to delete this report?")) return;
-    try {
-      await apiService.deleteReport(reportId);
-      setReports((prev) => prev.filter((r) => r.id !== reportId));
-    } catch (err) {
-      console.error("Failed to delete report:", err);
-      alert("Failed to delete report");
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-700";
-      case "under investigation":
-        return "bg-blue-100 text-blue-700";
-      case "resolved":
-        return "bg-green-100 text-green-700";
-      case "rejected":
-        return "bg-red-100 text-red-700";
-      default:
-        return "bg-gray-100 text-gray-700";
->>>>>>> Stashed changes
-    }
-  };
-
-  const getStatusDisplay = (status) => status;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <main className="pt-20 px-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
-          </div>
-        </main>
+// --- KPI Card Component ---
+const KPICard = ({ title, count, icon: Icon, color, trend }) => (
+  <div className="bg-white p-5 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between transition hover:shadow-lg hover:scale-[1.01] duration-150">
+    <div className="flex justify-between items-start">
+      <div>
+        <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+        <p className="text-3xl font-bold text-gray-800 mt-1">{count}</p>
       </div>
-    );
-  }
+      <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
+        <Icon className={`w-5 h-5 ${color.replace("bg-", "text-")}`} />
+      </div>
+    </div>
+    {trend && (
+      <div className="flex items-center mt-3 text-xs">
+        {trend.icon && <trend.icon className={`w-3 h-3 mr-1 ${trend.color}`} />}
+        <span className={`font-semibold ${trend.color} mr-1`}>{trend.value}</span>
+        {title !== "Under Investigation" && <span className="text-gray-400">from last month</span>}
+      </div>
+    )}
+  </div>
+);
+
+// --- Recent Reports Table ---
+const RecentReportsTable = ({ reports, onDelete, onStatusUpdate }) => {
+  const recentReports = reports.slice(0, 5);
+  const statuses = ["pending", "under-investigation", "resolved", "rejected"];
+
+  const getStatusStyle = (status) => {
+    const normalized = normalizeStatus(status);
+    const base = "px-3 py-1 rounded-full text-xs font-medium capitalize";
+    switch (normalized) {
+      case "pending": return `${base} bg-pink-100 text-pink-700`;
+      case "resolved": return `${base} bg-green-100 text-green-700`;
+      case "rejected": return `${base} bg-red-100 text-red-700`;
+      case "under-investigation": return `${base} bg-yellow-100 text-yellow-700`;
+      default: return `${base} bg-gray-100 text-gray-700`;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="pt-20 px-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-3xl font-bold" style={{ color: COLOR_PRIMARY_PURPLE }}>
-            Admin Dashboard
-          </h1>
-        </div>
+    <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Reports</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {["Title", "Status", "Date", "Actions"].map((header) => (
+                <th key={header} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-100">
+            {recentReports.map((report) => (
+              <tr key={report.id} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{report.title}</td>
+                <td className="px-6 py-4">
+                  <select
+                    value={normalizeStatus(report.status)}
+                    onChange={(e) => onStatusUpdate(report.id, e.target.value, report.user_id)}
+                    className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(report.status)}`}
+                  >
+                    {statuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1).replace("-", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">{formatDate(report.created_at)}</td>
+                <td className="px-6 py-4 text-right text-sm font-medium">
+                  <button
+                    onClick={() => onDelete(report.id)}
+                    className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition"
+                    title="Delete Report"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {[
-            { label: "Total Reports", value: stats.total, icon: "📊", color: COLOR_PRIMARY_TEAL },
-            { label: "Red Flags", value: stats.redFlags, icon: "🚩", color: "#DC2626" },
-            { label: "Interventions", value: stats.interventions, icon: "🛠️", color: "#2563EB" },
-            { label: "Pending", value: stats.pending, icon: "⏳", color: "#EAB308" },
-            { label: "Resolved", value: stats.resolved, icon: "✅", color: "#16A34A" },
-          ].map((s) => (
-            <div key={s.label} className="bg-white p-4 rounded-xl shadow-md flex items-center gap-3 border-l-4" style={{ borderColor: s.color }}>
-              <div className="p-2 rounded-lg text-white text-xl" style={{ backgroundColor: s.color }}>
-                {s.icon}
-              </div>
+// --- Notifications Sidebar ---
+const RecentNotifications = ({ refreshTrigger }) => {
+  const [notifications, setNotifications] = useState([]);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await api.getNotifications();
+      setNotifications(
+        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      );
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications, refreshTrigger]);
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Notifications</h2>
+      {notifications.length === 0 ? (
+        <p className="text-gray-500 text-sm">No notifications yet.</p>
+      ) : (
+        <div className="space-y-3 max-h-80 overflow-y-auto">
+          {notifications.slice(0, 5).map((n, i) => (
+            <div key={i} className="flex items-start p-3 rounded-lg bg-gray-50">
+              <Bell className="w-5 h-5 mt-1 mr-3 text-blue-600" />
               <div>
-                <p className="text-xl font-bold text-gray-800">{s.value}</p>
-                <p className="text-sm text-gray-500">{s.label}</p>
+                <p className="font-semibold text-sm text-gray-700">{n.title || "Notification"}</p>
+                <p className="text-sm text-gray-600">{n.message}</p>
+                <p className="text-xs text-gray-500 mt-1">{new Date(n.created_at).toLocaleString()}</p>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
-          {/* Status Dropdown */}
-          <div className="relative w-48">
-            <label className="text-sm font-semibold text-gray-600">Status</label>
-            <button
-              className="w-full flex items-center justify-between px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none shadow mt-1"
-              style={{ borderColor: COLOR_PRIMARY_TEAL }}
-              onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-            >
-              <span className="capitalize">
-                {filters.status === "all" ? "All Status" : getStatusDisplay(filters.status)}
-              </span>
-              <ChevronDown className="w-4 h-4 text-gray-600" />
-            </button>
-            {statusDropdownOpen && (
-              <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                <div
-                  onClick={() => {
-                    setFilters({ ...filters, status: "all" });
-                    setStatusDropdownOpen(false);
-                  }}
-                  className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
-                >
-                  All Status
-                </div>
-                {statusOptions.map(s => (
-                  <div
-                    key={s}
-                    onClick={() => { setFilters({ ...filters, status: s }); setStatusDropdownOpen(false); }}
-                    className="px-4 py-2 cursor-pointer hover:bg-teal-100 capitalize"
-                  >
-                    {getStatusDisplay(s)}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Search */}
-          <div className="flex-1 relative">
-            <label className="text-sm font-semibold text-gray-600">Search</label>
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="Search reports by title, description, location, or user..."
-                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 focus:ring-2 focus:ring-[#116E75] focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={() => setFilters({ status: "all", search: "" })}
-            className="bg-[#116E75] text-white px-4 py-2 rounded-md hover:bg-[#0d575c] transition"
-          >
-            Clear Filters
-          </button>
-        </div>
-
-        {/* Reports Table */}
-        <div className="overflow-x-auto bg-white rounded-xl shadow">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-3 border-b">#</th>
-                <th className="px-4 py-3 border-b">Title</th>
-                <th className="px-4 py-3 border-b">Description</th>
-                <th className="px-4 py-3 border-b">Type</th>
-                <th className="px-4 py-3 border-b">User</th>
-                <th className="px-4 py-3 border-b">Location</th>
-                <th className="px-4 py-3 border-b">Status</th>
-                <th className="px-4 py-3 border-b">Date</th>
-                <th className="px-4 py-3 border-b">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredReports.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="text-center py-8 text-gray-500">
-                    {reports.length === 0 ? "No reports submitted yet." : "No reports match your filters."}
-                  </td>
-                </tr>
-              ) : (
-                filteredReports.map((r, idx) => (
-                  <tr key={r.id} className={`border-t ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100`}>
-                    <td className="px-4 py-3">{idx + 1}</td>
-                    <td className="px-4 py-3 font-semibold">{r.title || "Untitled Report"}</td>
-                    <td className="px-4 py-3 max-w-xs">
-                      <div className="truncate" title={r.description}>
-                        {r.description || "No description"}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-<<<<<<< Updated upstream
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        r.reportType === "red-flag" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
-                      }`}>
-                        {r.reportType === "red-flag" ? "🚩 Red Flag" : "🛠️ Intervention"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{r.userName || "Unknown User"}</td>
-                    <td className="px-4 py-3">{r.location || "Not specified"}</td>
-                    <td className="px-4 py-3 capitalize">
-                      <select
-                        value={r.status || "pending"}
-                        onChange={(e) => handleStatusUpdate(r.id, e.target.value)}
-                        className={`px-3 py-1 rounded text-sm border-none focus:ring-2 focus:ring-blue-300 cursor-pointer ${getStatusColor(r.status)}`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="under-investigation">Under Investigation</option>
-                        <option value="resolved">Resolved</option>
-=======
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          r.report_type === "Red-Flag" || r.report_type === "red-flag"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}
-                      >
-                        {r.report_type === "Red-Flag" || r.report_type === "red-flag"
-                          ? "🚩 Red Flag"
-                          : "🛠️ Intervention"}
-                      </span>
-                    </td>
-                    {currentUser.role === "admin" && (
-                      <td className="px-4 py-3">{r.user_name || r.email || "Unknown User"}</td>
-                    )}
-                    <td className="px-4 py-3">
-                      {r.location || "Not specified"}
-                    </td>
-                    <td className="px-4 py-3 capitalize">
-                      <select
-                        value={r.status || "pending"}
-                        onChange={(e) =>
-                          handleStatusUpdate(r.id, e.target.value)
-                        }
-                        className={`px-3 py-1 rounded text-sm border-none focus:ring-2 focus:ring-blue-300 cursor-pointer ${getStatusColor(
-                          r.status
-                        )}`}
-                        disabled={currentUser.role !== "admin"}
-                      >
-                        {statusOptions.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
->>>>>>> Stashed changes
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : "Unknown"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button 
-                        onClick={() => handleDelete(r.id)}
-                        className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs transition-colors"
-                        title="Delete Report"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Summary */}
-        <div className="mt-4 text-sm text-gray-600">
-          Showing {filteredReports.length} of {reports.length} total reports
-        </div>
-      </main>
-      <SimpleAdminDashboard />;
-      
+      )}
     </div>
-    
+  );
+};
+
+// --- Main Admin Dashboard ---
+const AdminDashboard = ({ onDelete }) => {
+  const { reports, loading, currentUser, fetchReports } = useReports();
+  const metrics = useMemo(() => calculateMetrics(reports), [reports]);
+
+  const [notificationRefresh, setNotificationRefresh] = useState(0);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  const STATUS_API_MAP = {
+    pending: "pending",
+    "under-investigation": "under-investigation",
+    resolved: "resolved",
+    rejected: "rejected",
+  };
+
+  const handleStatusUpdate = async (reportId, newStatus, userId) => {
+    const formattedStatus = STATUS_API_MAP[newStatus];
+    if (!formattedStatus) return console.error("Invalid status:", newStatus);
+
+    try {
+      await api.updateReportStatus(reportId, formattedStatus);
+
+      if (userId) {
+        await api.createNotification({
+          user_id: userId,
+          message: `Your report status has been updated to "${formattedStatus}"`,
+        });
+        setNotificationRefresh((prev) => prev + 1);
+      }
+
+      fetchReports();
+      toast.success(`Report status updated to "${formattedStatus}"`);
+    } catch (err) {
+      console.error(
+        "Error updating status or sending notification:",
+        err.response?.data || err.message
+      );
+      toast.error("Failed to update status.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-lg text-gray-600">Loading Dashboard Data...</p>
+      </div>
+    );
+  }
+
+  const userName = currentUser?.name || "Admin";
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <Toaster position="top-right" />
+      <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
+      <p className="text-gray-600 mt-1 mb-8">
+        Welcome back, {userName.split(" ")[0]} — here’s a quick summary of your reports.
+      </p>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <KPICard title="Pending" count={metrics.pending} icon={Clock} color="bg-pink-500" trend={metrics.pendingTrend} />
+        <KPICard title="Resolved" count={metrics.resolved} icon={CheckCircle} color="bg-green-500" trend={metrics.resolvedTrend} />
+        <KPICard title="Rejected" count={metrics.rejected} icon={XCircle} color="bg-red-500" trend={metrics.rejectedTrend} />
+        <KPICard title="Total Red-Flags" count={metrics.totalRedFlags} icon={Flag} color="bg-red-500" trend={metrics.totalRedFlagsTrend} />
+        <KPICard title="Interventions" count={metrics.interventions} icon={Zap} color="bg-blue-500" trend={metrics.interventionsTrend} />
+        <KPICard title="Under Investigation" count={metrics.underInvestigation} icon={Search} color="bg-yellow-500" trend={metrics.underInvestigationTrend} />
+      </div>
+
+      {/* Reports + Notifications */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <RecentReportsTable reports={reports} onDelete={onDelete} onStatusUpdate={handleStatusUpdate} />
+        </div>
+        <RecentNotifications refreshTrigger={notificationRefresh} />
+      </div>
+    </div>
   );
 };
 
