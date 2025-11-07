@@ -1,16 +1,16 @@
-import React from "react";
-import { Upload } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import { useReports } from "../contexts/ReportContext";
+import { useAuth } from "../contexts/AuthContext"; // assuming you have this for JWT
 
-// Default Leaflet marker
+// Leaflet marker fix
 const markerIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
 
-// Step completion check
 const isStepComplete = (step, formData) => {
   switch (step) {
     case 1:
@@ -24,27 +24,76 @@ const isStepComplete = (step, formData) => {
   }
 };
 
-const ReportStepper = ({
-  currentStep,
-  nextStep,
-  prevStep,
-  formData,
-  setFormData,
-  handleSubmit,
-}) => {
-  const steps = [
-    { label: "Type & Description" },
-    { label: "Location & Map" },
-    { label: "Review & Submit" },
-  ];
+const ReportStepper = ({ reportToEdit = null, onClose }) => {
+  const { createReport, updateReport } = useReports();
+  const { token } = useAuth(); // JWT token
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    title: "",
+    specificTitle: "",
+    description: "",
+    location: "",
+    lat: "",
+    lng: "",
+    media: null,
+  });
+
+  useEffect(() => {
+    if (reportToEdit) {
+      setFormData({
+        title: reportToEdit.reportType === "red-flag" ? "Red Flag" : "Intervention",
+        specificTitle: reportToEdit.title,
+        description: reportToEdit.description,
+        location: reportToEdit.location || "",
+        lat: reportToEdit.coordinates?.lat || "",
+        lng: reportToEdit.coordinates?.lng || "",
+        media: reportToEdit.media || null,
+      });
+    }
+  }, [reportToEdit]);
+
+  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const handleNext = () => {
     if (isStepComplete(currentStep, formData)) nextStep();
     else alert("Please complete all fields in this step before proceeding.");
   };
 
-  const lat = parseFloat(formData.lat) || 0;
-  const lng = parseFloat(formData.lng) || 0;
+  const handleSubmit = async () => {
+    try {
+      const payload = new FormData();
+      payload.append("title", formData.specificTitle);
+      payload.append(
+        "reportType",
+        formData.title.toLowerCase() === "red flag" ? "red-flag" : "intervention"
+      );
+      payload.append("description", formData.description);
+      payload.append("location", formData.location);
+      payload.append("lat", formData.lat);
+      payload.append("lng", formData.lng);
+      if (formData.media) payload.append("media", formData.media);
+
+      if (reportToEdit) {
+        await updateReport(reportToEdit.id, payload, token);
+      } else {
+        const newReport = await createReport(payload, token);
+        console.log("Report submitted:", newReport);
+      }
+
+      if (onClose) onClose(); // close modal safely
+      alert("Report submitted successfully!");
+    } catch (error) {
+      console.error("Report submission error:", error);
+      alert("Failed to submit report. Please try again.");
+    }
+  };
+
+  const steps = [
+    { label: "Type & Description" },
+    { label: "Location & Map" },
+    { label: "Review & Submit" },
+  ];
 
   // Ensure media is always an array
   const mediaFiles = Array.isArray(formData.media) ? formData.media : [];
@@ -57,62 +106,43 @@ const ReportStepper = ({
           const complete = isStepComplete(index + 1, formData);
           const inProgress = currentStep === index + 1;
           return (
-            <React.Fragment key={index}>
-              <div className="flex flex-col items-center relative z-10 w-1/3">
-                <div
-                  className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white ${
-                    complete
-                      ? "bg-teal-500"
-                      : inProgress
-                      ? "bg-blue-500"
-                      : "bg-gray-300"
-                  } transition-colors duration-500`}
-                >
-                  {index + 1}
-                </div>
-                <p className="text-xs mt-1 text-center">{step.label}</p>
+
+            <div key={index} className="flex-1 flex flex-col items-center">
+              <div
+                className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white ${
+                  complete ? "bg-teal-500" : inProgress ? "bg-blue-500" : "bg-gray-300"
+                }`}
+              >
+                {index + 1}
               </div>
-              {index < steps.length - 1 && (
-                <div className="absolute top-3 left-1/3 w-1/3 h-1 bg-gray-300 rounded-full z-0">
-                  <div
-                    className="h-1 rounded-full transition-all duration-500"
-                    style={{
-                      width: complete ? "100%" : "0%",
-                      backgroundColor: "green",
-                    }}
-                  />
-                </div>
-              )}
-            </React.Fragment>
+              <p className="text-xs mt-1 text-center">{step.label}</p>
+            </div>
           );
         })}
       </div>
 
       {/* Step content */}
       <div className="flex-1 overflow-y-auto space-y-4">
+
         {/* Step 1 */}
         {currentStep === 1 && (
-          <div className="space-y-6 p-6 bg-white border border-gray-200 rounded-lg shadow-md">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-3 border-b">
-              <label className="text-gray-700 font-semibold text-base whitespace-nowrap">
-                Report Type:
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer text-red-600 hover:text-red-700">
+          <div className="space-y-4 p-4 bg-white border rounded-md">
+            <div className="flex gap-4">
+              <label>
                 <input
                   type="radio"
                   value="Red Flag"
-                  checked={formData.titleType === "Red Flag"}
-                  onChange={(e) =>
-                    setFormData({ ...formData, titleType: e.target.value })
-                  }
-                  className="form-radio h-5 w-5 border-red-400 text-red-600 focus:ring-red-500"
+
+                  checked={formData.title === "Red Flag"}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
-                <span className="text-sm font-medium">Red Flag (Urgent)</span>
+                Red Flag
               </label>
-              <label className="flex items-center space-x-2 cursor-pointer text-blue-600 hover:text-blue-700">
+              <label>
                 <input
                   type="radio"
                   value="Intervention"
+
                   checked={formData.titleType === "Intervention"}
                   onChange={(e) =>
                     setFormData({ ...formData, titleType: e.target.value })
@@ -153,25 +183,25 @@ const ReportStepper = ({
                 className="border border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-md w-full h-36 shadow-sm resize-y"
               />
             </div>
+
           </div>
         )}
 
-        {/* Step 2 */}
         {currentStep === 2 && (
-          <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-md flex flex-col md:flex-row gap-4 max-h-[70vh] overflow-hidden">
-            <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-2">
+          <div className="p-4 bg-white border rounded-md flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex flex-col gap-2">
               <input
                 type="text"
-                placeholder="Location / Address"
-                value={formData.location || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+
+                placeholder="Location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+
                 className="border p-2 rounded w-full"
               />
               <div className="flex gap-2">
                 <input
-                  type="number"
+                  type="text"
                   placeholder="Latitude"
                   value={formData.lat || ""}
                   onChange={(e) =>
@@ -180,7 +210,7 @@ const ReportStepper = ({
                   className="border p-2 rounded w-1/2"
                 />
                 <input
-                  type="number"
+                  type="text"
                   placeholder="Longitude"
                   value={formData.lng || ""}
                   onChange={(e) =>
@@ -190,86 +220,26 @@ const ReportStepper = ({
                 />
               </div>
 
-              {/* File Upload */}
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 cursor-pointer border p-2 rounded hover:bg-gray-100">
-                  <Upload className="text-gray-500 w-5 h-5" />
-                  <span className="text-sm text-gray-600">
-                    Upload images/videos
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setFormData((prev) => ({
-                        ...prev,
-                        media: [...mediaFiles, ...files],
-                      }));
-                    }}
-                    className="hidden"
-                  />
-                </label>
-
-                {/* Previews */}
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {mediaFiles.map((file, idx) => {
-                    if (!file) return null;
-
-                    const isImage = file.type?.startsWith("image/");
-                    const isVideo = file.type?.startsWith("video/");
-                    const url =
-                      file instanceof File
-                        ? URL.createObjectURL(file)
-                        : file.url || "";
-
-                    return (
-                      <div
-                        key={idx}
-                        className="relative w-24 h-24 border rounded overflow-hidden flex items-center justify-center text-xs text-gray-700"
-                      >
-                        {isImage && url && (
-                          <img
-                            src={url}
-                            alt={file.name || `media-${idx}`}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        {isVideo && url && (
-                          <video
-                            src={url}
-                            className="w-full h-full object-cover"
-                            controls
-                          />
-                        )}
-                        <button
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              media: prev.media.filter((_, i) => i !== idx),
-                            }))
-                          }
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => setFormData({ ...formData, media: e.target.files?.[0] })}
+                className="border p-2 rounded"
+              />
             </div>
-
-            <div className="flex-1 min-h-0 h-64 md:h-auto">
+            <div className="flex-1 h-64 md:h-auto">
               <MapContainer
-                center={[lat, lng]}
+                center={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
+
                 zoom={13}
                 scrollWheelZoom={false}
                 className="w-full h-full rounded"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <Marker position={[lat, lng]} icon={markerIcon}>
+                <Marker
+                  position={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
+                  icon={markerIcon}
+                >
                   <Popup>{formData.location || "No Location"}</Popup>
                 </Marker>
               </MapContainer>
@@ -277,36 +247,30 @@ const ReportStepper = ({
           </div>
         )}
 
-        {/* Step 3 */}
         {currentStep === 3 && (
-          <div className="space-y-2 p-4 bg-white border border-gray-200 rounded-lg shadow-md">
-            <p>
-              <strong>Type:</strong> {formData.titleType || "N/A"}
-            </p>
-            <p>
-              <strong>Title:</strong> {formData.title || "N/A"}
-            </p>
-            <p>
-              <strong>Description:</strong> {formData.description || "N/A"}
-            </p>
-            <p>
-              <strong>Location:</strong> {formData.location || "N/A"}
-            </p>
-            <p>
-              <strong>Coordinates:</strong> {lat}, {lng}
-            </p>
 
-            {mediaFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {mediaFiles.map((file, idx) => (
-                  <div
-                    key={idx}
-                    className="w-24 h-24 border rounded overflow-hidden flex items-center justify-center text-xs text-gray-700"
-                  >
-                    {file.name || file.url || "Preview not available"}
-                  </div>
-                ))}
-              </div>
+          <div className="p-4 bg-white border rounded-md space-y-2">
+            <p><strong>Type:</strong> {formData.title}</p>
+            <p><strong>Title:</strong> {formData.specificTitle}</p>
+            <p><strong>Description:</strong> {formData.description}</p>
+            <p><strong>Location:</strong> {formData.location}</p>
+            <p><strong>Coordinates:</strong> {formData.lat}, {formData.lng}</p>
+            {formData.media && (
+              <>
+                {formData.media.type.startsWith("image/") ? (
+                  <img
+                    src={URL.createObjectURL(formData.media)}
+                    alt="media"
+                    className="w-full h-48 object-cover rounded"
+                  />
+                ) : (
+                  <video
+                    src={URL.createObjectURL(formData.media)}
+                    controls
+                    className="w-full h-48 object-cover rounded"
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -315,26 +279,23 @@ const ReportStepper = ({
       {/* Navigation */}
       <div className="flex justify-between mt-4">
         {currentStep > 1 && (
-          <button
-            onClick={prevStep}
-            className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
-          >
+
+          <button onClick={prevStep} className="px-4 py-2 rounded bg-gray-300">
+
             Back
           </button>
         )}
         {currentStep < 3 && (
-          <button
-            onClick={handleNext}
-            className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 ml-auto"
-          >
+
+          <button onClick={handleNext} className="px-4 py-2 rounded bg-blue-500 text-white ml-auto">
+
             Next
           </button>
         )}
         {currentStep === 3 && (
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 rounded bg-teal-500 text-white hover:bg-green-600 ml-auto"
-          >
+
+          <button onClick={handleSubmit} className="px-4 py-2 rounded bg-teal-500 text-white ml-auto">
+
             Submit
           </button>
         )}
