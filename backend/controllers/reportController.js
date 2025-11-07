@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 // const db = require('../config/database');
 
 // // Get all reports with filters
@@ -240,6 +241,10 @@
 //   try {
 //     const { id } = req.params;
 //     const { title, description, location, coordinates } = req.body;
+=======
+const db = require("../config/db");
+const path = require("path");
+>>>>>>> Stashed changes
 
 //     // Check if report exists and belongs to user
 //     const [reports] = await db.promise().query(
@@ -456,6 +461,7 @@ const getReport = async (req, res) => {
   }
 };
 
+<<<<<<< Updated upstream
 // Create new report - FIXED VERSION
 const createReport = async (req, res) => {
   try {
@@ -465,6 +471,83 @@ const createReport = async (req, res) => {
     console.log('User ID:', req.user.id);
 
     const { title, description, reportType, location, coordinates, date } = req.body;
+=======
+// --- GET ALL REPORTS (ADMIN) --- FIXED VERSION
+exports.getAllReports = async (req, res) => {
+  try {
+    console.log("📊 Fetching ALL reports for admin");
+      console.log("🔐 User making request:", req.user); // Add this
+    console.log("🔐 User role:", req.user.role);
+    const [rows] = await db.query(`
+      
+      SELECT r.*, u.first_name, u.last_name, u.email
+      FROM reports r
+      JOIN users u ON r.user_id = u.id
+      ORDER BY r.created_at DESC
+    `);
+    
+    // ✅ FIXED: Add user_name field to each report
+    const reportsWithUser = rows.map(report => ({
+      ...report,
+      user_name: `${report.first_name} ${report.last_name}`
+    }));
+    
+    console.log(`✅ Found ${reportsWithUser.length} reports for admin`);
+    
+    // ✅ FIXED: Always return success with data, even if empty
+    res.json({
+      success: true,
+      data: reportsWithUser,
+      count: reportsWithUser.length
+    });
+  } catch (err) {
+    console.error("❌ Get all reports error:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error fetching reports",
+      error: err.message
+    });
+  }
+};
+
+// --- GET USER REPORTS ---
+exports.getUserReports = async (req, res) => {
+  try {
+    console.log("📊 Fetching reports for user:", req.user.id);
+    
+    const [rows] = await db.query(
+      `SELECT r.*, u.first_name, u.last_name, u.email
+       FROM reports r 
+       LEFT JOIN users u ON r.user_id = u.id 
+       WHERE r.user_id = ? 
+       ORDER BY r.created_at DESC`,
+      [req.user.id]
+    );
+    
+    // ✅ FIXED: Add user_name field to each report
+    const userReports = rows.map(report => ({
+      ...report,
+      user_name: `${report.first_name} ${report.last_name}`
+    }));
+    
+    console.log(`✅ Found ${userReports.length} reports for user ${req.user.id}`);
+    
+    // ✅ FIXED: Return consistent format
+    res.json({
+      success: true,
+      data: userReports,
+      count: userReports.length
+    });
+  } catch (err) {
+    console.error("❌ Get user reports error:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error fetching user reports",
+      error: err.message
+    });
+  }
+};
+>>>>>>> Stashed changes
 
     // Validate required fields
     if (!title || !description || !reportType) {
@@ -553,8 +636,27 @@ const createReport = async (req, res) => {
   }
 };
 
+<<<<<<< Updated upstream
 // Update report status (Admin only)
 const updateReportStatus = async (req, res) => {
+=======
+// --- UPDATE REPORT STATUS (Admin only) ---
+exports.updateReportStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  console.log(`🔄 Updating report ${id} status to:`, status);
+
+  // Validate status
+  const validStatuses = ["pending", "under investigation", "resolved", "rejected"];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ 
+      success: false,
+      message: "Invalid status" 
+    });
+  }
+
+>>>>>>> Stashed changes
   try {
     const { id } = req.params;
     const { status, note, notifyEmail, notifySMS } = req.body;
@@ -566,7 +668,14 @@ const updateReportStatus = async (req, res) => {
     );
 
     if (reports.length === 0) {
+<<<<<<< Updated upstream
       return res.status(404).json({ message: 'Report not found' });
+=======
+      return res.status(404).json({
+        success: false,
+        message: "Report not found"
+      });
+>>>>>>> Stashed changes
     }
 
     // Update report status
@@ -585,15 +694,31 @@ const updateReportStatus = async (req, res) => {
 
     res.json({ message: 'Report status updated successfully' });
 
+<<<<<<< Updated upstream
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ message: 'Server error updating status' });
+=======
+    res.json({
+      success: true,
+      message: "Report status updated successfully",
+      report: updatedReport
+    });
+  } catch (err) {
+    console.error("❌ Update report status error:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error updating report status",
+      error: err.message
+    });
+>>>>>>> Stashed changes
   }
 };
 
 // Update report (User only for pending reports)
 const updateReport = async (req, res) => {
   try {
+<<<<<<< Updated upstream
     const { id } = req.params;
     const { title, description, location, coordinates } = req.body;
 
@@ -615,6 +740,22 @@ const updateReport = async (req, res) => {
         latitude = lat;
         longitude = lng;
       }
+=======
+    const [report] = await db.query("SELECT * FROM reports WHERE id = ?", [id]);
+    if (report.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Report not found" 
+      });
+    }
+
+    // Only admin or owner can delete
+    if (userRole !== "admin" && report[0].user_id !== userId) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Unauthorized" 
+      });
+>>>>>>> Stashed changes
     }
 
     await db.promise().query(
@@ -624,11 +765,25 @@ const updateReport = async (req, res) => {
       [title, description, location, latitude, longitude, id]
     );
 
+<<<<<<< Updated upstream
     res.json({ message: 'Report updated successfully' });
 
   } catch (error) {
     console.error('Update report error:', error);
     res.status(500).json({ message: 'Server error updating report' });
+=======
+    res.json({ 
+      success: true,
+      message: "Report deleted successfully" 
+    });
+  } catch (err) {
+    console.error("❌ Delete report error:", err);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error deleting report",
+      error: err.message
+    });
+>>>>>>> Stashed changes
   }
 };
 
@@ -654,9 +809,23 @@ const deleteReport = async (req, res) => {
 
     res.json({ message: 'Report deleted successfully' });
 
+<<<<<<< Updated upstream
   } catch (error) {
     console.error('Delete report error:', error);
     res.status(500).json({ message: 'Server error deleting report' });
+=======
+    res.json({
+      success: true,
+      stats: formattedStats
+    });
+  } catch (err) {
+    console.error("❌ Get report stats error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error fetching statistics",
+      error: err.message
+    });
+>>>>>>> Stashed changes
   }
 };
 

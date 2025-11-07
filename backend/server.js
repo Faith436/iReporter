@@ -1,7 +1,22 @@
+<<<<<<< Updated upstream
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
+=======
+const express = require("express");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const fs = require("fs");
+const path = require("path");
+
+dotenv.config();
+
+const authRoutes = require("./routes/auth");
+const reportRoutes = require("./routes/reportRoutes");
+const notificationRoutes = require("./routes/notifications");
+>>>>>>> Stashed changes
 
 const app = express();
 

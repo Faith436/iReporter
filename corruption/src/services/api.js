@@ -199,7 +199,50 @@ class ApiService {
     return this.request(endpoint);
   }
 
+<<<<<<< Updated upstream
   async getReport(id) {
+=======
+  // ---------- Reports ----------
+  // getAllReports() {
+  //   return this.request('/reports/all');
+  // }
+
+  // getUserReports() {
+  //   return this.request('/reports/user');
+  // }
+// Update getAllReports in api.js
+getAllReports() {
+  const token = localStorage.getItem('token');
+  return this.request('/reports/all', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+}
+
+// Also update getUserReports
+getUserReports() {
+  const token = localStorage.getItem('token');
+  return this.request('/reports/user', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+}
+
+
+  getRecentReports(limit = 5) {
+    return this.request(`/reports/user?limit=${limit}`);
+  }
+
+  getReportStats() {
+    return this.request('/reports/stats');
+  }
+
+  getReport(id) {
+>>>>>>> Stashed changes
     return this.request(`/reports/${id}`);
   }
 
