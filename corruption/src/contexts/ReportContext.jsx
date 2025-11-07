@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, {
   createContext,
   useContext,
@@ -5,6 +6,9 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
+=======
+import React, { createContext, useContext, useState } from "react";
+>>>>>>> 8ee82302ad8e629e3af058605fccfc362b7acbe9
 import axios from "axios";
 import apiService from "../services/api";
 
@@ -38,8 +42,18 @@ export const ReportProvider = ({ children }) => {
     if (!currentUser) return;
     try {
       setLoading(true);
+<<<<<<< HEAD
       const data = await apiService.getReports(currentUser.id);
       setReports(Array.isArray(data) ? data : []);
+=======
+      const { data } = await axios.get(
+        "http://localhost:5000/api/reports/user",
+        { withCredentials: true }
+      );
+      // ✅ FIXED: Handle object response with reports property
+      const reportsData = data.reports || data || [];
+      setReports(reportsData);
+>>>>>>> 8ee82302ad8e629e3af058605fccfc362b7acbe9
     } catch (err) {
       console.error("Fetch reports error:", err);
       setReports([]);
@@ -48,6 +62,7 @@ export const ReportProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+<<<<<<< HEAD
   // --- Create, update, delete, updateStatus remain the same
   const createReport = async (reportData) => {
     try {
@@ -57,26 +72,88 @@ export const ReportProvider = ({ children }) => {
         { withCredentials: true }
       );
       setReports((prev) => [data.report, ...(prev || [])]);
+=======
+  // --- Fetch all reports (admin only)
+  const fetchAllReports = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axios.get(
+        "http://localhost:5000/api/reports/all",
+        { withCredentials: true }
+      );
+      // ✅ FIXED: Handle array response directly
+      const reportsData = Array.isArray(data) ? data : data.reports || data || [];
+      setReports(reportsData);
+    } catch (err) {
+      console.error("Fetch all reports error:", err);
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Create a new report
+  const createReport = async (reportData) => {
+    try {
+      console.log("📤 Creating report with data:", reportData);
+      
+      // ✅ SIMPLIFIED: Always use JSON with proper headers
+      const { data } = await axios.post(
+        "http://localhost:5000/api/reports",
+        reportData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log("✅ Report created successfully:", data);
+
+      // ✅ FIXED: Handle response format
+      const newReport = data.report || data;
+      setReports((prev) => [newReport, ...(prev || [])]);
+>>>>>>> 8ee82302ad8e629e3af058605fccfc362b7acbe9
       return data;
     } catch (err) {
-      console.error("Create report error:", err);
+      console.error("❌ Create report error:", err.response?.data || err);
       throw err;
     }
   };
 
   const updateReport = async (reportId, reportData) => {
     try {
+<<<<<<< HEAD
       const { data } = await axios.put(
         `${process.env.REACT_APP_API_URL}/reports/${reportId}`,
         reportData,
         { withCredentials: true }
       );
+=======
+      console.log("📤 Updating report:", reportId, reportData);
+      
+      const { data } = await axios.put(
+        `http://localhost:5000/api/reports/${reportId}`,
+        reportData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log("✅ Report updated successfully:", data);
+
+      const updatedReport = data.report || data;
+>>>>>>> 8ee82302ad8e629e3af058605fccfc362b7acbe9
       setReports((prev) =>
-        (prev || []).map((r) => (r.id === reportId ? data.report : r))
+        (prev || []).map((r) => (r.id === reportId ? updatedReport : r))
       );
       return data;
     } catch (err) {
-      console.error("Update report error:", err);
+      console.error("❌ Update report error:", err);
       throw err;
     }
   };
@@ -86,12 +163,16 @@ export const ReportProvider = ({ children }) => {
       const { data } = await axios.put(
         `${process.env.REACT_APP_API_URL}/reports/${reportId}/status`,
         { status },
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
       );
 
+<<<<<<< HEAD
       const reportOwnerId = data.report.user_id;
       const message = `Your report "${
         data.report.title
@@ -102,8 +183,24 @@ export const ReportProvider = ({ children }) => {
         { user_id: reportOwnerId, message },
         { withCredentials: true }
       );
+=======
+      // Create notification
+      const report = reports.find(r => r.id === reportId);
+      if (report) {
+        const reportOwnerId = report.user_id || report.userId;
+        const message = `Your report "${report.title}" status has been updated to "${status}"`;
+
+        await axios.post(
+          "http://localhost:5000/api/notifications",
+          { userId: reportOwnerId, message },
+          { withCredentials: true }
+        );
+      }
+
+      return data;
+>>>>>>> 8ee82302ad8e629e3af058605fccfc362b7acbe9
     } catch (err) {
-      console.error("Update report status error:", err);
+      console.error("❌ Update report status error:", err);
       throw err;
     }
   };
@@ -118,11 +215,12 @@ export const ReportProvider = ({ children }) => {
       );
       setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
     } catch (err) {
-      console.error("Delete report error:", err);
+      console.error("❌ Delete report error:", err);
       throw err;
     }
   };
 
+<<<<<<< HEAD
   // --- Load current user on mount
   useEffect(() => {
     fetchCurrentUser();
@@ -133,6 +231,12 @@ export const ReportProvider = ({ children }) => {
     if (!currentUser) return;
     fetchReports();
   }, [currentUser, fetchReports]);
+=======
+  // ✅ ADDED: Helper function to get user's reports
+  const getUserReports = (userId) => {
+    return reports.filter(report => report.user_id === userId || report.userId === userId);
+  };
+>>>>>>> 8ee82302ad8e629e3af058605fccfc362b7acbe9
 
   return (
     <ReportContext.Provider
@@ -146,6 +250,7 @@ export const ReportProvider = ({ children }) => {
         updateReport,
         updateReportStatus,
         deleteReport,
+        getUserReports,
       }}
     >
       {children}

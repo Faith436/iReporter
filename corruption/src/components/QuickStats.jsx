@@ -1,4 +1,3 @@
-// QuickStats.jsx - COMPLETE FIXED VERSION
 import React from "react";
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";

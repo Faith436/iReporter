@@ -1,14 +1,15 @@
 // controllers/authController.js
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const db = require("../db");
+const db = require("../config/db");
 
 // --- REGISTER USER ---
 const registerUser = async (req, res) => {
   const { firstName, lastName, email, password, phone } = req.body;
 
-  if (!firstName || !lastName || !email || !password)
+  if (!firstName || !lastName || !email || !password) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
 
   try {
     const [existing] = await db.query("SELECT id FROM users WHERE email = ?", [email]);
@@ -29,7 +30,11 @@ const registerUser = async (req, res) => {
       role: "user",
     };
 
-    const token = jwt.sign({ id: user.id, email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -58,7 +63,11 @@ const loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid email or password" });
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -110,7 +119,7 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-// --- LOGOUT ---
+// --- LOGOUT USER ---
 const logoutUser = (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
@@ -120,4 +129,20 @@ const logoutUser = (req, res) => {
   res.json({ message: "Logged out successfully" });
 };
 
-module.exports = { registerUser, loginUser, getCurrentUser, logoutUser };
+// Optional legacy 'getMe' route (if you still want to keep it)
+const getMe = async (req, res) => {
+  try {
+    res.json({ user: req.user });
+  } catch (error) {
+    console.error("Get user error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  getCurrentUser,
+  logoutUser,
+  getMe, // optional
+};
