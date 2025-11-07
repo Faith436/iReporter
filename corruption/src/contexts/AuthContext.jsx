@@ -15,33 +15,25 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-
-      if (token && savedUser) {
-        try {
-          // Verify token is still valid by making API call
-          const response = await apiService.getCurrentUser();
-          setUser(response.user);
-          localStorage.setItem('user', JSON.stringify(response.user));
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          logout();
-        }
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+
+    if (token && savedUser) {
+      try {
+        // Verify token is still valid
+        const response = await apiService.getCurrentUser();
+        setUser(response.user);
+      } catch (error) {
+        logout();
+      }
+    }
+    setLoading(false);
+  };
 
   const login = (userData, token) => {
     setUser(userData);
@@ -59,8 +51,7 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
-    loading,
-    checkAuth
+    loading
   };
 
   return (
