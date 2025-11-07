@@ -7,6 +7,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { ReportProvider } from "./contexts/ReportContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import reportWebVitals from "./reportWebVitals";
+
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
