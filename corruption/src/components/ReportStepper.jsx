@@ -77,7 +77,8 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     try {
       const payload = new FormData();
       payload.append(
-        "reportType",
+
+        "type",
         formData.reportType === "Red Flag" ? "red-flag" : "intervention"
       );
       payload.append("title", formData.title);
