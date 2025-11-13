@@ -1,6 +1,6 @@
 // src/contexts/NotificationContext.jsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import apiService from "../services/api"; // <- use your API service
+import apiService from "../services/api";
 
 const NotificationContext = createContext();
 export const useNotifications = () => useContext(NotificationContext);
@@ -9,23 +9,35 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Fetch all notifications
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const data = await apiService.getNotifications();
       setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Fetch notifications error:", err.response?.status, err.response?.data || err.message);
+      console.error(
+        "Fetch notifications error:",
+        err.response?.status,
+        err.response?.data || err.message
+      );
       setNotifications([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Add a new notification instantly
+  const addNotification = (notification) => {
+    setNotifications((prev) => [notification, ...prev]);
+  };
+
   const markAsRead = async (id) => {
     try {
       await apiService.markNotificationRead(id);
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)));
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n))
+      );
     } catch (err) {
       console.error("Mark notification read error:", err);
     }
@@ -45,7 +57,16 @@ export const NotificationProvider = ({ children }) => {
   }, [fetchNotifications]);
 
   return (
-    <NotificationContext.Provider value={{ notifications, loading, fetchNotifications, markAsRead, deleteNotification }}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        loading,
+        fetchNotifications,
+        markAsRead,
+        deleteNotification,
+        addNotification, // <-- new function
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );

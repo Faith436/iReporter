@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+// src/pages/UserDashboard.jsx
+import React, { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle,
   Flag,
@@ -12,9 +13,9 @@ import {
 
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
-import { useNotifications } from "../contexts/NotificationContext";
-import ReportStepper from "../components/ReportStepper";
 import apiService from "../services/api";
+import ReportStepper from "../components/ReportStepper";
+import { useNavigate } from "react-router-dom";
 
 // --- StatCard Component ---
 const StatCard = ({ title, value, icon: Icon, color }) => {
@@ -28,14 +29,11 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
 
   return (
     <div className="relative bg-white border border-gray-100 rounded-xl p-8 shadow-md hover:shadow-lg transition-all">
-      {/* Icon at top right */}
       <div
         className={`absolute top-4 right-4 p-2 rounded-full ${colorClasses[color]} flex items-center justify-center`}
       >
         <Icon className="w-6 h-6" />
       </div>
-
-      {/* Card content */}
       <div>
         <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
         <p className="text-3xl font-bold text-gray-800 mt-2">{value}</p>
@@ -72,11 +70,20 @@ const StatusTag = ({ status }) => {
   );
 };
 
-// --- Recent Reports ---
-const RecentReports = () => {
-  const { reports, loading } = useReports();
+// --- Recent Reports Table ---
+const RecentReports = ({ reports = [] }) => {
+  const safeReports = Array.isArray(reports)
+    ? reports.filter((r) => r && typeof r === "object")
+    : [];
+  const recentReports = safeReports.slice(0, 5);
 
-  if (loading) return <p>Loading reports...</p>;
+  if (recentReports.length === 0) {
+    return (
+      <div className="text-gray-500 text-center p-6 bg-gray-50 rounded border border-gray-200">
+        No recent reports.
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
@@ -87,38 +94,28 @@ const RecentReports = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-600">
-                Title
-              </th>
-              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-600">
-                Type
-              </th>
-              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-600">
-                Status
-              </th>
-              <th className="px-3 py-3 text-left text-sm font-semibold text-gray-600">
-                Date
-              </th>
-              <th className="px-3 py-3 text-right text-sm font-semibold text-gray-600">
-                Actions
-              </th>
+              {["Title", "Type", "Status", "Date"].map((header) => (
+                <th
+                  key={header}
+                  className="px-3 py-3 text-left text-sm font-semibold text-gray-600"
+                >
+                  {header}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {reports.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50">
-                <td className="px-3 py-4">{r.title}</td>
-                <td className="px-3 py-4">{r.type}</td>
+            {recentReports.map((r, idx) => (
+              <tr key={r?.id || idx} className="hover:bg-gray-50">
+                <td className="px-3 py-4">{r?.title ?? "Untitled Report"}</td>
+                <td className="px-3 py-4">{r?.type ?? "Unknown"}</td>
                 <td className="px-3 py-4">
-                  <StatusTag status={r.status} />
+                  <StatusTag status={r?.status ?? "Pending"} />
                 </td>
                 <td className="px-3 py-4">
-                  {new Date(r.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-3 py-4 text-right">
-                  <button className="text-red-400 hover:text-red-600">
-                    <XCircle className="w-5 h-5" />
-                  </button>
+                  {r?.created_at
+                    ? new Date(r.created_at).toLocaleDateString()
+                    : "N/A"}
                 </td>
               </tr>
             ))}
@@ -130,12 +127,7 @@ const RecentReports = () => {
 };
 
 // --- Recent Notifications ---
-const RecentNotifications = () => {
-  const { currentUser } = useUsers();
-  const { notifications, loading } = useNotifications();
-
-  if (loading) return <p>Loading notifications...</p>;
-
+const RecentNotifications = ({ notifications, currentUser }) => {
   const userNotifications = notifications.filter(
     (n) => n.user_id === currentUser?.id
   );
@@ -192,6 +184,8 @@ const RecentNotifications = () => {
 
 // --- Quick Actions ---
 const QuickActions = ({ openStepper, setType }) => {
+  const navigate = useNavigate();
+
   const actions = [
     {
       label: "Add Red-Flag Record",
@@ -213,6 +207,15 @@ const QuickActions = ({ openStepper, setType }) => {
     },
   ];
 
+  const handleAction = (action) => {
+    if (action.type === "view") {
+      navigate("/dashboard/reports");
+    } else {
+      setType(action.type); // pre-select type in stepper
+      setTimeout(() => openStepper(), 50);
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -222,11 +225,7 @@ const QuickActions = ({ openStepper, setType }) => {
         {actions.map((action, idx) => (
           <button
             key={idx}
-            onClick={() => {
-              if (action.type === "view") return;
-              setType(action.type);
-              openStepper();
-            }}
+            onClick={() => handleAction(action)}
             className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition duration-150 ease-in-out ${
               action.className
             } ${action.className.includes("bg-gray") ? "" : "shadow-md"}`}
@@ -240,58 +239,65 @@ const QuickActions = ({ openStepper, setType }) => {
   );
 };
 
-// --- Main Dashboard ---
+// --- Main User Dashboard ---
 const Dashboard = () => {
   const { currentUser } = useUsers();
   const { reports } = useReports();
-  const [stats, setStats] = useState({});
-  const [stepperOpen, setStepperOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({});
 
-  // Fetch dynamic stats from backend
+  const [stats, setStats] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [stepperOpen, setStepperOpen] = useState(false);
+  const [defaultReportType, setDefaultReportType] = useState("");
+
+  // Fetch dynamic stats
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const allReports = await apiService.getReports(currentUser?.id);
         if (allReports) {
-          const resolved = allReports.filter(
-            (r) => r.status?.toLowerCase() === "resolved"
-          ).length;
-          const rejected = allReports.filter(
-            (r) => r.status?.toLowerCase() === "rejected"
-          ).length;
-          const pending = allReports.filter(
-            (r) => r.status?.toLowerCase() === "pending"
-          ).length;
-          const underInvestigation = allReports.filter(
-            (r) =>
-              r.status?.toLowerCase() === "under-investigation" ||
-              r.status?.toLowerCase() === "under investigation"
-          ).length;
-          const redFlags = allReports.filter(
-            (r) => r.type?.toLowerCase() === "red-flag"
-          ).length;
-          const interventions = allReports.filter(
-            (r) => r.type?.toLowerCase() === "intervention"
-          ).length;
-
           setStats({
-            resolved,
-            rejected,
-            pending,
-            underInvestigation,
-            redFlags,
-            interventions,
+            resolved: allReports.filter(
+              (r) => r.status?.toLowerCase() === "resolved"
+            ).length,
+            rejected: allReports.filter(
+              (r) => r.status?.toLowerCase() === "rejected"
+            ).length,
+            pending: allReports.filter(
+              (r) => r.status?.toLowerCase() === "pending"
+            ).length,
+            underInvestigation: allReports.filter((r) =>
+              ["under-investigation", "under investigation"].includes(
+                r.status?.toLowerCase()
+              )
+            ).length,
+            redFlags: allReports.filter(
+              (r) => r.type?.toLowerCase() === "red-flag"
+            ).length,
+            interventions: allReports.filter(
+              (r) => r.type?.toLowerCase() === "intervention"
+            ).length,
           });
         }
       } catch (error) {
-        console.error("Error fetching user dashboard stats:", error);
+        console.error("Error fetching stats:", error);
       }
     };
-
     fetchStats();
   }, [currentUser]);
+
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const allNotifications = await apiService.getNotifications();
+      setNotifications(allNotifications);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const statCards = [
     {
@@ -343,7 +349,7 @@ const Dashboard = () => {
       </header>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3  gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {statCards.map((stat, idx) => (
           <StatCard key={idx} {...stat} />
         ))}
@@ -351,14 +357,18 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RecentReports />
+          <RecentReports reports={reports} />
         </div>
         <div className="space-y-6">
           <QuickActions
             openStepper={() => setStepperOpen(true)}
-            setType={(type) => setFormData({ ...formData, titleType: type })}
+            // CHANGE 2: Use the dedicated setter
+            setType={(type) => setDefaultReportType(type)}
           />
-          <RecentNotifications />
+          <RecentNotifications
+            notifications={notifications}
+            currentUser={currentUser}
+          />
         </div>
       </div>
 
@@ -372,14 +382,10 @@ const Dashboard = () => {
             >
               ×
             </button>
-
             <ReportStepper
-              currentStep={currentStep}
-              nextStep={() => setCurrentStep((prev) => Math.min(prev + 1, 3))}
-              prevStep={() => setCurrentStep((prev) => Math.max(prev - 1, 1))}
-              formData={formData}
-              setFormData={setFormData}
-              handleSubmit={() => setStepperOpen(false)}
+              // CHANGE 3: Pass the type using the correct prop name
+              defaultType={defaultReportType}
+              onClose={() => setStepperOpen(false)}
             />
           </div>
         </div>
