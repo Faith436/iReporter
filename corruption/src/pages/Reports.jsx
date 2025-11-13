@@ -1,4 +1,4 @@
-// src/pages/Dashboard.jsx
+// src/pages/Reports.jsx
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { useReports } from "../contexts/ReportContext";
@@ -11,14 +11,12 @@ const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 
 const Reports = () => {
   const {
-    reports,
-    currentUser, // fetched from backend via context
+    currentUser,
     userLoading,
     createReport,
     updateReport,
     deleteReport,
-    loading,
-    fetchReports, // unified fetch function
+    fetchReports,
   } = useReports();
 
   const [activeView, setActiveView] = useState("list");
@@ -34,13 +32,15 @@ const Reports = () => {
     status: "pending",
     media: [],
   });
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const role = currentUser?.role || "user";
+  const role =
+    (currentUser?.role || currentUser?.user?.role || "").toLowerCase();
 
-  // Fetch reports whenever currentUser changes
+  console.log("Resolved role:", role);
+
   useEffect(() => {
-    if (!currentUser) return;
-    fetchReports();
+    if (currentUser) fetchReports();
   }, [currentUser, fetchReports]);
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
@@ -67,10 +67,9 @@ const Reports = () => {
       if (editingReport) await updateReport(editingReport.id, submitData);
       else await createReport(submitData);
 
-      // Refresh reports
       await fetchReports();
+      setRefreshKey((prev) => prev + 1);
 
-      // Reset form
       setFormData({
         title: "",
         description: "",
@@ -89,7 +88,7 @@ const Reports = () => {
     }
   };
 
-  if (userLoading)
+  if (userLoading || !currentUser)
     return <div className="p-6 text-gray-600">Loading your dashboard...</div>;
 
   if (!currentUser)
@@ -107,32 +106,32 @@ const Reports = () => {
           className="text-2xl font-bold"
           style={{ color: COLOR_PRIMARY_PURPLE }}
         >
-          {role === "admin" ? "Admin Dashboard" : "My Reports"}
+          My Reports
         </h1>
 
         <div className="flex items-center gap-3">
-          {role === "user" && (
-            <button
-              onClick={() => {
-                setEditingReport(null);
-                setFormData({
-                  title: "",
-                  description: "",
-                  location: "",
-                  lat: "",
-                  lng: "",
-                  status: "pending",
-                  media: [],
-                });
-                setCurrentStep(1);
-                setShowModal(true);
-              }}
-              className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 shadow text-sm"
-            >
-              <Plus className="w-4 h-4" /> Add Report
-            </button>
-          )}
+          {/* Add Report button – visible only to non-admins */}
+          <button
+            onClick={() => {
+              setEditingReport(null);
+              setFormData({
+                title: "",
+                description: "",
+                location: "",
+                lat: "",
+                lng: "",
+                status: "pending",
+                media: [],
+              });
+              setCurrentStep(1);
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 shadow text-sm transition-all duration-200"
+          >
+            <Plus className="w-4 h-4" /> Add Report
+          </button>
 
+          {/* View Toggle Buttons */}
           <div className="flex gap-2 bg-gray-100 rounded-md p-1">
             <button
               onClick={() => setActiveView("list")}
@@ -158,18 +157,20 @@ const Reports = () => {
         </div>
       </div>
 
+      {/* ListView */}
       {activeView === "list" && (
         <ListView
-          reports={reports}
           role={role}
-          loading={loading}
           onEdit={handleEdit}
           onDelete={deleteReport}
+          refreshKey={refreshKey}
         />
       )}
+
+      {/* KanbanView */}
       {activeView === "kanban" && (
         <KanbanView
-          reports={reports}
+          reports={null}
           statuses={statuses}
           role={role}
           onEdit={handleEdit}
@@ -177,6 +178,7 @@ const Reports = () => {
         />
       )}
 
+      {/* Report Modal */}
       <ReportModal
         showModal={showModal}
         onClose={() => setShowModal(false)}

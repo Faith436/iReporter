@@ -1,8 +1,9 @@
-// src/components/RecentReports.jsx
 import React from "react";
 
-const RecentReports = ({ reports, onEditReport }) => {
-  const recent = reports.slice(0, 5); // last 5 reports
+const RecentReports = ({ reports = [], onEditReport }) => {
+  // Make sure reports is always an array and remove any invalid entries
+  const safeReports = Array.isArray(reports) ? reports.filter(r => r && typeof r === "object") : [];
+  const recent = safeReports.slice(0, 5);
 
   if (recent.length === 0) {
     return (
@@ -14,21 +15,21 @@ const RecentReports = ({ reports, onEditReport }) => {
 
   return (
     <div className="space-y-3">
-      {recent.map((report) => (
+      {recent.map((report, idx) => (
         <div
-          key={report.id}
+          key={report?.id || idx}
           className="p-4 bg-white rounded shadow flex justify-between items-center border border-gray-200"
         >
           <div>
-            <h4 className="font-semibold">{report.title}</h4>
-            <p className="text-sm text-gray-600">{report.description}</p>
+            <h4 className="font-semibold">{report?.title ?? "Untitled Report"}</h4>
+            <p className="text-sm text-gray-600">{report?.description ?? "No description"}</p>
             <p className="text-xs text-gray-400">
-              Status: {report.status || "Pending"}
+              Status: {report?.status ?? "Pending"}
             </p>
           </div>
-          {report.status === "pending" && (
+          {report?.status === "pending" && (
             <button
-              onClick={() => onEditReport(report)}
+              onClick={() => report && onEditReport?.(report)}
               className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700"
             >
               Edit

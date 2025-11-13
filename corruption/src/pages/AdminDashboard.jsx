@@ -10,7 +10,6 @@ import {
   ArrowUp,
   ArrowDown,
   Bell,
-  Trash2,
 } from "lucide-react";
 import api from "../services/api";
 import toast, { Toaster } from "react-hot-toast";
@@ -86,11 +85,16 @@ const RecentReportsTable = ({ reports, onDelete, onStatusUpdate }) => {
     const normalized = normalizeStatus(status);
     const base = "px-3 py-1 rounded-full text-xs font-medium capitalize";
     switch (normalized) {
-      case "pending": return `${base} bg-pink-100 text-pink-700`;
-      case "resolved": return `${base} bg-green-100 text-green-700`;
-      case "rejected": return `${base} bg-red-100 text-red-700`;
-      case "under-investigation": return `${base} bg-yellow-100 text-yellow-700`;
-      default: return `${base} bg-gray-100 text-gray-700`;
+      case "pending":
+        return `${base} bg-pink-100 text-pink-700`;
+      case "resolved":
+        return `${base} bg-green-100 text-green-700`;
+      case "rejected":
+        return `${base} bg-red-100 text-red-700`;
+      case "under-investigation":
+        return `${base} bg-yellow-100 text-yellow-700`;
+      default:
+        return `${base} bg-gray-100 text-gray-700`;
     }
   };
 
@@ -107,8 +111,13 @@ const RecentReportsTable = ({ reports, onDelete, onStatusUpdate }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {["Title", "Status", "Date", "Actions"].map((header) => (
-                <th key={header} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{header}</th>
+              {["Title", "User", "Status", "Date"].map((header) => (
+                <th
+                  key={header}
+                  className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                >
+                  {header}
+                </th>
               ))}
             </tr>
           </thead>
@@ -116,11 +125,16 @@ const RecentReportsTable = ({ reports, onDelete, onStatusUpdate }) => {
             {recentReports.map((report) => (
               <tr key={report.id} className="hover:bg-gray-50 transition">
                 <td className="px-6 py-4 text-sm font-medium text-gray-900">{report.title}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">
+                  {report.userName || report.user?.name || "Unknown User"}
+                </td>
                 <td className="px-6 py-4">
                   <select
                     value={normalizeStatus(report.status)}
                     onChange={(e) => onStatusUpdate(report.id, e.target.value, report.user_id)}
-                    className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(report.status)}`}
+                    className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(
+                      report.status
+                    )}`}
                   >
                     {statuses.map((status) => (
                       <option key={status} value={status}>
@@ -130,15 +144,6 @@ const RecentReportsTable = ({ reports, onDelete, onStatusUpdate }) => {
                   </select>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">{formatDate(report.created_at)}</td>
-                <td className="px-6 py-4 text-right text-sm font-medium">
-                  <button
-                    onClick={() => onDelete(report.id)}
-                    className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition"
-                    title="Delete Report"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>
@@ -149,24 +154,7 @@ const RecentReportsTable = ({ reports, onDelete, onStatusUpdate }) => {
 };
 
 // --- Notifications Sidebar ---
-const RecentNotifications = ({ refreshTrigger }) => {
-  const [notifications, setNotifications] = useState([]);
-
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const data = await api.getNotifications();
-      setNotifications(
-        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      );
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications, refreshTrigger]);
-
+const RecentNotifications = ({ notifications }) => {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Notifications</h2>
@@ -194,12 +182,21 @@ const RecentNotifications = ({ refreshTrigger }) => {
 const AdminDashboard = ({ onDelete }) => {
   const { reports, loading, currentUser, fetchReports } = useReports();
   const metrics = useMemo(() => calculateMetrics(reports), [reports]);
-
-  const [notificationRefresh, setNotificationRefresh] = useState(0);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     fetchReports();
+    fetchNotifications();
   }, [fetchReports]);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await api.getNotifications();
+      setNotifications(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
 
   const STATUS_API_MAP = {
     pending: "pending",
@@ -216,20 +213,24 @@ const AdminDashboard = ({ onDelete }) => {
       await api.updateReportStatus(reportId, formattedStatus);
 
       if (userId) {
-        await api.createNotification({
+        const newNotification = {
           user_id: userId,
+          title: "Report Update",
           message: `Your report status has been updated to "${formattedStatus}"`,
-        });
-        setNotificationRefresh((prev) => prev + 1);
+          is_read: 0,
+          created_at: new Date().toISOString(),
+        };
+
+        await api.createNotification(newNotification);
+
+        // Instant update in the dashboard
+        setNotifications((prev) => [newNotification, ...prev]);
       }
 
       fetchReports();
       toast.success(`Report status updated to "${formattedStatus}"`);
     } catch (err) {
-      console.error(
-        "Error updating status or sending notification:",
-        err.response?.data || err.message
-      );
+      console.error("Error updating status or sending notification:", err);
       toast.error("Failed to update status.");
     }
   };
@@ -243,13 +244,14 @@ const AdminDashboard = ({ onDelete }) => {
   }
 
   const userName = currentUser?.name || "Admin";
+  const displayName = userName.split(" ")[0] || "Admin";
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <Toaster position="top-right" />
       <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
       <p className="text-gray-600 mt-1 mb-8">
-        Welcome back, {userName.split(" ")[0]} — here’s a quick summary of your reports.
+        Welcome back, {displayName} — here’s a quick summary of your reports.
       </p>
 
       {/* KPI Cards */}
@@ -267,7 +269,7 @@ const AdminDashboard = ({ onDelete }) => {
         <div className="lg:col-span-2">
           <RecentReportsTable reports={reports} onDelete={onDelete} onStatusUpdate={handleStatusUpdate} />
         </div>
-        <RecentNotifications refreshTrigger={notificationRefresh} />
+        <RecentNotifications notifications={notifications} />
       </div>
     </div>
   );
