@@ -75,7 +75,7 @@ const LandingPage = () => {
               Sign In
             </button>
             <button
-              onClick={() => navigate("/signup")} // Changed to navigate to signup
+              onClick={() => navigate("/registration")} // Changed to navigate to signup
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200"
             >
               Get Started
@@ -98,7 +98,7 @@ const LandingPage = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <button
-                  onClick={() => navigate("/signup")} // Changed to navigate to signup
+                  onClick={() => navigate("/registration")} // Changed to navigate to signup
                   className="px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition duration-200 shadow-lg"
                 >
                   Start Reporting
