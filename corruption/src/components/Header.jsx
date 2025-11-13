@@ -60,10 +60,6 @@ const Header = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    console.log("Searching for:", searchQuery);
-  };
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -147,7 +143,7 @@ const Header = () => {
         {/* User Menu */}
         <div className="relative">
           <button onClick={() => setShowUserMenu(prev => !prev)} className="flex items-center gap-2 focus:outline-none">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-700 flex items-center justify-center text-white font-semibold">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-teal-700 flex items-center justify-center text-white font-semibold">
               {user.firstName ? user.firstName[0].toUpperCase() : "U"}
             </div>
             <div className="px-1 py-3 text-left">

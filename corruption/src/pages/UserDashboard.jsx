@@ -50,7 +50,7 @@ const StatusTag = ({ status }) => {
       classes = "bg-green-100 text-green-800";
       break;
     case "under-investigation":
-      classes = "bg-yellow-100 text-yellow-800";
+      classes = "bg-blue-100 text-yellow-800";
       break;
     case "rejected":
       classes = "bg-red-100 text-red-800";
@@ -190,13 +190,13 @@ const QuickActions = ({ openStepper, setType }) => {
     {
       label: "Add Red-Flag Record",
       icon: Flag,
-      className: "bg-teal-500 hover:bg-teal-600 text-white",
+      className: "bg-red-500 hover:bg-teal-600 text-white",
       type: "Red Flag",
     },
     {
       label: "Add Intervention",
       icon: Zap,
-      className: "bg-blue-600 hover:bg-blue-700 text-white",
+      className: "bg-teal-500 hover:bg-teal-700 text-white",
       type: "Intervention",
     },
     {

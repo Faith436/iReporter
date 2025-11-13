@@ -5,11 +5,11 @@ import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api"; // ✅ Use your API service
 import { useUsers } from "../contexts/UserContext";
 
-const COLOR_PRIMARY_TEAL = "#116E75";
+
 
 const AuthInput = ({ label, type, value, onChange, placeholder, icon: Icon }) => (
   <div className="mb-5">
-    <label className="block text-xs font-semibold uppercase mb-1" style={{ color: COLOR_PRIMARY_TEAL }}>
+    <label className="block text-xs font-semibold uppercase mb-1 text-red-600">
       {label}
     </label>
     <div className="relative">
@@ -18,10 +18,10 @@ const AuthInput = ({ label, type, value, onChange, placeholder, icon: Icon }) =>
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full p-3 pl-10 bg-white text-gray-800 rounded-lg focus:outline-none focus:ring-2 border border-teal-200 shadow-sm"
+        className="w-full p-3 pl-10 from-red-50 to-white rounded-lg focus:outline-none focus:ring-2 border border-red-200 shadow-sm"
         required
       />
-      <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: COLOR_PRIMARY_TEAL }} />
+      <Icon className="absolute text-red-500 left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
     </div>
   </div>
 );
@@ -87,10 +87,10 @@ const LoginForm = () => {
 
   return (
     <div className="flex flex-col bg-slate-100 p-8 sm:p-12 lg:p-16 justify-center">
-      <h2 className="text-3xl font-extrabold mb-2" style={{ color: COLOR_PRIMARY_TEAL }}>
+      <h2 className="text-3xl text-red-600 font-extrabold mb-2">
         Welcome Back!
       </h2>
-      <p className="text-gray-600 mb-6">Log in to continue</p>
+      <p className="text-red-600 mb-6">Log in to continue</p>
 
       <StatusMessage type={status.type} message={status.message} />
 
@@ -115,7 +115,7 @@ const LoginForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 mt-4 bg-teal-500 hover:bg-teal-400 text-white rounded-lg font-semibold transition disabled:opacity-50 flex items-center justify-center"
+          className="w-full py-3 mt-4 bg-red-500 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50 flex items-center justify-center"
         >
           {loading ? (
             <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@ const LoginForm = () => {
         </button>
       </form>
 
-      <p className="text-gray-400 text-center mt-4 text-sm">
+      <p className="text-red-400 text-center mt-4 text-sm">
         Don't have an account?{" "}
         <span onClick={() => navigate("/registration")} className="text-teal-500 hover:underline cursor-pointer">
           Sign up

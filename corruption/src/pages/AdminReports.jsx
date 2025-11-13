@@ -1,7 +1,6 @@
 // src/pages/AdminReports.jsx
 import React, { useEffect, useState } from "react";
 import { useReports } from "../contexts/ReportContext";
-import moment from "moment";
 import ListView from "../components/ListView";
 import KanbanView from "../components/KanbanView";
 
@@ -38,7 +37,7 @@ const AdminReports = () => {
           <button
             className={`px-4 py-2 rounded ${
               activeView === "list"
-                ? "bg-teal-500 text-white"
+                ? "bg-red-500 text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
             onClick={() => setActiveView("list")}
@@ -48,7 +47,7 @@ const AdminReports = () => {
           <button
             className={`px-4 py-2 rounded ${
               activeView === "kanban"
-                ? "bg-teal-500 text-white"
+                ? "bg-red-500 text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
             onClick={() => setActiveView("kanban")}
