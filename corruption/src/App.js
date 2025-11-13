@@ -7,7 +7,6 @@ import Reports from "./pages/Reports";
 import AdminReports from "./pages/AdminReports";
 import Login from "./pages/Login";
 import LandingPage from "./pages/LandingPage";
-import Signup from "./pages/Signup";
 import Registration from "./pages/Registration";
 import Notifications from "./pages/Notifications";
 import { useUsers } from "./contexts/UserContext";
@@ -71,14 +70,7 @@ function App() {
               </PublicRoute>
             }
           />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
+         
           <Route
             path="/registration"
             element={
