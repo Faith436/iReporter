@@ -73,7 +73,7 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-64 right-0 h-20 bg-white shadow-md flex items-center justify-between px-10 z-10 border-b border-gray-100">
+    <header className="fixed top-0 left-64 right-0 h-20 bg-gray-800  shadow-md flex items-center justify-between px-10 z-10 border-b border-gray-100">
       {/* Left: Menu + Search */}
       <div className="flex items-center gap-4 flex-1">
         <Menu className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" />
@@ -87,7 +87,7 @@ const Header = () => {
             onClick={() => setShowNotifications(prev => !prev)}
             className="relative p-2 rounded-full hover:bg-gray-100 transition"
           >
-            <Bell className="w-6 h-6 text-gray-700" />
+            <Bell className="w-6 h-6 text-white" />
             {unreadCount > 0 && (
               <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
                 {unreadCount}
@@ -147,9 +147,9 @@ const Header = () => {
               {user.firstName ? user.firstName[0].toUpperCase() : "U"}
             </div>
             <div className="px-1 py-3 text-left">
-              <p className="font-semibold text-gray-800">{user.firstName}</p>
+              <p className="font-semibold text-white">{user.firstName}</p>
             </div>
-            <ChevronDown className="w-4 h-4 text-gray-600" />
+            <ChevronDown className="w-4 h-4 text-white" />
           </button>
 
           {showUserMenu && (

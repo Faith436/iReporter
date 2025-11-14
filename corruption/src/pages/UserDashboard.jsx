@@ -16,6 +16,7 @@ import { useUsers } from "../contexts/UserContext";
 import apiService from "../services/api";
 import ReportStepper from "../components/ReportStepper";
 import { useNavigate } from "react-router-dom";
+import UserReportsView from "../components/UserReportsView"; // <-- NEW
 
 // --- StatCard Component ---
 const StatCard = ({ title, value, icon: Icon, color }) => {
@@ -70,62 +71,6 @@ const StatusTag = ({ status }) => {
   );
 };
 
-// --- Recent Reports Table ---
-const RecentReports = ({ reports = [] }) => {
-  const safeReports = Array.isArray(reports)
-    ? reports.filter((r) => r && typeof r === "object")
-    : [];
-  const recentReports = safeReports.slice(0, 5);
-
-  if (recentReports.length === 0) {
-    return (
-      <div className="text-gray-500 text-center p-6 bg-gray-50 rounded border border-gray-200">
-        No recent reports.
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        Recent Reports
-      </h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {["Title", "Type", "Status", "Date"].map((header) => (
-                <th
-                  key={header}
-                  className="px-3 py-3 text-left text-sm font-semibold text-gray-600"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {recentReports.map((r, idx) => (
-              <tr key={r?.id || idx} className="hover:bg-gray-50">
-                <td className="px-3 py-4">{r?.title ?? "Untitled Report"}</td>
-                <td className="px-3 py-4">{r?.type ?? "Unknown"}</td>
-                <td className="px-3 py-4">
-                  <StatusTag status={r?.status ?? "Pending"} />
-                </td>
-                <td className="px-3 py-4">
-                  {r?.created_at
-                    ? new Date(r.created_at).toLocaleDateString()
-                    : "N/A"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
 // --- Recent Notifications ---
 const RecentNotifications = ({ notifications, currentUser }) => {
   const userNotifications = notifications.filter(
@@ -166,9 +111,7 @@ const RecentNotifications = ({ notifications, currentUser }) => {
               <div className="flex items-start space-x-3">
                 <Icon className={`w-5 h-5 mt-1 ${color}`} />
                 <div>
-                  <p className={`text-sm font-semibold ${color}`}>
-                    {n.message}
-                  </p>
+                  <p className={`text-sm font-semibold ${color}`}>{n.message}</p>
                   <p className="text-xs text-gray-400 mt-1">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
@@ -190,7 +133,7 @@ const QuickActions = ({ openStepper, setType }) => {
     {
       label: "Add Red-Flag Record",
       icon: Flag,
-      className: "bg-red-500 hover:bg-teal-600 text-white",
+      className: "bg-red-500 hover:bg-red-700 text-white",
       type: "Red Flag",
     },
     {
@@ -248,6 +191,7 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
+  const [editingReport, setEditingReport] = useState(null);
 
   // Fetch dynamic stats
   useEffect(() => {
@@ -300,51 +244,20 @@ const Dashboard = () => {
   }, [fetchNotifications]);
 
   const statCards = [
-    {
-      title: "Resolved Reports",
-      value: stats.resolved || 0,
-      icon: CheckCircle,
-      color: "green",
-    },
-    {
-      title: "Pending Reports",
-      value: stats.pending || 0,
-      icon: Clock,
-      color: "gray",
-    },
-    {
-      title: "Under Investigation",
-      value: stats.underInvestigation || 0,
-      icon: Search,
-      color: "yellow",
-    },
-    {
-      title: "Rejected Reports",
-      value: stats.rejected || 0,
-      icon: XCircle,
-      color: "red",
-    },
-    {
-      title: "Red-Flag Reports",
-      value: stats.redFlags || 0,
-      icon: Flag,
-      color: "red",
-    },
-    {
-      title: "Interventions",
-      value: stats.interventions || 0,
-      icon: Zap,
-      color: "blue",
-    },
+    { title: "Resolved Reports", value: stats.resolved || 0, icon: CheckCircle, color: "green" },
+    { title: "Pending Reports", value: stats.pending || 0, icon: Clock, color: "gray" },
+    { title: "Under Investigation", value: stats.underInvestigation || 0, icon: Search, color: "yellow" },
+    { title: "Rejected Reports", value: stats.rejected || 0, icon: XCircle, color: "red" },
+    { title: "Red-Flag Reports", value: stats.redFlags || 0, icon: Flag, color: "red" },
+    { title: "Interventions", value: stats.interventions || 0, icon: Zap, color: "blue" },
   ];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <header className="mb-8">
+    <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen">
+      <header className="mb-8 ">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
         <p className="text-gray-500 mt-1">
-          Welcome back, {currentUser?.firstName}! Here’s what’s happening with
-          your reports.
+          Welcome back, {currentUser?.firstName}! Here’s what’s happening with your reports.
         </p>
       </header>
 
@@ -357,18 +270,23 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RecentReports reports={reports} />
+          {/* <-- Replaced RecentReports with UserReportsView --> */}
+          <UserReportsView
+            reports={reports}
+            role="user"
+            setEditingReport={setEditingReport}
+            setShowModal={setStepperOpen} // or another modal for editing
+            onDelete={(id) => console.log("Delete report", id)}
+            loading={false} // or use your loading state
+          />
         </div>
+
         <div className="space-y-6">
           <QuickActions
             openStepper={() => setStepperOpen(true)}
-            // CHANGE 2: Use the dedicated setter
             setType={(type) => setDefaultReportType(type)}
           />
-          <RecentNotifications
-            notifications={notifications}
-            currentUser={currentUser}
-          />
+          <RecentNotifications notifications={notifications} currentUser={currentUser} />
         </div>
       </div>
 
@@ -383,9 +301,10 @@ const Dashboard = () => {
               ×
             </button>
             <ReportStepper
-              // CHANGE 3: Pass the type using the correct prop name
               defaultType={defaultReportType}
               onClose={() => setStepperOpen(false)}
+              editingReport={editingReport}
+              setEditingReport={setEditingReport}
             />
           </div>
         </div>

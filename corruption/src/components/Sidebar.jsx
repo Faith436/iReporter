@@ -9,8 +9,8 @@ const Sidebar = () => {
   const baseLink = isAdmin ? "/admin" : "/dashboard";
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-red-600 text-white flex flex-col shadow-lg">
-      <div className="flex items-center h-20 border-b border-white/20">
+    <aside className="fixed top-0 left-0 h-full w-64 bg-gray-800 text-white flex flex-col shadow-lg">
+      <div className="flex items-center h-20 ">
         <h1 className="text-2xl mx-5 font-bold tracking-wide">iReporter</h1>
       </div>
 

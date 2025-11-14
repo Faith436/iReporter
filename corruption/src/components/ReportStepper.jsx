@@ -41,7 +41,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     media: null,
   });
 
-  // Populate form if editing or if default type is provided
+  // ✔ FIXED: Populate form if editing
   useEffect(() => {
     if (reportToEdit) {
       setFormData({
@@ -52,12 +52,11 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         location: reportToEdit.location || "",
         lat: reportToEdit.lat || "",
         lng: reportToEdit.lng || "",
-        media: reportToEdit.media || null,
+        media: null, // Let user reupload. Do NOT prefill File objects
       });
-      setCurrentStep(1); // Always start at Step 1 when editing
+      setCurrentStep(1);
     } else if (defaultType) {
       setFormData((prev) => ({ ...prev, reportType: defaultType }));
-      setCurrentStep(1); // Start at Step 1
     }
   }, [reportToEdit, defaultType]);
 
@@ -77,7 +76,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     try {
       const payload = new FormData();
       payload.append(
-
         "type",
         formData.reportType === "Red Flag" ? "red-flag" : "intervention"
       );
@@ -156,6 +154,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
               ))}
             </div>
 
+            {/* Title */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Report Title
@@ -163,25 +162,26 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
               <input
                 type="text"
                 placeholder="Enter report title"
-                value={formData.title || ""}
+                value={formData.title}
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                className="border border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-md w-full"
+                className="border border-gray-300 p-3 rounded-md w-full"
               />
             </div>
 
+            {/* Description */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Description
               </label>
               <textarea
                 placeholder="Provide a detailed account..."
-                value={formData.description || ""}
+                value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="border border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-md w-full h-36 resize-y"
+                className="border border-gray-300 p-3 rounded-md w-full h-36 resize-y"
               />
             </div>
           </div>
@@ -200,20 +200,22 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 }
                 className="border p-2 rounded w-full"
               />
+
               <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Latitude"
-                  value={formData.lat || ""}
+                  value={formData.lat}
                   onChange={(e) =>
                     setFormData({ ...formData, lat: e.target.value })
                   }
                   className="border p-2 rounded w-1/2"
                 />
+
                 <input
                   type="text"
                   placeholder="Longitude"
-                  value={formData.lng || ""}
+                  value={formData.lng}
                   onChange={(e) =>
                     setFormData({ ...formData, lng: e.target.value })
                   }
@@ -230,6 +232,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 className="border p-2 rounded"
               />
             </div>
+
             <div className="flex-1 h-64 md:h-auto">
               <MapContainer
                 center={[
@@ -301,6 +304,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             Back
           </button>
         )}
+
         {currentStep < 3 && (
           <button
             onClick={handleNext}
@@ -309,6 +313,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             Next
           </button>
         )}
+
         {currentStep === 3 && (
           <button
             onClick={handleSubmit}
