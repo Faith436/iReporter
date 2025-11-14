@@ -131,9 +131,9 @@ const LoginForm = () => {
         </button>
       </form>
 
-      <p className="text-red-400 text-center mt-4 text-sm">
+      <p className="text-black-400 text-center mt-4 text-sm">
         Don't have an account?{" "}
-        <span onClick={() => navigate("/registration")} className="text-teal-500 hover:underline cursor-pointer">
+        <span onClick={() => navigate("/registration")} className="text-red-500 hover:underline cursor-pointer">
           Sign up
         </span>
       </p>

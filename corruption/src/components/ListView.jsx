@@ -1,14 +1,16 @@
-// src/components/ListView.jsx - Admin/User Dynamic Columns
+// src/components/ListView.jsx
 import React, { useState, useEffect } from "react";
 import { Trash2, SquarePen } from "lucide-react";
 import moment from "moment";
 import { useReports } from "../contexts/ReportContext";
 
 const StatusTag = ({ status }) => {
-  let classes = "";
-  const normalizedStatus = status ? status.toLowerCase() : "pending";
-  let displayStatus = status.charAt(0).toUpperCase() + status.slice(1);
+  const normalizedStatus = status?.toLowerCase() || "pending";
+  let displayStatus = status
+    ? status.charAt(0).toUpperCase() + status.slice(1)
+    : "Pending";
 
+  let classes = "";
   switch (normalizedStatus) {
     case "resolved":
       classes = "bg-green-100 text-green-800";
@@ -35,18 +37,29 @@ const StatusTag = ({ status }) => {
   );
 };
 
-const ListView = ({ role, onEdit, onDelete, refreshKey }) => {
-  const { reports, loading, fetchReports, currentUser } = useReports();
+const ListView = ({
+  role,
+  reports, // optional prop
+  setEditingReport,
+  setShowModal,
+  onDelete,
+  refreshKey,
+  loading = false,
+  currentUser,
+}) => {
+  const { reports: contextReports } = useReports(); // fallback to context reports
+  const displayReports = reports || contextReports || []; // always an array
+
   const [internalLoading, setInternalLoading] = useState(false);
 
   useEffect(() => {
     const loadReports = async () => {
       setInternalLoading(true);
-      await fetchReports(); // fetch all for admin, own for user
+      // Optional: fetch/refresh reports if needed
       setInternalLoading(false);
     };
     if (currentUser) loadReports();
-  }, [currentUser, fetchReports, refreshKey]);
+  }, [currentUser, refreshKey]);
 
   const tableHeaders =
     role === "admin"
@@ -70,9 +83,16 @@ const ListView = ({ role, onEdit, onDelete, refreshKey }) => {
   const renderCell = (report, key) => {
     switch (key) {
       case "title":
-        return report.title;
+        return report.title || "N/A";
       case "user":
-        return report.userName || report.userEmail || "Unknown User";
+        // Adjust based on how user info is stored
+        return (
+          report.userName ||
+          report.userEmail ||
+          report.user?.name ||
+          report.user?.email ||
+          "Unknown User"
+        );
       case "location":
         return report.location || "N/A";
       case "type":
@@ -84,13 +104,15 @@ const ListView = ({ role, onEdit, onDelete, refreshKey }) => {
       case "actions":
         return (
           <div className="text-right space-x-2">
-            {report.status === "pending" && (
+            {/* Show edit button only for users */}
+            {role === "user" && report.status === "pending" && (
               <button
-                onClick={() => onEdit(report)}
-                className="text-gray-400 hover:text-gray-600 transition"
-                title="Edit Report"
+                onClick={() => {
+                  setEditingReport(report);
+                  setShowModal(true);
+                }}
               >
-                <SquarePen className="w-5 h-5 inline-block" />
+                <SquarePen className="w-5 h-5" />
               </button>
             )}
             <button
@@ -106,6 +128,8 @@ const ListView = ({ role, onEdit, onDelete, refreshKey }) => {
         return null;
     }
   };
+
+  const isLoading = internalLoading || loading;
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
@@ -127,7 +151,7 @@ const ListView = ({ role, onEdit, onDelete, refreshKey }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {internalLoading || loading ? (
+            {isLoading ? (
               <tr>
                 <td
                   colSpan={tableHeaders.length}
@@ -136,8 +160,8 @@ const ListView = ({ role, onEdit, onDelete, refreshKey }) => {
                   Loading reports...
                 </td>
               </tr>
-            ) : reports.length ? (
-              reports.map((report) => (
+            ) : displayReports.length ? (
+              displayReports.map((report) => (
                 <tr
                   key={report.id}
                   className="hover:bg-gray-50 transition duration-150"

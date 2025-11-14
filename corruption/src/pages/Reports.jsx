@@ -16,9 +16,10 @@ const Reports = () => {
     createReport,
     updateReport,
     deleteReport,
+     reports,
     fetchReports,
   } = useReports();
-
+ // Fetch reports from context
   const [activeView, setActiveView] = useState("list");
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -34,8 +35,11 @@ const Reports = () => {
   });
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const role =
-    (currentUser?.role || currentUser?.user?.role || "").toLowerCase();
+  const role = (
+    currentUser?.role ||
+    currentUser?.user?.role ||
+    ""
+  ).toLowerCase();
 
   console.log("Resolved role:", role);
 
@@ -126,7 +130,7 @@ const Reports = () => {
               setCurrentStep(1);
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 shadow text-sm transition-all duration-200"
+            className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-700 shadow text-sm transition-all duration-200"
           >
             <Plus className="w-4 h-4" /> Add Report
           </button>
@@ -137,7 +141,7 @@ const Reports = () => {
               onClick={() => setActiveView("list")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
                 activeView === "list"
-                  ? "bg-white shadow text-teal-600"
+                  ? "bg-white shadow text-red-600"
                   : "text-gray-600 hover:text-teal-600"
               }`}
             >
@@ -147,7 +151,7 @@ const Reports = () => {
               onClick={() => setActiveView("kanban")}
               className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${
                 activeView === "kanban"
-                  ? "bg-white shadow text-teal-600"
+                  ? "bg-white shadow text-red-600"
                   : "text-gray-600 hover:text-teal-600"
               }`}
             >
@@ -161,9 +165,11 @@ const Reports = () => {
       {activeView === "list" && (
         <ListView
           role={role}
-          onEdit={handleEdit}
+          reports={reports}
+          setEditingReport={setEditingReport}
           onDelete={deleteReport}
           refreshKey={refreshKey}
+          setShowModal={setShowModal}
         />
       )}
 
