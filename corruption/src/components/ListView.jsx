@@ -132,7 +132,7 @@ const ListView = ({
   const isLoading = internalLoading || loading;
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-50vh">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">All Reports</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
