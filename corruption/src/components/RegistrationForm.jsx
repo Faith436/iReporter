@@ -1,43 +1,67 @@
 // src/components/RegistrationForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User,Mail, Lock, CheckCircle, XCircle } from "lucide-react";
+import { User, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import axios from "axios";
 
+const AuthInput = ({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
 
+  const isPassword = type === "password";
+  const inputType = isPassword && showPassword ? "text" : type;
 
-const AuthInput = ({ label, type, value, onChange, placeholder, icon: Icon }) => (
-  <div className="mb-5">
-    <label
-      className="block text-xs font-semibold uppercase mb-1 text-red-600"
-      
-    >
-      {label}
-    </label>
-    <div className="relative">
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full p-3 pl-10 from-red-50 to-white rounded-lg focus:outline-none focus:ring-2 border border-red-200 shadow-sm"
-        required
-      />
-      <Icon
-        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-        
-      />
+  return (
+    <div className="mb-5">
+      <label className="block text-xs font-semibold uppercase mb-1 text-red-600">
+        {label}
+      </label>
+
+      <div className="relative">
+        <input
+          type={inputType}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full p-3 pl-10 pr-10 rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2"
+          required
+        />
+
+        {/* Left Icon */}
+        <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
+
+        {/* Eye Toggle (only for password) */}
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const StatusMessage = ({ type, message }) => {
   if (!message) return null;
   const Icon = type === "success" ? CheckCircle : XCircle;
   const colorClass =
-    type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+    type === "success"
+      ? "bg-green-100 text-green-700"
+      : "bg-red-100 text-red-700";
   return (
-    <div className={`flex items-center p-3 mb-4 rounded-lg text-sm ${colorClass}`}>
+    <div
+      className={`flex items-center p-3 mb-4 rounded-lg text-sm ${colorClass}`}
+    >
       <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
       <p className="font-medium">{message}</p>
     </div>
@@ -100,26 +124,26 @@ const RegistrationForm = () => {
 
       <form onSubmit={handleRegister} className="w-full" noValidate>
         <div className="flex gap-4">
-        <div className="flex-1">
+          <div className="flex-1">
             <AuthInput
-            label="First Name"
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Wisdom"
-            icon={User}
+              label="First Name"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Wisdom"
+              icon={User}
             />
-        </div>
-        <div className="flex-1">
+          </div>
+          <div className="flex-1">
             <AuthInput
-            label="Last Name"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Jerry"
-            icon={User}
+              label="Last Name"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Jerry"
+              icon={User}
             />
-        </div>
+          </div>
         </div>
 
         <AuthInput

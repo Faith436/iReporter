@@ -5,33 +5,64 @@ import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api"; // ✅ Use your API service
 import { useUsers } from "../contexts/UserContext";
 
+const AuthInput = ({
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
 
+  const isPassword = type === "password";
+  const inputType = isPassword && showPassword ? "text" : type;
 
-const AuthInput = ({ label, type, value, onChange, placeholder, icon: Icon }) => (
-  <div className="mb-5">
-    <label className="block text-xs font-semibold uppercase mb-1 text-red-600">
-      {label}
-    </label>
-    <div className="relative">
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full p-3 pl-10 from-red-50 to-white rounded-lg focus:outline-none focus:ring-2 border border-red-200 shadow-sm"
-        required
-      />
-      <Icon className="absolute text-red-500 left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
+  return (
+    <div className="mb-5">
+      <label className="block text-xs font-semibold uppercase mb-1 text-red-600">
+        {label}
+      </label>
+
+      <div className="relative">
+        <input
+          type={inputType}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full p-3 pl-10 pr-10 from-red-50 to-white rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2"
+          required
+        />
+
+        {/* Left Icon */}
+        <Icon className="absolute text-red-500 left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
+
+        {/* Eye Button for Password */}
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const StatusMessage = ({ type, message }) => {
   if (!message) return null;
   const Icon = type === "success" ? CheckCircle : XCircle;
-  const colorClass = type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+  const colorClass =
+    type === "success"
+      ? "bg-green-100 text-green-700"
+      : "bg-red-100 text-red-700";
   return (
-    <div className={`flex items-center p-3 mb-4 rounded-lg text-sm ${colorClass}`}>
+    <div
+      className={`flex items-center p-3 mb-4 rounded-lg text-sm ${colorClass}`}
+    >
       <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
       <p className="font-medium">{message}</p>
     </div>
@@ -59,7 +90,10 @@ const LoginForm = () => {
       // Set current user in context
       setCurrentUser(data.user);
 
-      setStatus({ type: "success", message: "Login successful! Redirecting..." });
+      setStatus({
+        type: "success",
+        message: "Login successful! Redirecting...",
+      });
 
       // Clear input
       setEmail("");
@@ -73,7 +107,6 @@ const LoginForm = () => {
           navigate("/dashboard");
         }
       }, 1000);
-
     } catch (err) {
       console.error("Login error:", err);
       setStatus({
@@ -95,21 +128,21 @@ const LoginForm = () => {
       <StatusMessage type={status.type} message={status.message} />
 
       <form onSubmit={handleLogin} className="w-full" noValidate>
-        <AuthInput 
-          label="Email Address" 
-          type="email" 
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)} 
-          placeholder="faith@example.com" 
-          icon={Mail} 
+        <AuthInput
+          label="Email Address"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="faith@example.com"
+          icon={Mail}
         />
-        <AuthInput 
-          label="Password" 
-          type="password" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-          placeholder="••••••••" 
-          icon={Lock} 
+        <AuthInput
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          icon={Lock}
         />
 
         <button
@@ -118,9 +151,25 @@ const LoginForm = () => {
           className="w-full py-3 mt-4 bg-red-500 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50 flex items-center justify-center"
         >
           {loading ? (
-            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4zm2 5.29A7.96 7.96 0 014 12H0c0 3.04 1.13 5.82 3 7.94l3-2.65z"></path>
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4zm2 5.29A7.96 7.96 0 014 12H0c0 3.04 1.13 5.82 3 7.94l3-2.65z"
+              ></path>
             </svg>
           ) : (
             <>
@@ -133,7 +182,10 @@ const LoginForm = () => {
 
       <p className="text-black-400 text-center mt-4 text-sm">
         Don't have an account?{" "}
-        <span onClick={() => navigate("/registration")} className="text-red-500 hover:underline cursor-pointer">
+        <span
+          onClick={() => navigate("/registration")}
+          className="text-red-500 hover:underline cursor-pointer"
+        >
           Sign up
         </span>
       </p>
