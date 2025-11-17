@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
       uploadPath += 'others/';
     }
 
-    // ✅ Ensure folder exists
+    // Ensure folder exists
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
       console.log(`🟢 Created folder: ${uploadPath}`);
@@ -34,16 +34,27 @@ const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
     cb(null, true);
   } else {
-    cb(new Error('Only image and video files are allowed!'), false);
+    console.warn(`⚠️ Skipped file (invalid type): ${file.originalname}`);
+    cb(null, false); // skip invalid file instead of throwing
   }
 };
 
+// Multer instance
 const upload = multer({
   storage,
   fileFilter,
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit
-  }
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
-module.exports = upload;
+// Middleware to catch multer errors
+const uploadMiddleware = (req, res, next) => {
+  upload.array('media', 5)(req, res, (err) => {
+    if (err) {
+      console.error("Upload error:", err.message);
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+};
+
+module.exports = uploadMiddleware;

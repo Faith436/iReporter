@@ -28,35 +28,63 @@ const MapBoundsSetter = ({ markers }) => {
 };
 
 const ReportMap = () => {
-  const { reports } = useReports();
+  const { locations } = useReports(); // get reactive locations
 
-  // ensure lat/lng are numbers
-  const validReports = reports
-    .filter((r) => r.lat && r.lng)
-    .map((r) => ({
-      ...r,
-      lat: Number(r.lat),
-      lng: Number(r.lng),
-    }));
+  const validLocations = locations.filter((loc) => loc.lat && loc.lng);
 
   const defaultCenter = [0.347596, 32.58252]; // Kampala
 
   return (
     <div className="relative w-full h-96">
-      <MapContainer center={defaultCenter} zoom={10} style={{ height: "100%", width: "100%" }}>
+      <MapContainer
+        center={defaultCenter}
+        zoom={10}
+        style={{ height: "100%", width: "100%" }}
+      >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-        {validReports.map((r) => (
-          <Marker key={r.id} position={[r.lat, r.lng]} icon={locationIcon}>
+        {validLocations.map((loc) => (
+          <Marker
+            key={loc.id}
+            position={[loc.lat, loc.lng]}
+            icon={locationIcon}
+          >
             <Popup>
-              <strong>{r.title}</strong>
-              <br />
-              {r.type} — {r.status}
+              <div className="space-y-1">
+                <h3 className="font-bold text-red-600">{loc.title}</h3>
+                <p>
+                  <strong>Type:</strong> {loc.type}
+                </p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span
+                    className={`font-semibold ${
+                      loc.status === "resolved"
+                        ? "text-green-600"
+                        : loc.status === "pending"
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {loc.status.toUpperCase()}
+                  </span>
+                </p>
+                {loc.userName && (
+                  <p>
+                    <strong>User:</strong> {loc.userName}
+                  </p>
+                )}
+                {loc.userEmail && (
+                  <p>
+                    <strong>Email:</strong> {loc.userEmail}
+                  </p>
+                )}
+              </div>
             </Popup>
           </Marker>
         ))}
 
-        <MapBoundsSetter markers={validReports} />
+        <MapBoundsSetter markers={validLocations} />
       </MapContainer>
     </div>
   );

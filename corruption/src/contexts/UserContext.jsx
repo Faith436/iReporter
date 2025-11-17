@@ -1,7 +1,5 @@
-// src/contexts/UserContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import { User } from "lucide-react";
+import apiService from "../services/api"; // ✅ use apiService
 
 const UserContext = createContext();
 
@@ -14,11 +12,10 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/auth/me", {
-          withCredentials: true,
-        });
+        const data = await apiService.getCurrentUser(); // ✅ use apiService
         setCurrentUser(data.user);
       } catch (err) {
+        console.error("Failed to fetch current user:", err);
         setCurrentUser(null);
       } finally {
         setLoading(false);
@@ -27,15 +24,10 @@ export const UserProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  // --- LOGOUT FUNCTION ---
   const logout = async () => {
     try {
-      await axios.post(
-        "http://localhost:5000/api/auth/logout",
-        {},
-        { withCredentials: true }
-      );
-      setCurrentUser(null); // Clear context
+      await apiService.logout(); // ✅ use apiService
+      setCurrentUser(null);
     } catch (err) {
       console.error("Logout error:", err);
     }

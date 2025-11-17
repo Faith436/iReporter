@@ -13,16 +13,17 @@ export const useReports = () => useContext(ReportContext);
 
 export const ReportProvider = ({ children }) => {
   const [reports, setReports] = useState([]);
+  const [locations, setLocations] = useState([]); // <-- new for map
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
-  const [editingReport, setEditingReport] = useState(null); // currently editing report
+  const [editingReport, setEditingReport] = useState(null);
 
   // --- Fetch logged-in user
   const fetchCurrentUser = useCallback(async () => {
     setUserLoading(true);
     try {
-      const user = await apiService.getCurrentUser(); // /api/auth/me
+      const user = await apiService.getCurrentUser();
       setCurrentUser(user);
     } catch (err) {
       console.error("Failed to fetch current user:", err);
@@ -32,53 +33,74 @@ export const ReportProvider = ({ children }) => {
     }
   }, []);
 
+  // --- Fetch reports
+  const fetchReports = useCallback(async () => {
+    if (!currentUser) return;
 
-  console.log("Current user:", currentUser);
+    try {
+      setLoading(true);
+      let data;
 
+      const role = currentUser?.role || currentUser?.user?.role;
 
-  // --- Fetch reports (admin: all, user: own only)
-const fetchReports = useCallback(async () => {
-  if (!currentUser) return;
+      if (role === "admin") {
+        data = await apiService.getReports(); // all reports
+      } else {
+        const userId = currentUser.id || currentUser.user?.id;
+        data = await apiService.getReports(userId);
+      }
 
-  try {
-    setLoading(true);
-    let data;
+      const reportsWithUser = (data || []).map((report) => ({
+        ...report,
+        userName:
+          report.userName ||
+          `${report.first_name || ""} ${report.last_name || ""}`.trim(),
+        userEmail: report.userEmail || report.email,
+      }));
 
-    const role = currentUser?.role || currentUser?.user?.role;
+      setReports(reportsWithUser);
 
-    if (role === "admin") {
-      // Admin: get all reports
-      data = await apiService.getReports(); // call without userId
-    } else {
-      // User: get own reports
-      const userId = currentUser.id || currentUser.user?.id;
-      data = await apiService.getReports(userId);
+      // --- populate locations for the map
+      const locs = reportsWithUser
+        .filter((r) => r.lat && r.lng)
+        .map((r) => ({
+          id: r.id,
+          lat: Number(r.lat),
+          lng: Number(r.lng),
+          title: r.title,
+          type: r.type,
+          status: r.status,
+        }));
+      setLocations(locs);
+
+    } catch (err) {
+      console.error("Fetch reports error:", err);
+      setReports([]);
+      setLocations([]);
+    } finally {
+      setLoading(false);
     }
-
-    const reportsWithUser = (data || []).map((report) => ({
-      ...report,
-      userName:
-        report.userName ||
-        `${report.first_name || ""} ${report.last_name || ""}`.trim(),
-      userEmail: report.userEmail || report.email,
-    }));
-
-    setReports(reportsWithUser);
-  } catch (err) {
-    console.error("Fetch reports error:", err);
-    setReports([]);
-  } finally {
-    setLoading(false);
-  }
-}, [currentUser]);
-
+  }, [currentUser]);
 
   // --- Create report
   const createReport = async (reportData) => {
     try {
       const { data } = await apiService.createReport(reportData);
-      const report = data?.report || data; // safe fallback
+      const report = data?.report || data;
+
       setReports((prev) => [report, ...(prev || [])]);
+      setLocations((prev) => [
+        ...prev,
+        {
+          id: report.id,
+          lat: Number(report.lat),
+          lng: Number(report.lng),
+          title: report.title,
+          type: report.type,
+          status: report.status,
+        },
+      ]);
+
       return report;
     } catch (err) {
       console.error("Create report error:", err);
@@ -91,9 +113,18 @@ const fetchReports = useCallback(async () => {
     try {
       const { data } = await apiService.updateReport(reportId, reportData);
       const report = data?.report || data;
+
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? report : r))
       );
+      setLocations((prev) =>
+        (prev || []).map((loc) =>
+          loc.id === reportId
+            ? { ...loc, lat: Number(report.lat), lng: Number(report.lng), title: report.title, type: report.type, status: report.status }
+            : loc
+        )
+      );
+
       return report;
     } catch (err) {
       console.error("Update report error:", err);
@@ -108,7 +139,14 @@ const fetchReports = useCallback(async () => {
       const report = data?.report || data;
 
       setReports((prev) =>
-        (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
+        (prev || []).map((r) =>
+          r.id === reportId ? { ...r, status } : r
+        )
+      );
+      setLocations((prev) =>
+        (prev || []).map((loc) =>
+          loc.id === reportId ? { ...loc, status } : loc
+        )
       );
 
       // Notify user
@@ -126,6 +164,7 @@ const fetchReports = useCallback(async () => {
     try {
       await apiService.deleteReport(reportId);
       setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
+      setLocations((prev) => (prev || []).filter((loc) => loc.id !== reportId));
     } catch (err) {
       console.error("Delete report error:", err);
       throw err;
@@ -147,6 +186,7 @@ const fetchReports = useCallback(async () => {
     <ReportContext.Provider
       value={{
         reports,
+        locations, // <-- expose locations to the map
         loading,
         currentUser,
         userLoading,
@@ -156,7 +196,7 @@ const fetchReports = useCallback(async () => {
         updateReportStatus,
         deleteReport,
         editingReport,
-        setEditingReport, // allow stepper or admin view to set the report
+        setEditingReport,
       }}
     >
       {children}

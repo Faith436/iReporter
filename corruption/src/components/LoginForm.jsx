@@ -30,7 +30,7 @@ const AuthInput = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full p-3 pl-10 pr-10 from-red-50 to-white rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2"
+          className="w-full p-3 pl-10 pr-10 from-red-50 to-white rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2 placeholder:text-xs"
           required
         />
 
@@ -76,42 +76,56 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState({ type: null, message: "" });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Validate inputs
+  const validate = () => {
+    const newErrors = {};
+    if (!email.trim()) newErrors.email = "Email is required";
+    if (!password.trim()) newErrors.password = "Password is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
     setStatus({ type: null, message: "" });
     setLoading(true);
 
     try {
-      // ✅ Use your apiService instead of axios directly
+      // 1️⃣ Log in and get token & user
       const data = await apiService.login(email, password);
 
-      // Set current user in context
-      setCurrentUser(data.user);
+      // 2️⃣ Store token
+      localStorage.setItem("token", data.token);
+
+      // 3️⃣ Fetch full current user from API (to avoid null)
+      const fullUser = await apiService.getCurrentUser();
+
+      // 4️⃣ Set in context
+      setCurrentUser(fullUser.user);
 
       setStatus({
         type: "success",
         message: "Login successful! Redirecting...",
       });
 
-      // Clear input
       setEmail("");
       setPassword("");
 
-      // Redirect based on role
+      // 5️⃣ Redirect based on role
       setTimeout(() => {
-        if (data.user.role === "admin") {
-          navigate("/admin");
-        } else {
-          navigate("/dashboard");
-        }
+        if (fullUser.user.role === "admin") navigate("/admin");
+        else navigate("/dashboard");
       }, 1000);
     } catch (err) {
       console.error("Login error:", err);
       setStatus({
         type: "error",
-        message: err.message || "Invalid email or password",
+        message: err.response?.data?.message || "Invalid email or password",
       });
     } finally {
       setLoading(false);
@@ -136,6 +150,8 @@ const LoginForm = () => {
           placeholder="faith@example.com"
           icon={Mail}
         />
+        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+
         <AuthInput
           label="Password"
           type="password"
@@ -144,6 +160,9 @@ const LoginForm = () => {
           placeholder="••••••••"
           icon={Lock}
         />
+        {errors.password && (
+          <p className="text-red-500 text-sm">{errors.password}</p>
+        )}
 
         <button
           type="submit"

@@ -13,7 +13,6 @@ const AuthInput = ({
   icon: Icon,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-
   const isPassword = type === "password";
   const inputType = isPassword && showPassword ? "text" : type;
 
@@ -22,21 +21,16 @@ const AuthInput = ({
       <label className="block text-xs font-semibold uppercase mb-1 text-red-600">
         {label}
       </label>
-
       <div className="relative">
         <input
           type={inputType}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full p-3 pl-10 pr-10 rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2"
+          className="w-full p-3 pl-10 pr-10 rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2 placeholder:text-xs"
           required
         />
-
-        {/* Left Icon */}
         <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
-
-        {/* Eye Toggle (only for password) */}
         {isPassword && (
           <button
             type="button"
@@ -70,17 +64,42 @@ const StatusMessage = ({ type, message }) => {
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState({ type: null, message: "" });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!firstName.trim()) newErrors.firstName = "First name is required";
+    if (!lastName.trim()) newErrors.lastName = "Last name is required";
+
+    if (!email.trim()) newErrors.email = "Email is required";
+    else if (!/^\S+@\S+\.\S+$/.test(email))
+      newErrors.email = "Invalid email format";
+
+    if (!password.trim()) newErrors.password = "Password is required";
+    else if (password.length < 6)
+      newErrors.password = "Password must be at least 6 characters";
+    else if (!/\d/.test(password))
+      newErrors.password = "Password must include at least one number";
+
+    if (phone && !/^\d{10,15}$/.test(phone))
+      newErrors.phone = "Phone must be 10-15 digits";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
     setStatus({ type: null, message: "" });
     setLoading(true);
 
@@ -100,7 +119,6 @@ const RegistrationForm = () => {
       setPassword("");
       setPhone("");
 
-      // Redirect to login after a short delay
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
       console.error("Registration error:", err);
@@ -130,9 +148,12 @@ const RegistrationForm = () => {
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Wisdom"
+              placeholder="wisdom"
               icon={User}
             />
+            {errors.firstName && (
+              <p className="text-gray-500 text-sm">{errors.firstName}</p>
+            )}
           </div>
           <div className="flex-1">
             <AuthInput
@@ -143,6 +164,9 @@ const RegistrationForm = () => {
               placeholder="Jerry"
               icon={User}
             />
+            {errors.lastName && (
+              <p className="text-gray-500 text-sm">{errors.lastName}</p>
+            )}
           </div>
         </div>
 
@@ -154,6 +178,10 @@ const RegistrationForm = () => {
           placeholder="wisdom@example.com"
           icon={Mail}
         />
+        {errors.email && (
+          <p className="text-gray-500 text-sm">{errors.email}</p>
+        )}
+
         <AuthInput
           label="Password"
           type="password"
@@ -162,6 +190,10 @@ const RegistrationForm = () => {
           placeholder="••••••••"
           icon={Lock}
         />
+        {errors.password && (
+          <p className="text-gray-500 text-sm">{errors.password}</p>
+        )}
+
         <AuthInput
           label="Phone (optional)"
           type="text"
@@ -170,6 +202,9 @@ const RegistrationForm = () => {
           placeholder="0700000000"
           icon={User}
         />
+        {errors.phone && (
+          <p className="text-gray-500 text-sm">{errors.phone}</p>
+        )}
 
         <button
           type="submit"

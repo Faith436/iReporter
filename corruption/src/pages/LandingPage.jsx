@@ -200,7 +200,7 @@ const LandingPage = () => {
           </p>
           <button
             onClick={() => navigate("/signup")} // Changed to navigate to signup
-            className="px-8 py-4 bg-white text-red-600 rounded-lg font-bold text-lg hover:bg-gray-100 transition duration-200 shadow-lg"
+            className="px-8 py-4 bg-white text-red-500 rounded-lg font-bold text-lg hover:bg-white transition duration-200 shadow-lg"
           >
             Get Started Today
           </button>
@@ -251,7 +251,7 @@ const LandingPage = () => {
           </div>
 
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 iReporter. All rights reserved.</p>
+            <p>&copy; 2025 iReporter. All rights reserved.</p>
           </div>
         </div>
       </footer>

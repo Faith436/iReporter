@@ -3,18 +3,17 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-const fs = require("fs"); 
+const fs = require("fs");
 dotenv.config();
 
 const authRoutes = require("./routes/auth");
-const reportRoutes = require("./routes/reportRoutes"); 
+const reportRoutes = require("./routes/reportRoutes");
 const notificationRoutes = require("./routes/notifications");
-
 
 const app = express();
 
 // --- Ensure upload directories exist ---
-['uploads/images', 'uploads/videos', 'uploads/others'].forEach(dir => {
+["uploads/images", "uploads/videos", "uploads/others"].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
     console.log(`🟢 Created directory: ${dir}`);
@@ -31,7 +30,19 @@ app.use(
   })
 );
 
-app.use(express.json()); 
+app.use(express.json());
+
+// Catch invalid JSON body
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid JSON format",
+    });
+  }
+  next();
+});
+
 app.use(express.urlencoded({ extended: true }));
 
 // --- Static and cookies ---
@@ -39,7 +50,7 @@ app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
 
 // --- Routes that need multer (multipart/form-data) ---
-app.use("/api/reports", reportRoutes); 
+app.use("/api/reports", reportRoutes);
 
 // --- JSON-parsed routes (normal APIs like auth/notifications) ---
 app.use("/api/auth", authRoutes);
