@@ -4,7 +4,7 @@ const API_URL = "http://localhost:5000/api";
 const AUTH_URL = `${API_URL}/auth`;
 const REPORTS_URL = `${API_URL}/reports`;
 const USERS_URL = `${API_URL}/users`;
-const NOTIFICATIONS_URL = `${API_URL}/notifications`; // <- new
+const NOTIFICATIONS_URL = `${API_URL}/notifications`;
 
 const apiService = {
   // --- Auth ---
@@ -20,13 +20,21 @@ const apiService = {
       { email, password },
       { withCredentials: true }
     );
+
+    // ✅ Store token if returned by backend
+    if (res.data.token) localStorage.setItem("token", res.data.token);
     return res.data;
   },
   getCurrentUser: async () => {
-    const res = await axios.get(`${AUTH_URL}/me`, { withCredentials: true });
+    const token = localStorage.getItem("token");
+    const res = await axios.get(`${AUTH_URL}/me`, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     return res.data;
   },
   logout: async () => {
+    localStorage.removeItem("token"); // remove stored token
     const res = await axios.post(
       `${AUTH_URL}/logout`,
       {},
@@ -36,73 +44,101 @@ const apiService = {
   },
 
   // --- Reports ---
-
   getReports: async (userId) => {
+    const token = localStorage.getItem("token");
     const res = await axios.get(
       `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`,
-      { withCredentials: true }
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
     );
     return res.data;
   },
 
   createReport: async (data) => {
-    const res = await axios.post(REPORTS_URL, data, { withCredentials: true });
+    const token = localStorage.getItem("token");
+    const res = await axios.post(REPORTS_URL, data, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     return res.data;
   },
 
   updateReport: async (reportId, data) => {
+    const token = localStorage.getItem("token");
     const res = await axios.put(`${REPORTS_URL}/${reportId}`, data, {
       withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     return res.data;
   },
 
   updateReportStatus: async (reportId, status) => {
+    const token = localStorage.getItem("token");
     const res = await axios.put(
       `${REPORTS_URL}/${reportId}/status`,
       { status },
-      { withCredentials: true }
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
     );
     return res.data;
   },
 
   deleteReport: async (reportId) => {
+    const token = localStorage.getItem("token");
     const res = await axios.delete(`${REPORTS_URL}/${reportId}`, {
       withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     return res.data;
   },
 
-  // --- Users (admin) ---
+  // --- Users ---
   getUsers: async () => {
-    const res = await axios.get(USERS_URL, { withCredentials: true });
+    const token = localStorage.getItem("token");
+    const res = await axios.get(USERS_URL, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     return res.data;
   },
 
   // --- Notifications ---
   createNotification: async (data) => {
+    const token = localStorage.getItem("token");
     const res = await axios.post(NOTIFICATIONS_URL, data, {
       withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     return res.data;
   },
+
   getNotifications: async () => {
-    const res = await axios.get(NOTIFICATIONS_URL, { withCredentials: true });
-    return res.data.notifications; // now returns array directly
+    const token = localStorage.getItem("token");
+    const res = await axios.get(NOTIFICATIONS_URL, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return res.data.notifications;
   },
+
   markNotificationRead: async (id) => {
-    const res = await axios.patch(
-      `${NOTIFICATIONS_URL}/${id}/read`,
-      {},
-      {
-        withCredentials: true,
-      }
-    );
+    const token = localStorage.getItem("token");
+    const res = await axios.patch(`${NOTIFICATIONS_URL}/${id}/read`, {}, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     return res.data;
   },
+
   deleteNotification: async (id) => {
+    const token = localStorage.getItem("token");
     const res = await axios.delete(`${NOTIFICATIONS_URL}/${id}`, {
       withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     return res.data;
   },

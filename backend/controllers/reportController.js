@@ -4,20 +4,40 @@ const path = require("path");
 
 // --- CREATE REPORT ---
 exports.createReport = async (req, res) => {
-  const user = req.user; // authenticated user
-  const { title, description, location, status, lat, lng } = req.body;
+  const user = req.user;
 
-  console.log("🟢 Incoming report data:", req.body);
+  // Ensure req.body is not empty
+  const body = req.body || {};
+
+  const {
+    title = "",
+    description = "",
+    location = "",
+    status = "pending",
+    type = "general",
+    lat,
+    lng,
+  } = body;
+
+  console.log("🟢 Incoming report data:", body);
   console.log("🟢 Uploaded files:", req.files);
-  console.log("🟢 Authenticated user:", req.user);
+  console.log("🟢 Authenticated user:", user);
 
-  if (!title || !description || !location) {
-    return res
-      .status(400)
-      .json({ error: "Title, description, and location are required" });
+  // Validate required fields
+  if (!title.trim() || !description.trim() || !location.trim()) {
+    return res.status(400).json({
+      error: "Title, description, and location are required",
+    });
   }
 
-  // Handle multiple media files
+  // Validate coordinates (prevent NaN)
+  const parsedLat = parseFloat(lat);
+  const parsedLng = parseFloat(lng);
+
+  const finalLat = isNaN(parsedLat) ? 0 : parsedLat;
+  const finalLng = isNaN(parsedLng) ? 0 : parsedLng;
+
+  // Handle media files safely
   let mediaPaths = [];
   if (req.files && req.files.length > 0) {
     mediaPaths = req.files.map(
@@ -28,30 +48,30 @@ exports.createReport = async (req, res) => {
   try {
     const [result] = await db.query(
       `INSERT INTO reports (user_id, title, description, type, status, location, lat, lng, media)
-   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.id,
         title,
         description,
-        req.body.type || "general", // <-- type goes here
-        status || "pending", // <-- status
+        type,
+        status,
         location,
-        parseFloat(lat) || 0,
-        parseFloat(lng) || 0,
+        finalLat,
+        finalLng,
         JSON.stringify(mediaPaths),
       ]
     );
 
-    // fetch the newly created report
     const [rows] = await db.query("SELECT * FROM reports WHERE id = ?", [
       result.insertId,
     ]);
+
     const report = rows[0];
     report.media = report.media ? JSON.parse(report.media) : [];
 
     res.status(201).json({ message: "Report created successfully", report });
   } catch (err) {
-    console.error("Create report error:", err.message, err.stack);
+    console.error("Create report error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -68,10 +88,9 @@ exports.getAllReports = async (req, res) => {
 
     rows.forEach((r) => (r.media = r.media ? JSON.parse(r.media) : []));
 
-    // Add createdBy field for frontend
     const mappedRows = rows.map((r) => ({
       ...r,
-      createdBy: r.user_id, // <-- user ID for notifications
+      createdBy: r.user_id,
       userName: `${r.first_name} ${r.last_name}`,
     }));
 
@@ -92,10 +111,9 @@ exports.getUserReports = async (req, res) => {
 
     rows.forEach((r) => (r.media = r.media ? JSON.parse(r.media) : []));
 
-    // Add createdBy field
     const mappedRows = rows.map((r) => ({
       ...r,
-      createdBy: r.user_id, // ensure frontend has the user ID
+      createdBy: r.user_id,
     }));
 
     res.json(mappedRows);
@@ -108,12 +126,32 @@ exports.getUserReports = async (req, res) => {
 // --- UPDATE REPORT STATUS (Admin only) ---
 exports.updateReportStatus = async (req, res) => {
   const { id } = req.params;
+
+  // Handle missing body
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).json({
+      error: "Request body cannot be empty",
+    });
+  }
+
   const { status } = req.body;
 
-  if (
-    !["pending", "under-investigation", "resolved", "rejected"].includes(status)
-  )
-    return res.status(400).json({ error: "Invalid status" });
+  // Handle missing status field
+  if (!status) {
+    return res.status(400).json({
+      error: "Status field is required",
+    });
+  }
+
+  const allowed = ["pending", "under-investigation", "resolved", "rejected"];
+
+  // Handle invalid status value
+  if (!allowed.includes(status)) {
+    return res.status(400).json({
+      error:
+        "Invalid status. Allowed: pending, under-investigation, resolved, rejected",
+    });
+  }
 
   try {
     await db.query("UPDATE reports SET status = ? WHERE id = ?", [status, id]);
@@ -128,15 +166,14 @@ exports.updateReportStatus = async (req, res) => {
 exports.deleteReport = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
-  const userRole = req.user.role;
 
   try {
     const [report] = await db.query("SELECT * FROM reports WHERE id = ?", [id]);
     if (report.length === 0)
       return res.status(404).json({ error: "Report not found" });
 
-    // Only admin or report owner can delete
-    if (userRole !== "admin" && report[0].user_id !== userId)
+    // Only admin or owner can delete
+    if (userId !== report[0].user_id)
       return res.status(403).json({ error: "Unauthorized" });
 
     await db.query("DELETE FROM reports WHERE id = ?", [id]);

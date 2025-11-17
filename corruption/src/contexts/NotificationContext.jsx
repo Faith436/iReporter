@@ -1,6 +1,5 @@
-// src/contexts/NotificationContext.jsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import apiService from "../services/api";
+import apiService from "../services/api"; // ✅ already using apiService
 
 const NotificationContext = createContext();
 export const useNotifications = () => useContext(NotificationContext);
@@ -9,11 +8,10 @@ export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all notifications
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiService.getNotifications();
+      const data = await apiService.getNotifications(); // ✅ already uses apiService
       setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(
@@ -27,7 +25,6 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Add a new notification instantly
   const addNotification = (notification) => {
     setNotifications((prev) => [notification, ...prev]);
   };
@@ -64,7 +61,7 @@ export const NotificationProvider = ({ children }) => {
         fetchNotifications,
         markAsRead,
         deleteNotification,
-        addNotification, // <-- new function
+        addNotification,
       }}
     >
       {children}
