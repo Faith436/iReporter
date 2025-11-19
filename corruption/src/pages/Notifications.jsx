@@ -9,8 +9,11 @@ const Notifications = () => {
 
   if (loading) return <p className="p-4">Loading notifications...</p>;
 
-  // Filter notifications for logged-in user
-  const userNotifications = notifications.filter(n => n.user_id === currentUser?.id);
+  // Admin sees all notifications, users see only their own
+  const userNotifications =
+    currentUser?.role === "admin"
+      ? notifications
+      : notifications.filter((n) => n.user_id === currentUser?.id);
 
   const IconMap = {
     Info: { Icon: Info, bg: "bg-blue-50", color: "text-blue-600" },
@@ -26,14 +29,23 @@ const Notifications = () => {
       ) : (
         <div className="space-y-4">
           {userNotifications.map((n) => {
-            const { Icon, bg, color } = IconMap[n.type] || { Icon: Info, bg: "bg-gray-50", color: "text-gray-600" };
+            const { Icon, bg, color } =
+              IconMap[n.type] || { Icon: Info, bg: "bg-gray-50", color: "text-gray-600" };
             return (
-              <div key={n.id} className={`p-4 rounded-lg ${bg} border border-opacity-50 ${color.replace("text", "border")}`}>
+              <div
+                key={n.id}
+                className={`p-4 rounded-lg ${bg} border border-opacity-50 ${color.replace(
+                  "text",
+                  "border"
+                )}`}
+              >
                 <div className="flex items-start space-x-3">
                   <Icon className={`w-5 h-5 mt-1 ${color} flex-shrink-0`} />
                   <div>
                     <p className={`text-sm font-semibold ${color}`}>{n.message}</p>
-                    <p className="text-xs text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(n.created_at).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>

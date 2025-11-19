@@ -11,39 +11,31 @@ const {
   deleteReport,
 } = require("../controllers/reportController");
 
-// 🟢 CREATE REPORT (with media upload)
-router.post(
-  "/",
-  authMiddleware,
-  upload, // directly use the middleware
-  async (req, res) => {
-    try {
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ error: "Request body cannot be empty" });
-      }
-      await createReport(req, res);
-    } catch (err) {
-      console.error("Error in POST /reports:", err);
-      res.status(500).json({ error: "Server error" });
+// 🟢 CREATE REPORT (with media upload + notify admin)
+router.post("/", authMiddleware, upload, async (req, res) => {
+  try {
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ error: "Request body cannot be empty" });
     }
+    await createReport(req, res);
+  } catch (err) {
+    console.error("Error in POST /reports:", err);
+    res.status(500).json({ error: "Server error" });
   }
-);
+});
 
-// 🟣 UNIFIED GET ROUTE — Admin gets all, user gets their own
+// 🟣 GET REPORTS — Admin gets all, user gets their own
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    if (req.user.role === "admin") {
-      return getAllReports(req, res);
-    } else {
-      return getUserReports(req, res);
-    }
+    if (req.user.role === "admin") return getAllReports(req, res);
+    return getUserReports(req, res);
   } catch (err) {
     console.error("Error in GET /reports:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// 🟡 UPDATE REPORT STATUS
+// 🟡 UPDATE REPORT STATUS (with notifications)
 router.put("/:id/status", authMiddleware, async (req, res) => {
   try {
     if (!req.body || !req.body.status) {
