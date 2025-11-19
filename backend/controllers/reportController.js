@@ -6,9 +6,7 @@ const path = require("path");
 exports.createReport = async (req, res) => {
   const user = req.user;
 
-  // Ensure req.body is not empty
   const body = req.body || {};
-
   const {
     title = "",
     description = "",
@@ -19,25 +17,18 @@ exports.createReport = async (req, res) => {
     lng,
   } = body;
 
-  console.log("🟢 Incoming report data:", body);
-  console.log("🟢 Uploaded files:", req.files);
-  console.log("🟢 Authenticated user:", user);
-
-  // Validate required fields
   if (!title.trim() || !description.trim() || !location.trim()) {
     return res.status(400).json({
       error: "Title, description, and location are required",
     });
   }
 
-  // Validate coordinates (prevent NaN)
   const parsedLat = parseFloat(lat);
   const parsedLng = parseFloat(lng);
 
   const finalLat = isNaN(parsedLat) ? 0 : parsedLat;
   const finalLng = isNaN(parsedLng) ? 0 : parsedLng;
 
-  // Handle media files safely
   let mediaPaths = [];
   if (req.files && req.files.length > 0) {
     mediaPaths = req.files.map(
@@ -46,6 +37,7 @@ exports.createReport = async (req, res) => {
   }
 
   try {
+    // --- Insert report ---
     const [result] = await db.query(
       `INSERT INTO reports (user_id, title, description, type, status, location, lat, lng, media)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -67,7 +59,34 @@ exports.createReport = async (req, res) => {
     ]);
 
     const report = rows[0];
-    report.media = report.media ? JSON.parse(report.media) : [];
+    report.media = JSON.parse(report.media || "[]");
+
+    /** ------------------------------------------
+     * 🔥 CREATE ADMIN NOTIFICATION
+     * ------------------------------------------ */
+    const ADMIN_ID = 1; // <-- Change if needed
+
+    // Fetch user full name
+    const [userRow] = await db.query(
+      "SELECT first_name, last_name, email FROM users WHERE id = ?",
+      [user.id]
+    );
+
+    const firstName = userRow[0]?.first_name || "";
+    const lastName = userRow[0]?.last_name || "";
+    const email = userRow[0]?.email || "Unknown";
+
+    const displayName =
+      firstName || lastName ? `${firstName} ${lastName}`.trim() : email;
+
+    const message = `New report created by ${displayName}: ${title}`;
+
+    await db.execute(
+      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
+      [ADMIN_ID, message]
+    );
+
+    /** ------------------------------------------ */
 
     res.status(201).json({ message: "Report created successfully", report });
   } catch (err) {
