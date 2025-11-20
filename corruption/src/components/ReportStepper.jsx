@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { useReports } from "../contexts/ReportContext";
 import { useAuth } from "../contexts/AuthContext";
+import toast, { Toaster } from "react-hot-toast";
 
 // Leaflet marker icon
 const markerIcon = new L.Icon({
@@ -68,9 +69,9 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     else alert("Please complete all fields in this step before proceeding.");
   };
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (!formData.reportType || !formData.title || !formData.description) {
-      return alert("Please complete all required fields before submitting.");
+      return toast.error("Please complete all required fields before submitting.", { duration: 5000, position: "top-center" });
     }
 
     try {
@@ -92,11 +93,11 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         await createReport(payload, token);
       }
 
-      alert("Report submitted successfully!");
+      toast.success("Report submitted successfully!", { duration: 5000, position: "top-center" });
       if (onClose) onClose();
     } catch (err) {
       console.error(err);
-      alert("Failed to submit report. Please try again.");
+      toast.error("Failed to submit report. Please try again.", { duration: 5000, position: "top-center" });
     }
   };
 
