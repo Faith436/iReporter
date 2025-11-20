@@ -1,44 +1,30 @@
 // src/contexts/ReportContext.jsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import apiService from "../services/api";
+import { useUsers } from "./UserContext";
 
 const ReportContext = createContext();
 export const useReports = () => useContext(ReportContext);
 
 export const ReportProvider = ({ children }) => {
-  // --- User state
-  const [currentUser, setCurrentUser] = useState(null);
-  const [userLoading, setUserLoading] = useState(true);
+  const { currentUser } = useUsers();
 
-  // --- Reports & map locations
   const [reports, setReports] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingReport, setEditingReport] = useState(null);
 
-  // --- Notifications
   const [notifications, setNotifications] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
 
-  /** -----------------------------
-   * Fetch current user and normalize
-   * ----------------------------- */
-  const fetchCurrentUser = useCallback(async () => {
-    setUserLoading(true);
-    try {
-      const res = await apiService.getCurrentUser();
-      const user = res.user || res; // normalize
-      setCurrentUser(user);
-    } catch (err) {
-      console.error("Failed to fetch current user:", err);
-      setCurrentUser(null);
-    } finally {
-      setUserLoading(false);
-    }
-  }, []);
+  const [hasCreatedFirstReport, setHasCreatedFirstReport] = useState(false);
+
+  // Utility: normalize report type
+  const normalizeType = (type) =>
+    type?.toLowerCase().replace(/\s+/g, "-") || "";
 
   /** -----------------------------
-   * Fetch reports (all for admin, user-specific for normal users)
+   * Fetch reports
    * ----------------------------- */
   const fetchReports = useCallback(async () => {
     if (!currentUser) return;
@@ -50,9 +36,9 @@ export const ReportProvider = ({ children }) => {
       const userId = currentUser.id;
 
       if (role === "admin") {
-        data = await apiService.getReports(); // all reports
+        data = await apiService.getReports();
       } else {
-        data = await apiService.getReports(userId); // user's reports
+        data = await apiService.getReports(userId);
       }
 
       const reportsWithUser = (data || []).map((report) => ({
@@ -61,6 +47,7 @@ export const ReportProvider = ({ children }) => {
           report.userName ||
           `${report.first_name || ""} ${report.last_name || ""}`.trim(),
         userEmail: report.userEmail || report.email,
+        type: normalizeType(report.type),
       }));
 
       setReports(reportsWithUser);
@@ -76,6 +63,8 @@ export const ReportProvider = ({ children }) => {
           status: r.status,
         }));
       setLocations(locs);
+
+      if (reportsWithUser.length > 0) setHasCreatedFirstReport(true);
     } catch (err) {
       console.error("Fetch reports error:", err);
       setReports([]);
@@ -94,7 +83,7 @@ export const ReportProvider = ({ children }) => {
     setNotifLoading(true);
     try {
       const data = await apiService.getNotifications();
-      setNotifications(data || []); // ensure array
+      setNotifications(data || []);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
       setNotifications([]);
@@ -113,7 +102,8 @@ export const ReportProvider = ({ children }) => {
       const res = await apiService.createReport(reportData);
       const report = res?.report || res;
 
-      // Add to state
+      report.type = normalizeType(report.type);
+
       setReports((prev) => [report, ...(prev || [])]);
       setLocations((prev) => [
         ...prev,
@@ -127,7 +117,8 @@ export const ReportProvider = ({ children }) => {
         },
       ]);
 
-      // Admin receives notification if user is not admin
+      if (!hasCreatedFirstReport) setHasCreatedFirstReport(true);
+
       if (currentUser.role !== "admin") {
         fetchNotifications();
       }
@@ -146,6 +137,8 @@ export const ReportProvider = ({ children }) => {
     try {
       const res = await apiService.updateReport(reportId, reportData);
       const report = res?.report || res;
+
+      report.type = normalizeType(report.type);
 
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? report : r))
@@ -177,11 +170,7 @@ export const ReportProvider = ({ children }) => {
    * ----------------------------- */
   const updateReportStatus = async (reportId, status) => {
     try {
-      // Update status via API
       await apiService.updateReportStatus(reportId, status);
-
-      // Fetch updated report (contains owner info)
-      const updatedReport = await apiService.getReportById(reportId);
 
       setReports((prev) =>
         (prev || []).map((r) =>
@@ -194,14 +183,13 @@ export const ReportProvider = ({ children }) => {
         )
       );
 
-      // Send notification to report owner
+      const updatedReport = await apiService.getReportById(reportId);
       const ownerId = updatedReport.user_id || updatedReport.user?.id;
       if (ownerId) {
         const message = `Your report "${updatedReport.title}" status is now "${status.toUpperCase()}"`;
         await apiService.sendNotification(ownerId, message);
       }
 
-      // Refresh notifications
       fetchNotifications();
     } catch (err) {
       console.error("Update report status error:", err);
@@ -227,12 +215,8 @@ export const ReportProvider = ({ children }) => {
   };
 
   /** -----------------------------
-   * Load user + reports + notifications on mount
+   * Load reports + notifications on user change
    * ----------------------------- */
-  useEffect(() => {
-    fetchCurrentUser();
-  }, [fetchCurrentUser]);
-
   useEffect(() => {
     if (currentUser) {
       fetchReports();
@@ -244,12 +228,12 @@ export const ReportProvider = ({ children }) => {
     <ReportContext.Provider
       value={{
         currentUser,
-        userLoading,
         reports,
         locations,
         loading,
         notifications,
         notifLoading,
+        hasCreatedFirstReport,
         fetchReports,
         fetchNotifications,
         createReport,

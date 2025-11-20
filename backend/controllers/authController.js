@@ -88,27 +88,49 @@ const loginUser = async (req, res) => {
 const getCurrentUser = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, first_name, last_name, email, phone, role FROM users WHERE id = ?",
+      "SELECT id, first_name, last_name, email, phone, role, firstLoginShown FROM users WHERE id = ?",
       [req.user.id]
     );
     if (rows.length === 0) return res.status(404).json({ error: "User not found" });
 
     const user = rows[0];
     res.json({
-      user: {
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
-    });
+  user: {
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    firstLoginShown: user.firstLoginShown === 1
+  },
+});
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
+const markFirstLoginSeen = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await db.query(
+      "UPDATE users SET firstLoginShown = 1 WHERE id = ?",
+      [userId]
+    );
+
+    return res.json({
+      success: true,
+      message: "First login popup marked as seen",
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
 
 // --- LOGOUT ---
 const logoutUser = (req, res) => {
@@ -120,4 +142,4 @@ const logoutUser = (req, res) => {
   res.json({ message: "Logged out successfully" });
 };
 
-module.exports = { registerUser, loginUser, getCurrentUser, logoutUser };
+module.exports = { registerUser, loginUser, getCurrentUser, logoutUser, markFirstLoginSeen };
