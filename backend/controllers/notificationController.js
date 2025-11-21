@@ -46,12 +46,26 @@ const createNotification = async (req, res) => {
     const { user_id, message } = req.body;
 
     if (!user_id || !message) {
-      return res.status(400).json({ error: "user_id and message are required" });
+      return res
+        .status(400)
+        .json({ error: "user_id and message are required" });
     }
 
+    const ADMIN_ID = 1; // Change this if your admin id is not 1
+
+    // 1️⃣ Save notification for the target user
     const [result] = await db.execute(
       "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
       [user_id, message]
+    );
+
+    // 2️⃣ Save a **copy** for the admin
+    await db.execute(
+      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
+      [
+        ADMIN_ID,
+        `Sent to user ${user_id}: ${message}`
+      ]
     );
 
     const [newNotification] = await db.execute(
@@ -60,12 +74,18 @@ const createNotification = async (req, res) => {
     );
 
     console.log("Notification created:", newNotification[0]);
-    res.status(201).json(newNotification[0]);
+
+    res.status(201).json({
+      message: "Notification delivered, admin copy saved",
+      notification: newNotification[0],
+    });
+
   } catch (err) {
     console.error("Create notification error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 module.exports = {
   getUserNotifications,

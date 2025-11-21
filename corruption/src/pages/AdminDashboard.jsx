@@ -21,7 +21,8 @@ const normalizeStatus = (status) =>
 const calculateMetrics = (reports) => {
   const counts = reports.reduce(
     (acc, report) => {
-      const type = report.type || "Red-Flag";
+      // Normalize type from API to consistent format
+      const type = report.type?.toLowerCase() || "red-flag";
       const status = normalizeStatus(report.status);
 
       if (status === "pending") acc.pending++;
@@ -29,8 +30,8 @@ const calculateMetrics = (reports) => {
       if (status === "rejected") acc.rejected++;
       if (status === "under-investigation") acc.underInvestigation++;
 
-      if (type === "Red-Flag") acc.totalRedFlags++;
-      if (type === "Intervention") acc.interventions++;
+      if (type === "red-flag") acc.totalRedFlags++;
+      if (type === "intervention") acc.interventions++;
       return acc;
     },
     {
@@ -53,6 +54,7 @@ const calculateMetrics = (reports) => {
     underInvestigationTrend: { value: "3 new this week", color: "text-yellow-600", icon: Clock },
   };
 };
+
 
 // --- KPI Card Component ---
 const KPICard = ({ title, count, icon: Icon, color, trend }) => (
@@ -248,7 +250,7 @@ const AdminDashboard = ({ onDelete }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <Toaster position="top-right" />
+      <Toaster position="top-center" />
       <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
       <p className="text-gray-600 mt-1 mb-8">
         Welcome back, {displayName} — here’s a quick summary of your reports.

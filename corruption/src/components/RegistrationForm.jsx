@@ -1,62 +1,22 @@
-// src/components/RegistrationForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import axios from "axios";
-
-const AuthInput = ({
-  label,
-  type,
-  value,
-  onChange,
-  placeholder,
-  icon: Icon,
-}) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const isPassword = type === "password";
-  const inputType = isPassword && showPassword ? "text" : type;
-
-  return (
-    <div className="mb-5">
-      <label className="block text-xs font-semibold uppercase mb-1 text-red-600">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type={inputType}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          className="w-full p-3 pl-10 pr-10 rounded-lg border border-red-200 shadow-sm focus:outline-none focus:ring-2 placeholder:text-xs"
-          required
-        />
-        <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-          >
-            {showPassword ? "🙈" : "👁️"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
+import AuthInput from "./AuthInput";
 
 const StatusMessage = ({ type, message }) => {
   if (!message) return null;
   const Icon = type === "success" ? CheckCircle : XCircle;
-  const colorClass =
-    type === "success"
-      ? "bg-green-100 text-green-700"
-      : "bg-red-100 text-red-700";
+
   return (
     <div
-      className={`flex items-center p-3 mb-4 rounded-lg text-sm ${colorClass}`}
+      className={`flex items-center p-3 mb-4 rounded-lg text-sm ${
+        type === "success"
+          ? "bg-green-100 text-green-700"
+          : "bg-red-100 text-red-700"
+      }`}
     >
-      <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+      <Icon className="w-5 h-5 mr-3" />
       <p className="font-medium">{message}</p>
     </div>
   );
@@ -64,64 +24,82 @@ const StatusMessage = ({ type, message }) => {
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [status, setStatus] = useState({ type: null, message: "" });
+
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    phone: "",
+  });
+
   const [errors, setErrors] = useState({});
+  const [status, setStatus] = useState({ type: null, message: "" });
   const [loading, setLoading] = useState(false);
 
-  const validate = () => {
-    const newErrors = {};
+  const updateForm = (field, value) => {
+    setForm({ ...form, [field]: value });
+    validateField(field, value);
+  };
 
-    if (!firstName.trim()) newErrors.firstName = "First name is required";
-    if (!lastName.trim()) newErrors.lastName = "Last name is required";
+  const validateField = (field, value) => {
+    let msg = "";
 
-    if (!email.trim()) newErrors.email = "Email is required";
-    else if (!/^\S+@\S+\.\S+$/.test(email))
-      newErrors.email = "Invalid email format";
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) msg = "First name is required";
+        else if (/\d/.test(value)) msg = "Must not contain numbers";
+        break;
 
-    if (!password.trim()) newErrors.password = "Password is required";
-    else if (password.length < 6)
-      newErrors.password = "Password must be at least 6 characters";
-    else if (!/\d/.test(password))
-      newErrors.password = "Password must include at least one number";
+      case "lastName":
+        if (!value.trim()) msg = "Last name is required";
+        else if (/\d/.test(value)) msg = "Must not contain numbers";
+        break;
 
-    if (phone && !/^\d{10,15}$/.test(phone))
-      newErrors.phone = "Phone must be 10-15 digits";
+      case "email":
+        if (!value.trim()) msg = "Email is required";
+        else if (!/^\S+@\S+\.\S+$/.test(value))
+          msg = "Invalid email format";
+        break;
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      case "password":
+        if (value.length < 6) msg = "Min 6 characters required";
+        else if (!/\d/.test(value)) msg = "Must include at least 1 number";
+        break;
+
+      case "phone":
+        if (value && !/^\d{10,15}$/.test(value))
+          msg = "Must be 10–15 digits";
+        break;
+    }
+
+    setErrors((prev) => ({ ...prev, [field]: msg }));
+  };
+
+  const validateAll = () => {
+    Object.keys(form).forEach((field) => validateField(field, form[field]));
+    return Object.values(errors).every((e) => e === "");
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validateAll()) return;
 
-    setStatus({ type: null, message: "" });
     setLoading(true);
+    setStatus({ type: null, message: "" });
 
     try {
       const { data } = await axios.post(
         "http://localhost:5000/api/auth/register",
-        { firstName, lastName, email, password, phone },
+        form,
         { withCredentials: true }
       );
 
       setStatus({ type: "success", message: data.message });
-
-      // Clear inputs
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setPassword("");
-      setPhone("");
+      setForm({ firstName: "", lastName: "", email: "", password: "", phone: "" });
 
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
-      console.error("Registration error:", err);
       setStatus({
         type: "error",
         message: err.response?.data?.error || "Registration failed",
@@ -132,90 +110,86 @@ const RegistrationForm = () => {
   };
 
   return (
-    <div className="flex flex-col bg-slate-100 p-8 sm:p-12 lg:p-16 justify-center">
+    <div className="flex flex-col bg-gradient-to-br bg-slate-100 p-8 sm:p-12 lg:p-16  shadow-md">
       <h2 className="text-3xl font-extrabold mb-2 text-red-600">
         Create Account
       </h2>
-      <p className="text-red-600 mb-6">Sign up to get started</p>
+      <p className="text-red-500 mb-6">Sign up to get started</p>
 
       <StatusMessage type={status.type} message={status.message} />
 
-      <form onSubmit={handleRegister} className="w-full" noValidate>
+      <form onSubmit={handleRegister} className="w-full">
         <div className="flex gap-4">
           <div className="flex-1">
             <AuthInput
               label="First Name"
               type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="wisdom"
+              value={form.firstName}
+              onChange={(e) => updateForm("firstName", e.target.value)}
+              onBlur={() => validateField("firstName", form.firstName)}
+              placeholder="Wisdom"
               icon={User}
+              error={errors.firstName}
             />
-            {errors.firstName && (
-              <p className="text-gray-500 text-sm">{errors.firstName}</p>
-            )}
           </div>
+
           <div className="flex-1">
             <AuthInput
               label="Last Name"
               type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              value={form.lastName}
+              onChange={(e) => updateForm("lastName", e.target.value)}
+              onBlur={() => validateField("lastName", form.lastName)}
               placeholder="Jerry"
               icon={User}
+              error={errors.lastName}
             />
-            {errors.lastName && (
-              <p className="text-gray-500 text-sm">{errors.lastName}</p>
-            )}
           </div>
         </div>
 
         <AuthInput
           label="Email Address"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={form.email}
+          onChange={(e) => updateForm("email", e.target.value)}
+          onBlur={() => validateField("email", form.email)}
           placeholder="wisdom@example.com"
           icon={Mail}
+          error={errors.email}
         />
-        {errors.email && (
-          <p className="text-gray-500 text-sm">{errors.email}</p>
-        )}
 
         <AuthInput
           label="Password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={form.password}
+          onChange={(e) => updateForm("password", e.target.value)}
+          onBlur={() => validateField("password", form.password)}
           placeholder="••••••••"
           icon={Lock}
+          error={errors.password}
         />
-        {errors.password && (
-          <p className="text-gray-500 text-sm">{errors.password}</p>
-        )}
 
         <AuthInput
           label="Phone (optional)"
           type="text"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          value={form.phone}
+          onChange={(e) => updateForm("phone", e.target.value)}
+          onBlur={() => validateField("phone", form.phone)}
           placeholder="0700000000"
           icon={User}
+          error={errors.phone}
         />
-        {errors.phone && (
-          <p className="text-gray-500 text-sm">{errors.phone}</p>
-        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 mt-4 bg-red-500 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50 flex items-center justify-center"
+          className="w-full py-3 mt-4 bg-red-500 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
         >
           {loading ? "Registering..." : "Register"}
         </button>
       </form>
 
-      <p className="text-black-600 text-center mt-4 text-sm">
+      <p className="text-black text-center mt-4 text-sm">
         Already have an account?{" "}
         <span
           onClick={() => navigate("/login")}
