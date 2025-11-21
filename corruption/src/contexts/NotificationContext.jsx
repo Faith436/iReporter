@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import apiService from "../services/api"; // ✅ already using apiService
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import apiService from "../services/api";
 
 const NotificationContext = createContext();
 export const useNotifications = () => useContext(NotificationContext);
@@ -11,7 +17,7 @@ export const NotificationProvider = ({ children }) => {
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiService.getNotifications(); // ✅ already uses apiService
+      const data = await apiService.getNotifications();
       setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(
@@ -49,6 +55,19 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  // ✅ Delete all notifications (frontend loop)
+  const deleteAllNotifications = async () => {
+    try {
+      // Delete each notification individually
+      await Promise.all(notifications.map((n) => deleteNotification(n.id)));
+      // Clear local state
+      setNotifications([]);
+    } catch (err) {
+      console.error("Delete all notifications error:", err);
+      throw err; // rethrow so component can handle toast/error
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
@@ -61,6 +80,7 @@ export const NotificationProvider = ({ children }) => {
         fetchNotifications,
         markAsRead,
         deleteNotification,
+        deleteAllNotifications, // ✅ add here
         addNotification,
       }}
     >

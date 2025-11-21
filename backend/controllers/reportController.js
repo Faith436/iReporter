@@ -1,14 +1,13 @@
 // controllers/reportController.js
 const db = require("../db");
 const path = require("path");
+const sendEmail = require("../utils/sendEmail"); // ✅ Import email utility
 
 // --- CREATE REPORT ---
 exports.createReport = async (req, res) => {
   const user = req.user;
 
-  // Ensure req.body is not empty
   const body = req.body || {};
-
   const {
     title = "",
     description = "",
@@ -19,25 +18,18 @@ exports.createReport = async (req, res) => {
     lng,
   } = body;
 
-  console.log("🟢 Incoming report data:", body);
-  console.log("🟢 Uploaded files:", req.files);
-  console.log("🟢 Authenticated user:", user);
-
-  // Validate required fields
   if (!title.trim() || !description.trim() || !location.trim()) {
     return res.status(400).json({
       error: "Title, description, and location are required",
     });
   }
 
-  // Validate coordinates (prevent NaN)
   const parsedLat = parseFloat(lat);
   const parsedLng = parseFloat(lng);
 
   const finalLat = isNaN(parsedLat) ? 0 : parsedLat;
   const finalLng = isNaN(parsedLng) ? 0 : parsedLng;
 
-  // Handle media files safely
   let mediaPaths = [];
   if (req.files && req.files.length > 0) {
     mediaPaths = req.files.map(
@@ -46,6 +38,7 @@ exports.createReport = async (req, res) => {
   }
 
   try {
+    // --- Insert report ---
     const [result] = await db.query(
       `INSERT INTO reports (user_id, title, description, type, status, location, lat, lng, media)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -67,7 +60,41 @@ exports.createReport = async (req, res) => {
     ]);
 
     const report = rows[0];
-    report.media = report.media ? JSON.parse(report.media) : [];
+    report.media = JSON.parse(report.media || "[]");
+
+    /** ------------------------------------------
+     * 🔥 CREATE ADMIN NOTIFICATION & EMAIL
+     * ------------------------------------------ */
+    const ADMIN_ID = 1; // Change if needed
+
+    const [userRow] = await db.query(
+      "SELECT first_name, last_name, email FROM users WHERE id = ?",
+      [user.id]
+    );
+
+    const firstName = userRow[0]?.first_name || "";
+    const lastName = userRow[0]?.last_name || "";
+    const email = userRow[0]?.email || "Unknown";
+
+    const displayName =
+      firstName || lastName ? `${firstName} ${lastName}`.trim() : email;
+
+    const message = `New report created by ${displayName}: ${title}`;
+
+    // In-app notification
+    await db.execute(
+      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
+      [ADMIN_ID, message]
+    );
+
+    // Email to admin
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL || "admin@example.com", // fallback admin email
+      subject: "New Report Created",
+      text: message,
+    });
+
+    /** ------------------------------------------ */
 
     res.status(201).json({ message: "Report created successfully", report });
   } catch (err) {
@@ -127,7 +154,6 @@ exports.getUserReports = async (req, res) => {
 exports.updateReportStatus = async (req, res) => {
   const { id } = req.params;
 
-  // Handle missing body
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(400).json({
       error: "Request body cannot be empty",
@@ -136,7 +162,6 @@ exports.updateReportStatus = async (req, res) => {
 
   const { status } = req.body;
 
-  // Handle missing status field
   if (!status) {
     return res.status(400).json({
       error: "Status field is required",
@@ -144,8 +169,6 @@ exports.updateReportStatus = async (req, res) => {
   }
 
   const allowed = ["pending", "under-investigation", "resolved", "rejected"];
-
-  // Handle invalid status value
   if (!allowed.includes(status)) {
     return res.status(400).json({
       error:
@@ -155,6 +178,35 @@ exports.updateReportStatus = async (req, res) => {
 
   try {
     await db.query("UPDATE reports SET status = ? WHERE id = ?", [status, id]);
+
+    // --- In-app notification & email to report owner ---
+    const [reportRows] = await db.query("SELECT * FROM reports WHERE id = ?", [
+      id,
+    ]);
+    const report = reportRows[0];
+
+    const [userRows] = await db.query(
+      "SELECT email, first_name, last_name FROM users WHERE id = ?",
+      [report.user_id]
+    );
+    const user = userRows[0];
+
+    const displayName = `${user.first_name} ${user.last_name}`.trim();
+    const emailMessage = `Hello ${displayName}, your report "${report.title}" status has been updated to "${status}".`;
+
+    // In-app notification
+    await db.execute(
+      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
+      [report.user_id, emailMessage]
+    );
+
+    // Send email
+    await sendEmail({
+      to: user.email,
+      subject: `Report Status Updated: ${report.title}`,
+      text: emailMessage,
+    });
+
     res.json({ message: "Report status updated successfully" });
   } catch (err) {
     console.error("Update report status error:", err);
@@ -172,7 +224,6 @@ exports.deleteReport = async (req, res) => {
     if (report.length === 0)
       return res.status(404).json({ error: "Report not found" });
 
-    // Only admin or owner can delete
     if (userId !== report[0].user_id)
       return res.status(403).json({ error: "Unauthorized" });
 

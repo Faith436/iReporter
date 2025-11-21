@@ -127,10 +127,14 @@ const apiService = {
 
   markNotificationRead: async (id) => {
     const token = localStorage.getItem("token");
-    const res = await axios.patch(`${NOTIFICATIONS_URL}/${id}/read`, {}, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await axios.patch(
+      `${NOTIFICATIONS_URL}/${id}/read`,
+      {},
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return res.data;
   },
 
@@ -140,6 +144,60 @@ const apiService = {
       withCredentials: true,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+    return res.data;
+  },
+
+  deleteAllNotifications: async () => {
+    const token = localStorage.getItem("token");
+    const allNotifications = await axios.get(NOTIFICATIONS_URL, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    await Promise.all(
+      allNotifications.data.notifications.map((n) =>
+        axios.delete(`${NOTIFICATIONS_URL}/${n.id}`, {
+          withCredentials: true,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+      )
+    );
+    return { success: true };
+  },
+
+  // --- Mark first login seen ---
+  markFirstLogin: async () => {
+    const token = localStorage.getItem("token");
+    const res = await axios.put(
+      `${AUTH_URL}/first-login-seen`,
+      {},
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    return res.data;
+  },
+
+  // --- ✅ NEW: Onboarding Tracking ---
+  getOnboardingStatus: async () => {
+    const token = localStorage.getItem("token");
+    const res = await axios.get(`${AUTH_URL}/onboarding-status`, {
+      withCredentials: true,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    return res.data; // { onboardingShown: true/false }
+  },
+
+  updateOnboardingStatus: async () => {
+    const token = localStorage.getItem("token");
+    const res = await axios.patch(
+      `${AUTH_URL}/onboarding-status`,
+      { onboardingShown: true },
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return res.data;
   },
 };

@@ -199,7 +199,7 @@ const LandingPage = () => {
             Join thousands of citizens who are using iReporter to fight corruption and improve their communities
           </p>
           <button
-            onClick={() => navigate("/signup")} // Changed to navigate to signup
+            onClick={() => navigate("/registration")}
             className="px-8 py-4 bg-white text-red-500 rounded-lg font-bold text-lg hover:bg-white transition duration-200 shadow-lg"
           >
             Get Started Today
