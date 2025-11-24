@@ -5,6 +5,7 @@ import {
   Flag,
   Zap,
   Search,
+  Trash2,
   XCircle,
   Clock,
   Info,
@@ -13,11 +14,15 @@ import {
 
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
-import apiService from "../services/api";
+import { useNotifications } from "../contexts/NotificationContext"; // ✅ IMPORTANT
 import ReportStepper from "../components/ReportStepper";
 import { useNavigate } from "react-router-dom";
 import UserReportsView from "../components/UserReportsView";
+import toast, { Toaster } from "react-hot-toast";
 
+// ─────────────────────────────────────────────
+// STAT CARD COMPONENT
+// ─────────────────────────────────────────────
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
     green: "bg-green-100 text-green-600",
@@ -42,41 +47,38 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   );
 };
 
-const StatusTag = ({ status }) => {
-  let classes = "";
-  switch (status?.toLowerCase()) {
-    case "resolved":
-      classes = "bg-green-100 text-green-800";
-      break;
-    case "under-investigation":
-      classes = "bg-blue-100 text-yellow-800";
-      break;
-    case "rejected":
-      classes = "bg-red-100 text-red-800";
-      break;
-    case "pending":
-      classes = "bg-gray-100 text-gray-800";
-      break;
-    default:
-      classes = "bg-blue-100 text-blue-800";
-  }
-  return (
-    <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${classes}`}
-    >
-      {status}
-    </span>
-  );
-};
+// ─────────────────────────────────────────────
+// NOTIFICATION LIST + DELETE BUTTON
+// ─────────────────────────────────────────────
+const RecentNotifications = ({
+  notifications,
+  currentUser,
+  deleteNotification, // ✅ RECEIVED FROM PARENT
+}) => {
+  const [removing, setRemoving] = useState(null);
 
-const RecentNotifications = ({ notifications, currentUser }) => {
   const userNotifications = notifications.filter(
     (n) => n.user_id === currentUser?.id
   );
+
   const IconMap = {
     Info: { Icon: Info, bg: "bg-blue-50", color: "text-blue-600" },
     Resolved: { Icon: CheckCircle, bg: "bg-green-50", color: "text-green-600" },
     Reminder: { Icon: Clock, bg: "bg-yellow-50", color: "text-yellow-600" },
+  };
+
+  const handleDelete = async (id) => {
+    setRemoving(id);
+    setTimeout(() => {
+      deleteNotification(id); // ✅ WORKING NOW
+      setRemoving(null);
+    }, 200);
+    try {
+      await deleteNotification(id);
+      toast.success("Notification deleted", { position: "top-center" });
+    } catch (err) {
+      toast.error("Failed to delete notification", { position: "top-center" });
+    }
   };
 
   return (
@@ -84,25 +86,28 @@ const RecentNotifications = ({ notifications, currentUser }) => {
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Recent Notifications
       </h2>
+
       <div className="space-y-4">
         {userNotifications.length === 0 && (
           <p className="text-gray-500 text-sm text-center">
             No notifications yet.
           </p>
         )}
+
         {userNotifications.map((n) => {
           const { Icon, bg, color } = IconMap[n.type] || {
             Icon: Info,
             bg: "bg-gray-50",
             color: "text-gray-600",
           };
+
           return (
             <div
               key={n.id}
-              className={`p-4 rounded-lg ${bg} border ${color.replace(
+              className={`p-4 rounded-lg border flex justify-between items-start transition-all duration-200 ${bg} ${color.replace(
                 "text",
                 "border"
-              )}`}
+              )} ${removing === n.id ? "opacity-0 scale-95" : "opacity-100"}`}
             >
               <div className="flex items-start space-x-3">
                 <Icon className={`w-5 h-5 mt-1 ${color}`} />
@@ -115,6 +120,14 @@ const RecentNotifications = ({ notifications, currentUser }) => {
                   </p>
                 </div>
               </div>
+
+              {/* DELETE BUTTON */}
+              <button
+                onClick={() => handleDelete(n.id)}
+                className="p-1 rounded hover:bg-red-100 transition"
+              >
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </button>
             </div>
           );
         })}
@@ -123,6 +136,9 @@ const RecentNotifications = ({ notifications, currentUser }) => {
   );
 };
 
+// ─────────────────────────────────────────────
+// QUICK ACTIONS
+// ─────────────────────────────────────────────
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
   const actions = [
@@ -177,16 +193,23 @@ const QuickActions = ({ openStepper, setType }) => {
   );
 };
 
+// ─────────────────────────────────────────────
+// MAIN USER DASHBOARD
+// ─────────────────────────────────────────────
 const Dashboard = () => {
   const { currentUser } = useUsers();
   const { reports } = useReports();
+
+  const {
+    notifications,
+    deleteNotification, // ✅ GET FROM CONTEXT
+  } = useNotifications();
+
   const [stats, setStats] = useState({});
-  const [notifications, setNotifications] = useState([]);
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
 
-  // Show overlay if user has no reports
   const [showNoReportsOverlay, setShowNoReportsOverlay] = useState(false);
   useEffect(() => {
     if (currentUser && reports) {
@@ -194,7 +217,7 @@ const Dashboard = () => {
     }
   }, [currentUser, reports]);
 
-  // Stats Fetch
+  // Compute stats
   useEffect(() => {
     if (!reports) return;
 
@@ -212,46 +235,9 @@ const Dashboard = () => {
     });
   }, [reports]);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const allNotifications = await apiService.getNotifications();
-      setNotifications(allNotifications);
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-
   return (
     <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative">
-      {/* Overlay if no reports */}
-      {showNoReportsOverlay && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="bg-white p-10 rounded-2xl shadow-2xl max-w-lg w-full text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              No Reports Yet 🎉
-            </h2>
-            <p className="text-gray-600 mb-6">
-              You currently have no reports. Start by creating your first
-              Red-Flag or Intervention report.
-            </p>
-            <button
-              onClick={() => {
-                setStepperOpen(true);
-                setShowNoReportsOverlay(false);
-                setDefaultReportType("Red Flag");
-              }}
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl text-lg font-semibold shadow-md w-full"
-            >
-              Add Your First Report
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* HEADER */}
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
         <p className="text-gray-500 mt-1">
@@ -259,6 +245,7 @@ const Dashboard = () => {
         </p>
       </header>
 
+      {/* STATS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {[
           {
@@ -302,6 +289,7 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* REPORTS + NOTIFICATIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <UserReportsView
@@ -319,14 +307,17 @@ const Dashboard = () => {
             openStepper={() => setStepperOpen(true)}
             setType={setDefaultReportType}
           />
+
+          {/* 👉 PASS THE DELETE FUNCTION HERE */}
           <RecentNotifications
             notifications={notifications}
             currentUser={currentUser}
+            deleteNotification={deleteNotification} // ✅ FIXED
           />
         </div>
       </div>
 
-      {/* Stepper */}
+      {/* REPORT STEPPER MODAL */}
       {stepperOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-auto">
           <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mt-20 p-6 relative">
@@ -336,6 +327,7 @@ const Dashboard = () => {
             >
               ×
             </button>
+
             <ReportStepper
               defaultType={defaultReportType}
               onClose={() => setStepperOpen(false)}

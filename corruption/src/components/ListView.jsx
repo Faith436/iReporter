@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Trash2, SquarePen } from "lucide-react";
 import moment from "moment";
 import { useReports } from "../contexts/ReportContext";
+import toast, { Toaster } from "react-hot-toast";
 
 const StatusTag = ({ status }) => {
   const normalizedStatus = status?.toLowerCase() || "pending";
@@ -39,7 +40,7 @@ const StatusTag = ({ status }) => {
 
 const ListView = ({
   role,
-  reports, // optional prop
+  reports,
   setEditingReport,
   setShowModal,
   onDelete,
@@ -47,7 +48,7 @@ const ListView = ({
   loading = false,
   currentUser,
 }) => {
-  const { reports: contextReports } = useReports(); // fallback to context reports
+  const { reports: contextReports } = useReports();
   const displayReports = reports || contextReports || [];
 
   const [internalLoading, setInternalLoading] = useState(false);
@@ -59,6 +60,52 @@ const ListView = ({
     };
     if (currentUser) loadReports();
   }, [currentUser, refreshKey]);
+
+  // --- Toast-based Delete Confirmation ---
+  const handleDeleteWithToast = (reportId) => {
+    toast(
+      (t) => (
+        <div className="bg-white border  rounded-lg p-9 shadow-lg">
+          <p className="mb-3 text-gray-800 font-medium">
+            Are you sure you want to delete this report?
+          </p>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+            >
+              No
+            </button>
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  await onDelete(reportId);
+                  toast.success("Report deleted successfully", {
+                    position: "top-center",
+                    duration: 2500,
+                  });
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Failed to delete report", {
+                    position: "top-center",
+                    duration: 2500,
+                  });
+                }
+              }}
+              className="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white"
+            >
+              Yes
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        duration: Infinity, // waits for user action
+      }
+    );
+  };
 
   const tableHeaders =
     role === "admin"
@@ -101,7 +148,7 @@ const ListView = ({
         return moment(report.created_at || Date.now()).format("MMM D, YYYY");
       case "actions":
         return (
-          <div className="text-right space-x-2">
+          <div className="text-right space-x-9">
             {role === "user" && report.status === "pending" && (
               <button
                 onClick={() => {
@@ -113,7 +160,7 @@ const ListView = ({
               </button>
             )}
             <button
-              onClick={() => onDelete(report.id)}
+              onClick={() => handleDeleteWithToast(report.id)}
               className="text-red-400 hover:text-red-600 transition"
               title="Delete Report"
             >
@@ -130,6 +177,9 @@ const ListView = ({
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[50vh]">
+      {/* Toast container */}
+      <Toaster position="top-center" reverseOrder={false} />
+
       <h2 className="text-xl font-semibold text-gray-800 mb-4">All Reports</h2>
 
       {/* Desktop Table */}
@@ -246,7 +296,7 @@ const ListView = ({
                     </button>
                   )}
                   <button
-                    onClick={() => onDelete(report.id)}
+                    onClick={() => handleDeleteWithToast(report.id)}
                     className="text-red-400 hover:text-red-600 transition"
                     title="Delete Report"
                   >

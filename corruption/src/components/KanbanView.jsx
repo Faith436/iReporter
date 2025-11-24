@@ -63,7 +63,7 @@ const KanbanView = ({ role, loggedInUserId, onEdit, onDelete, refreshKey }) => {
     loadReports();
   }, [loggedInUserId, role, fetchUserReports, refreshKey]);
 
-  // --- Group reports by status (no filtering by createdBy)
+  // --- Group reports by status
   const groupedReports = statuses.map((status) => ({
     status,
     items: reports.filter(
@@ -78,13 +78,16 @@ const KanbanView = ({ role, loggedInUserId, onEdit, onDelete, refreshKey }) => {
   }
 
   return (
-    <div className="grid md:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
       {groupedReports.map(({ status, items }) => (
-        <div key={status} className="bg-gray-100 p-4 rounded-lg shadow-sm">
+        <div
+          key={status}
+          className="bg-gray-100 p-4 rounded-lg shadow-sm flex flex-col"
+        >
           <h2 className="font-semibold capitalize mb-3 text-gray-700">
             {status.replace("-", " ")}
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto">
             {items.length ? (
               items.map((report) => {
                 const lat = parseFloat(report.lat) || 0;
@@ -93,7 +96,7 @@ const KanbanView = ({ role, loggedInUserId, onEdit, onDelete, refreshKey }) => {
                 return (
                   <div
                     key={report.id}
-                    className="bg-white rounded-lg shadow p-3 border border-gray-200 hover:shadow-md transition relative"
+                    className="bg-white rounded-lg shadow p-3 border border-gray-200 hover:shadow-md transition relative flex flex-col"
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="font-semibold text-sm">{report.title}</h3>
@@ -104,7 +107,7 @@ const KanbanView = ({ role, loggedInUserId, onEdit, onDelete, refreshKey }) => {
                     </p>
 
                     {report.lat && report.lng && (
-                      <div className="overflow-hidden rounded h-40 mb-2">
+                      <div className="overflow-hidden rounded h-40 mb-2 relative z-0">
                         <MapContainer
                           center={[lat, lng]}
                           zoom={13}
@@ -113,7 +116,9 @@ const KanbanView = ({ role, loggedInUserId, onEdit, onDelete, refreshKey }) => {
                         >
                           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                           <Marker position={[lat, lng]} icon={markerIcon}>
-                            <Popup>{report.location || "No Location"}</Popup>
+                            <Popup className="z-40">
+                              {report.location || "No Location"}
+                            </Popup>
                           </Marker>
                         </MapContainer>
                       </div>
