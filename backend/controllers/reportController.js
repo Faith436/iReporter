@@ -89,7 +89,7 @@ exports.createReport = async (req, res) => {
 
     // Email to admin
     await sendEmail({
-      to: process.env.ADMIN_EMAIL || "admin@example.com", // fallback admin email
+      to: process.env.ADMIN_EMAIL || "wisdomjeremiah57@gmail.com", // fallback admin email
       subject: "New Report Created",
       text: message,
     });
