@@ -9,11 +9,14 @@ const NOTIFICATIONS_URL = "/notifications";
 // Create a single axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // <--- send cookies automatically
 });
 
+// Interceptor to attach token to every request
 api.interceptors.request.use((config) => {
-  // no need to attach token
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
@@ -25,31 +28,32 @@ const apiService = {
   },
 
   login: async (email, password) => {
-    const res = await api.post(
-      `${AUTH_URL}/login`,
-      { email, password },
-      { withCredentials: true }
-    );
-    console.log("LOGIN RESPONSE:", res.data); // <-- add this
+    const res = await api.post(`${AUTH_URL}/login`, { email, password });
+    console.log("LOGIN RESPONSE:", res.data);
+
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token); // store token
+    }
+
     return res.data;
   },
 
   getCurrentUser: async () => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token found");
+
     const res = await api.get(`${AUTH_URL}/me`);
     return res.data;
   },
 
   logout: async () => {
     localStorage.removeItem("token");
-    const res = await api.post(`${AUTH_URL}/logout`);
-    return res.data;
+    return { message: "Logged out" };
   },
 
   // --- Reports ---
   getReports: async (userId) => {
-    const res = await api.get(
-      `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`
-    );
+    const res = await api.get(`${REPORTS_URL}${userId ? "?userId=" + userId : ""}`);
     return res.data;
   },
 
