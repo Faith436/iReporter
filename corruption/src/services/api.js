@@ -53,7 +53,9 @@ const apiService = {
 
   // --- Reports ---
   getReports: async (userId) => {
-    const res = await api.get(`${REPORTS_URL}${userId ? "?userId=" + userId : ""}`);
+    const res = await api.get(
+      `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`
+    );
     return res.data;
   },
 
@@ -68,8 +70,18 @@ const apiService = {
   },
 
   updateReportStatus: async (reportId, status) => {
-    const res = await api.put(`${REPORTS_URL}/${reportId}/status`, data);
-    return res.data;
+    try {
+      const res = await api.put(`${REPORTS_URL}/${reportId}/status`, {
+        status,
+      });
+      return res.data;
+    } catch (error) {
+      console.error(
+        "Error updating report status:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
   },
 
   deleteReport: async (reportId) => {

@@ -299,7 +299,7 @@ const AdminDashboard = ({ onDelete }) => {
 
     try {
       console.log("Sending status update:", formattedStatus);
-      await api.updateReportStatus(reportId, { status: formattedStatus });
+      await api.updateReportStatus(reportId, formattedStatus);
       if (userId) {
         const newNotification = {
           user_id: userId,
