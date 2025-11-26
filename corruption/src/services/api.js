@@ -1,10 +1,11 @@
 import axios from "axios";
 import API_BASE_URL from "../config/api"; // adjust path as needed
 
-const AUTH_URL = "/api/auth";
-const REPORTS_URL = "/api/reports";
-const USERS_URL = "/api/users";
-const NOTIFICATIONS_URL = "/api/notifications";
+const AUTH_URL = "/auth";
+const REPORTS_URL = "/reports";
+const USERS_URL = "/users";
+const NOTIFICATIONS_URL = "/notifications";
+
 
 // Create a single axios instance
 const api = axios.create({
