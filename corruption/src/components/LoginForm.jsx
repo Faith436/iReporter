@@ -69,7 +69,7 @@ const StatusMessage = ({ type, message }) => {
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { setCurrentUser } = useUsers();
+  const { setCurrentUser, markFirstLoginSeen } = useUsers();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -99,29 +99,26 @@ const LoginForm = () => {
     setStatus({ type: null, message: "" });
     setLoading(true);
 
-    console.log("API Base URL:", API_BASE_URL);
-
     try {
-      // 1. Login → token automatically stored via axios interceptor
-      const data = await apiService.login(email, password);
+      // 1️⃣ Login → token handled via axios cookies
+      await apiService.login(email, password);
 
-      // 2. Get current user
+      // 2️⃣ Fetch full user info
       const fullUser = await apiService.getCurrentUser();
       setCurrentUser(fullUser.user);
 
-      // 3. Check if first login
-      if (!fullUser.user.firstLoginShown) {
-        // Show first-login modal
-        // Make sure you have a state in your UserContext like `showFirstLogin`
-        markFirstLoginSeen?.(); // call the context function to mark first login
+      // 3️⃣ First login check
+      if (!fullUser.user.firstLoginShown && markFirstLoginSeen) {
+        await markFirstLoginSeen(); // mark first login as seen on backend
       }
 
+      // 4️⃣ Success message
       setStatus({
         type: "success",
         message: "Login successful! Redirecting...",
       });
 
-      // 4. Redirect based on role
+      // 5️⃣ Redirect based on role
       setTimeout(() => {
         if (fullUser.user.role === "admin") navigate("/admin");
         else navigate("/dashboard");
