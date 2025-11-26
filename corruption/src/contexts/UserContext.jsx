@@ -2,13 +2,21 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import apiService from "../services/api";
 
 const UserContext = createContext();
-
 export const useUsers = () => useContext(UserContext);
 
 export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFirstLogin, setShowFirstLogin] = useState(false); // for first-login modal
+
+  // Helper: check if first-login modal should show
+  const checkFirstLogin = (user) => {
+    if (!user.firstLoginShown && (!user.reports || user.reports.length === 0)) {
+      setShowFirstLogin(true);
+    } else {
+      setShowFirstLogin(false);
+    }
+  };
 
   // Fetch current user on mount
   useEffect(() => {
@@ -17,10 +25,8 @@ export const UserProvider = ({ children }) => {
         const data = await apiService.getCurrentUser();
         setCurrentUser(data.user);
 
-        // Show first-login modal if not seen
-        if (!data.user.firstLoginShown) {
-          setShowFirstLogin(true);
-        }
+        // Check first-login logic
+        checkFirstLogin(data.user);
       } catch (err) {
         console.error("Failed to fetch current user:", err);
         setCurrentUser(null);
@@ -37,9 +43,8 @@ export const UserProvider = ({ children }) => {
       const data = await apiService.getCurrentUser();
       setCurrentUser(data.user);
 
-      // Re-check first-login status
-      if (!data.user.firstLoginShown) setShowFirstLogin(true);
-      else setShowFirstLogin(false);
+      // Re-check first-login logic
+      checkFirstLogin(data.user);
     } catch (err) {
       console.error("Failed to refresh user:", err);
     }
@@ -79,7 +84,6 @@ export const UserProvider = ({ children }) => {
         logout,
         loading,
         showFirstLogin,
-        setShowFirstLogin,
         markFirstLoginSeen,
       }}
     >

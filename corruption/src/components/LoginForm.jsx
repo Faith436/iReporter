@@ -108,7 +108,11 @@ const LoginForm = () => {
       setCurrentUser(fullUser.user);
 
       // 3️⃣ First login check
-      if (!fullUser.user.firstLoginShown && markFirstLoginSeen) {
+      if (
+        !fullUser.user.firstLoginShown &&
+        (!fullUser.user.reports || fullUser.user.reports.length === 0) &&
+        markFirstLoginSeen
+      ) {
         await markFirstLoginSeen(); // mark first login as seen on backend
       }
 
