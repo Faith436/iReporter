@@ -1,7 +1,13 @@
 import React from "react";
 
-const RecentReports = ({ reports = [], onEditReport }) => {
-  // Make sure reports is always an array and remove any invalid entries
+const STATUS_OPTIONS = {
+  pending: "Pending",
+  "under-investigation": "Under Investigation",
+  resolved: "Resolved",
+  rejected: "Rejected",
+};
+
+const RecentReports = ({ reports = [], onEditReport, onStatusUpdate }) => {
   const safeReports = Array.isArray(reports) ? reports.filter(r => r && typeof r === "object") : [];
   const recent = safeReports.slice(0, 5);
 
@@ -23,13 +29,26 @@ const RecentReports = ({ reports = [], onEditReport }) => {
           <div>
             <h4 className="font-semibold">{report?.title ?? "Untitled Report"}</h4>
             <p className="text-sm text-gray-600">{report?.description ?? "No description"}</p>
-            <p className="text-xs text-gray-400">
-              Status: {report?.status ?? "Pending"}
-            </p>
+            <div className="mt-1 text-xs text-gray-400">
+              Status:{" "}
+              <select
+                value={report?.status || "pending"}
+                onChange={(e) =>
+                  onStatusUpdate?.(report.id, e.target.value, report.user_id)
+                }
+                className="text-xs rounded px-2 py-1 border"
+              >
+                {Object.entries(STATUS_OPTIONS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          {report?.status === "pending" && (
+          {report?.status === "pending" && onEditReport && (
             <button
-              onClick={() => report && onEditReport?.(report)}
+              onClick={() => onEditReport(report)}
               className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700"
             >
               Edit
