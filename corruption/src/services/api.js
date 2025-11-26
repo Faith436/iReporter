@@ -1,10 +1,10 @@
 import axios from "axios";
 import API_BASE_URL from "../config/api"; // adjust path as needed
 
-const AUTH_URL = "/auth";
-const REPORTS_URL = "/reports";
-const USERS_URL = "/users";
-const NOTIFICATIONS_URL = "/notifications";
+const AUTH_URL = "/api/auth";
+const REPORTS_URL = "/api/reports";
+const USERS_URL = "/api/users";
+const NOTIFICATIONS_URL = "/api/notifications";
 
 // Create a single axios instance
 const api = axios.create({
@@ -48,7 +48,9 @@ const apiService = {
 
   // --- Reports ---
   getReports: async (userId) => {
-    const res = await api.get(`${REPORTS_URL}${userId ? "?userId=" + userId : ""}`);
+    const res = await api.get(
+      `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`
+    );
     return res.data;
   },
 
@@ -102,7 +104,9 @@ const apiService = {
   deleteAllNotifications: async () => {
     const allNotifications = await api.get(NOTIFICATIONS_URL);
     await Promise.all(
-      allNotifications.data.notifications.map((n) => api.delete(`${NOTIFICATIONS_URL}/${n.id}`))
+      allNotifications.data.notifications.map((n) =>
+        api.delete(`${NOTIFICATIONS_URL}/${n.id}`)
+      )
     );
     return { success: true };
   },
@@ -119,7 +123,9 @@ const apiService = {
   },
 
   updateOnboardingStatus: async () => {
-    const res = await api.patch(`${AUTH_URL}/onboarding-status`, { onboardingShown: true });
+    const res = await api.patch(`${AUTH_URL}/onboarding-status`, {
+      onboardingShown: true,
+    });
     return res.data;
   },
 };
