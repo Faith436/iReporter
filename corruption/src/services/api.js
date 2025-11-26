@@ -6,7 +6,6 @@ const REPORTS_URL = "/reports";
 const USERS_URL = "/users";
 const NOTIFICATIONS_URL = "/notifications";
 
-
 // Create a single axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -24,12 +23,13 @@ api.interceptors.request.use((config) => {
 const apiService = {
   // --- Auth ---
   register: async (userData) => {
-    const res = await api.post(`${AUTH_URL}/signup`, userData);
+    const res = await api.post(`${AUTH_URL}/register`, userData);
     return res.data;
   },
 
   login: async (email, password) => {
     const res = await api.post(`${AUTH_URL}/login`, { email, password });
+    console.log("LOGIN RESPONSE:", res.data); // <-- add this
     if (res.data.token) localStorage.setItem("token", res.data.token);
     return res.data;
   },
