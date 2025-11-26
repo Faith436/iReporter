@@ -9,15 +9,7 @@ const NOTIFICATIONS_URL = "/notifications";
 // Create a single axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-});
-
-// Interceptor to attach token to every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true, // <--- send cookies automatically
 });
 
 const apiService = {
@@ -30,13 +22,10 @@ const apiService = {
   login: async (email, password) => {
     const res = await api.post(`${AUTH_URL}/login`, { email, password });
     console.log("LOGIN RESPONSE:", res.data); // <-- add this
-    if (res.data.token) localStorage.setItem("token", res.data.token);
     return res.data;
   },
 
   getCurrentUser: async () => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token found");
     const res = await api.get(`${AUTH_URL}/me`);
     return res.data;
   },
