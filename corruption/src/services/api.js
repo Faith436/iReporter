@@ -6,6 +6,21 @@ const REPORTS_URL = `${API_BASE_URL}/reports`;
 const USERS_URL = `${API_BASE_URL}/users`;
 const NOTIFICATIONS_URL = `${API_BASE_URL}/notifications`;
 
+// Create an axios instance for all API calls
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
+// Interceptor to attach token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 const apiService = {
   // --- Auth ---
   register: async (userData) => {
@@ -50,7 +65,10 @@ const apiService = {
     const token = localStorage.getItem("token");
     const res = await axios.get(
       `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`,
-      { withCredentials: true, headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
     );
     return res.data;
   },
@@ -75,10 +93,14 @@ const apiService = {
 
   updateReportStatus: async (reportId, status) => {
     const token = localStorage.getItem("token");
-    const res = await axios.put(`${REPORTS_URL}/${reportId}/status`, { status }, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await axios.put(
+      `${REPORTS_URL}/${reportId}/status`,
+      { status },
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return res.data;
   },
 
@@ -122,10 +144,14 @@ const apiService = {
 
   markNotificationRead: async (id) => {
     const token = localStorage.getItem("token");
-    const res = await axios.patch(`${NOTIFICATIONS_URL}/${id}/read`, {}, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await axios.patch(
+      `${NOTIFICATIONS_URL}/${id}/read`,
+      {},
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return res.data;
   },
 
@@ -158,10 +184,14 @@ const apiService = {
   // --- First login / Onboarding ---
   markFirstLogin: async () => {
     const token = localStorage.getItem("token");
-    const res = await axios.put(`${AUTH_URL}/first-login-seen`, {}, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await axios.put(
+      `${AUTH_URL}/first-login-seen`,
+      {},
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return res.data;
   },
 
@@ -176,10 +206,14 @@ const apiService = {
 
   updateOnboardingStatus: async () => {
     const token = localStorage.getItem("token");
-    const res = await axios.patch(`${AUTH_URL}/onboarding-status`, { onboardingShown: true }, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await axios.patch(
+      `${AUTH_URL}/onboarding-status`,
+      { onboardingShown: true },
+      {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
     return res.data;
   },
 };

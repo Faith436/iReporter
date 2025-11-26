@@ -93,39 +93,42 @@ const LoginForm = () => {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  e.preventDefault();
+  if (!validate()) return;
 
-    setStatus({ type: null, message: "" });
-    setLoading(true);
+  setStatus({ type: null, message: "" });
+  setLoading(true);
 
-    console.log("API Base URL:", API_BASE_URL);
+  console.log("API Base URL:", API_BASE_URL);
 
-    try {
-      const data = await apiService.login(email, password);
-      localStorage.setItem("token", data.token);
+  try {
+    // 1. login → token stored automatically via axios interceptor
+    const data = await apiService.login(email, password);
 
-      const fullUser = await apiService.getCurrentUser();
-      setCurrentUser(fullUser.user);
+    // 2. get current user
+    const fullUser = await apiService.getCurrentUser();
+    setCurrentUser(fullUser.user);
 
-      setStatus({
-        type: "success",
-        message: "Login successful! Redirecting...",
-      });
+    setStatus({
+      type: "success",
+      message: "Login successful! Redirecting...",
+    });
 
-      setTimeout(() => {
-        if (fullUser.user.role === "admin") navigate("/admin");
-        else navigate("/dashboard");
-      }, 1200);
-    } catch (err) {
-      setStatus({
-        type: "error",
-        message: err.response?.data?.message || "Invalid email or password",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    // 3. redirect based on role
+    setTimeout(() => {
+      if (fullUser.user.role === "admin") navigate("/admin");
+      else navigate("/dashboard");
+    }, 1200);
+  } catch (err) {
+    setStatus({
+      type: "error",
+      message: err.response?.data?.message || "Invalid email or password",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="flex flex-col bg-slate-100 p-8 sm:p-12 lg:p-16 justify-center">
