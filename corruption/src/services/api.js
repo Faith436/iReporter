@@ -12,6 +12,11 @@ const api = axios.create({
   withCredentials: true, // <--- send cookies automatically
 });
 
+api.interceptors.request.use((config) => {
+  // no need to attach token
+  return config;
+});
+
 const apiService = {
   // --- Auth ---
   register: async (userData) => {
@@ -20,7 +25,11 @@ const apiService = {
   },
 
   login: async (email, password) => {
-    const res = await api.post(`${AUTH_URL}/login`, { email, password });
+    const res = await api.post(
+      `${AUTH_URL}/login`,
+      { email, password },
+      { withCredentials: true }
+    );
     console.log("LOGIN RESPONSE:", res.data); // <-- add this
     return res.data;
   },
