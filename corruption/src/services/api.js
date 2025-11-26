@@ -68,7 +68,7 @@ const apiService = {
   },
 
   updateReportStatus: async (reportId, status) => {
-    const res = await api.put(`${REPORTS_URL}/${reportId}/status`, { status });
+    const res = await api.put(`${REPORTS_URL}/${reportId}/status`, data);
     return res.data;
   },
 
