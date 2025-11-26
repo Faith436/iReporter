@@ -23,6 +23,9 @@ function App() {
     );
   }
 
+  console.log("API Base URL:", API_BASE_URL);
+
+
   // --- Protected route ---
   const ProtectedRoute = ({ children, allowedRoles }) => {
     if (!currentUser) return <Navigate to="/login" replace />;

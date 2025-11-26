@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api";
 import { useUsers } from "../contexts/UserContext";
+import API_BASE_URL from '../config/api'; // adjust the relative path as needed
 
 const AuthInput = ({
   label,
@@ -97,6 +98,8 @@ const LoginForm = () => {
 
     setStatus({ type: null, message: "" });
     setLoading(true);
+
+    console.log("API Base URL:", API_BASE_URL);
 
     try {
       const data = await apiService.login(email, password);
