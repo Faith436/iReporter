@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api";
 import { useUsers } from "../contexts/UserContext";
-import API_BASE_URL from '../config/api'; // adjust the relative path as needed
+import API_BASE_URL from "../config/api"; // adjust the relative path as needed
 
 const AuthInput = ({
   label,
@@ -93,42 +93,48 @@ const LoginForm = () => {
   };
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  if (!validate()) return;
+    e.preventDefault();
+    if (!validate()) return;
 
-  setStatus({ type: null, message: "" });
-  setLoading(true);
+    setStatus({ type: null, message: "" });
+    setLoading(true);
 
-  console.log("API Base URL:", API_BASE_URL);
+    console.log("API Base URL:", API_BASE_URL);
 
-  try {
-    // 1. login → token stored automatically via axios interceptor
-    const data = await apiService.login(email, password);
+    try {
+      // 1. Login → token automatically stored via axios interceptor
+      const data = await apiService.login(email, password);
 
-    // 2. get current user
-    const fullUser = await apiService.getCurrentUser();
-    setCurrentUser(fullUser.user);
+      // 2. Get current user
+      const fullUser = await apiService.getCurrentUser();
+      setCurrentUser(fullUser.user);
 
-    setStatus({
-      type: "success",
-      message: "Login successful! Redirecting...",
-    });
+      // 3. Check if first login
+      if (!fullUser.user.firstLoginShown) {
+        // Show first-login modal
+        // Make sure you have a state in your UserContext like `showFirstLogin`
+        markFirstLoginSeen?.(); // call the context function to mark first login
+      }
 
-    // 3. redirect based on role
-    setTimeout(() => {
-      if (fullUser.user.role === "admin") navigate("/admin");
-      else navigate("/dashboard");
-    }, 1200);
-  } catch (err) {
-    setStatus({
-      type: "error",
-      message: err.response?.data?.message || "Invalid email or password",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      setStatus({
+        type: "success",
+        message: "Login successful! Redirecting...",
+      });
 
+      // 4. Redirect based on role
+      setTimeout(() => {
+        if (fullUser.user.role === "admin") navigate("/admin");
+        else navigate("/dashboard");
+      }, 1200);
+    } catch (err) {
+      setStatus({
+        type: "error",
+        message: err.response?.data?.message || "Invalid email or password",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col bg-slate-100 p-8 sm:p-12 lg:p-16 justify-center">

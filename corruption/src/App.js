@@ -11,11 +11,11 @@ import Registration from "./pages/Registration";
 import Notifications from "./pages/Notifications";
 import { useUsers } from "./contexts/UserContext";
 import { Toaster } from "react-hot-toast";
-import API_BASE_URL from './config/api'; // adjust path if necessary
-
+import API_BASE_URL from './config/api';
+import FirstLoginModal from "./components/FirstLoginPopup";
 
 function App() {
-  const { currentUser, loading } = useUsers();
+  const { currentUser, loading, showFirstLogin, markFirstLoginSeen } = useUsers();
 
   if (loading) {
     return (
@@ -26,7 +26,6 @@ function App() {
   }
 
   console.log("API Base URL:", API_BASE_URL);
-
 
   // --- Protected route ---
   const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -56,76 +55,39 @@ function App() {
   return (
     <>
       <Toaster position="top-right" />
+
+      {/* First-login modal */}
+      {showFirstLogin && (
+        <FirstLoginModal onClose={markFirstLoginSeen} />
+      )}
+
       <Router>
         <Routes>
           {/* Public routes */}
-          <Route
-            path="/"
-            element={
-              <PublicRoute>
-                <LandingPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-         
-          <Route
-            path="/registration"
-            element={
-              <PublicRoute>
-                <Registration />
-              </PublicRoute>
-            }
-          />
+          <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/registration" element={<PublicRoute><Registration /></PublicRoute>} />
 
           {/* User dashboard */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["user"]}>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
+          <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["user"]}><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<UserDashboard />} />
             <Route path="reports" element={<Reports />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>
 
           {/* Admin dashboard */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedRoles={["admin"]}>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><DashboardLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>
 
           {/* Catch-all route */}
-          <Route
-            path="*"
-            element={
-              !currentUser ? (
-                <Navigate to="/" replace />
-              ) : currentUser.role === "admin" ? (
-                <Navigate to="/admin" replace />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            }
-          />
+          <Route path="*" element={
+            !currentUser ? <Navigate to="/" replace /> :
+            currentUser.role === "admin" ? <Navigate to="/admin" replace /> :
+            <Navigate to="/dashboard" replace />
+          } />
         </Routes>
       </Router>
     </>
