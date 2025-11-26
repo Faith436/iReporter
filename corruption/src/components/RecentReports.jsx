@@ -1,14 +1,16 @@
 import React from "react";
 
 const STATUS_OPTIONS = {
-  pending: "Pending",
-  "under-investigation": "Under Investigation",
-  resolved: "Resolved",
-  rejected: "Rejected",
+  pending: "pending",
+  "under-investigation": "under-investigation",
+  resolved: "resolved",
+  rejected: "rejected",
 };
 
 const RecentReports = ({ reports = [], onEditReport, onStatusUpdate }) => {
-  const safeReports = Array.isArray(reports) ? reports.filter(r => r && typeof r === "object") : [];
+  const safeReports = Array.isArray(reports)
+    ? reports.filter((r) => r && typeof r === "object")
+    : [];
   const recent = safeReports.slice(0, 5);
 
   if (recent.length === 0) {
@@ -27,20 +29,31 @@ const RecentReports = ({ reports = [], onEditReport, onStatusUpdate }) => {
           className="p-4 bg-white rounded shadow flex justify-between items-center border border-gray-200"
         >
           <div>
-            <h4 className="font-semibold">{report?.title ?? "Untitled Report"}</h4>
-            <p className="text-sm text-gray-600">{report?.description ?? "No description"}</p>
+            <h4 className="font-semibold">
+              {report?.title ?? "Untitled Report"}
+            </h4>
+            <p className="text-sm text-gray-600">
+              {report?.description ?? "No description"}
+            </p>
             <div className="mt-1 text-xs text-gray-400">
               Status:{" "}
               <select
-                value={report?.status || "pending"}
+                value={
+                  STATUS_OPTIONS[report?.status] ? report.status : "pending"
+                }
                 onChange={(e) =>
-                  onStatusUpdate?.(report.id, e.target.value, report.user_id)
+                  onStatusUpdate?.(
+                    report.id,
+                    e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                    report.user_id
+                  )
                 }
                 className="text-xs rounded px-2 py-1 border"
               >
                 {Object.entries(STATUS_OPTIONS).map(([key, label]) => (
                   <option key={key} value={key}>
-                    {label}
+                    {label.charAt(0).toUpperCase() +
+                      label.slice(1).replace("-", " ")}
                   </option>
                 ))}
               </select>

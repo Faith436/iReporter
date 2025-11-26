@@ -298,7 +298,7 @@ const AdminDashboard = ({ onDelete }) => {
     if (!formattedStatus) return console.error("Invalid status:", newStatus);
 
     try {
-      await api.updateReportStatus(reportId, formattedStatus);
+      await api.updateReportStatus(reportId, { status: formattedStatus });
       if (userId) {
         const newNotification = {
           user_id: userId,
