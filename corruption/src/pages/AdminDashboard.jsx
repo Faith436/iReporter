@@ -287,11 +287,11 @@ const AdminDashboard = ({ onDelete }) => {
   };
 
   const STATUS_API_MAP = {
-  "Pending": "pending",
-  "Under Investigation": "under-investigation",
-  "Resolved": "resolved",
-  "Rejected": "rejected",
-};
+    pending: "pending",
+    "under-investigation": "under-investigation",
+    resolved: "resolved",
+    rejected: "rejected",
+  };
 
   const handleStatusUpdate = async (reportId, newStatus, userId) => {
     const formattedStatus = STATUS_API_MAP[newStatus];
