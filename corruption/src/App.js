@@ -11,6 +11,8 @@ import Registration from "./pages/Registration";
 import Notifications from "./pages/Notifications";
 import { useUsers } from "./contexts/UserContext";
 import { Toaster } from "react-hot-toast";
+import API_BASE_URL from './config/api'; // adjust path if necessary
+
 
 function App() {
   const { currentUser, loading } = useUsers();
