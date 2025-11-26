@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { User, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import axios from "axios";
 import AuthInput from "./AuthInput";
+import apiService from "../services/api";
 
 const StatusMessage = ({ type, message }) => {
   if (!message) return null;
@@ -58,8 +59,7 @@ const RegistrationForm = () => {
 
       case "email":
         if (!value.trim()) msg = "Email is required";
-        else if (!/^\S+@\S+\.\S+$/.test(value))
-          msg = "Invalid email format";
+        else if (!/^\S+@\S+\.\S+$/.test(value)) msg = "Invalid email format";
         break;
 
       case "password":
@@ -68,8 +68,7 @@ const RegistrationForm = () => {
         break;
 
       case "phone":
-        if (value && !/^\d{10,15}$/.test(value))
-          msg = "Must be 10–15 digits";
+        if (value && !/^\d{10,15}$/.test(value)) msg = "Must be 10–15 digits";
         break;
     }
 
@@ -83,20 +82,23 @@ const RegistrationForm = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
     if (!validateAll()) return;
 
     setLoading(true);
     setStatus({ type: null, message: "" });
 
     try {
-      const { data } = await axios.post(
-        "http://localhost:5000/api/auth/register",
-        form,
-        { withCredentials: true }
-      );
+      const data = await apiService.register(form); // ✅ use apiService
 
       setStatus({ type: "success", message: data.message });
-      setForm({ firstName: "", lastName: "", email: "", password: "", phone: "" });
+      setForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        phone: "",
+      });
 
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
