@@ -185,10 +185,13 @@ exports.updateReportStatus = async (req, res) => {
     ]);
     const report = reportRows[0];
 
-    const [userRows] = await db.query(
-      "SELECT email, first_name, last_name FROM users WHERE id = ?",
-      [report.user_id]
-    );
+    if (!userRows || userRows.length === 0) {
+      console.error("❌ No user found for report:", report);
+      return res.status(500).json({
+        error: "Report owner not found — cannot send notification or email",
+      });
+    }
+
     const user = userRows[0];
 
     const displayName = `${user.first_name} ${user.last_name}`.trim();
@@ -209,7 +212,7 @@ exports.updateReportStatus = async (req, res) => {
 
     res.json({ message: "Report status updated successfully" });
   } catch (err) {
-    console.error("Update report status error:", err);
+    console.error("Update report status error:", err.sqlMessage || err);
     res.status(500).json({ error: "Server error" });
   }
 };
