@@ -155,17 +155,13 @@ exports.updateReportStatus = async (req, res) => {
   const { id } = req.params;
 
   if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(400).json({
-      error: "Request body cannot be empty",
-    });
+    return res.status(400).json({ error: "Request body cannot be empty" });
   }
 
   const { status } = req.body;
 
   if (!status) {
-    return res.status(400).json({
-      error: "Status field is required",
-    });
+    return res.status(400).json({ error: "Status field is required" });
   }
 
   const allowed = ["pending", "under-investigation", "resolved", "rejected"];
@@ -177,13 +173,24 @@ exports.updateReportStatus = async (req, res) => {
   }
 
   try {
+    // 1️⃣ Update report status
     await db.query("UPDATE reports SET status = ? WHERE id = ?", [status, id]);
 
-    // --- In-app notification & email to report owner ---
+    // 2️⃣ Fetch report to get user_id
     const [reportRows] = await db.query("SELECT * FROM reports WHERE id = ?", [
       id,
     ]);
     const report = reportRows[0];
+
+    if (!report) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+
+    // 3️⃣ Fetch report owner
+    const [userRows] = await db.query(
+      "SELECT email, first_name, last_name FROM users WHERE id = ?",
+      [report.user_id]
+    );
 
     if (!userRows || userRows.length === 0) {
       console.error("❌ No user found for report:", report);
@@ -193,17 +200,16 @@ exports.updateReportStatus = async (req, res) => {
     }
 
     const user = userRows[0];
-
     const displayName = `${user.first_name} ${user.last_name}`.trim();
     const emailMessage = `Hello ${displayName}, your report "${report.title}" status has been updated to "${status}".`;
 
-    // In-app notification
+    // 4️⃣ In-app notification
     await db.execute(
       "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
       [report.user_id, emailMessage]
     );
 
-    // Send email
+    // 5️⃣ Send email
     await sendEmail({
       to: user.email,
       subject: `Report Status Updated: ${report.title}`,
@@ -212,7 +218,7 @@ exports.updateReportStatus = async (req, res) => {
 
     res.json({ message: "Report status updated successfully" });
   } catch (err) {
-    console.error("Update report status error:", err.sqlMessage || err);
+    console.error("Update report status error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
