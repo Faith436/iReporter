@@ -60,7 +60,11 @@ app.use("/api/notifications", notificationRoutes);
 // --- Test route ---
 app.get("/", (req, res) => {
   res.send("API running... authentication + reports routes ready ✅");
+
 });
+
+console.log("SendGrid API Key Loaded:", process.env.SENDGRID_API_KEY?.startsWith("SG."));
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
