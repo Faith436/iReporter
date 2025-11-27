@@ -173,10 +173,10 @@ exports.updateReportStatus = async (req, res) => {
   }
 
   try {
-    // 1️⃣ Update report status
+    // 1️⃣ Update the report status
     await db.query("UPDATE reports SET status = ? WHERE id = ?", [status, id]);
 
-    // 2️⃣ Fetch report to get user_id
+    // 2️⃣ Fetch report & user
     const [reportRows] = await db.query("SELECT * FROM reports WHERE id = ?", [
       id,
     ]);
@@ -186,7 +186,6 @@ exports.updateReportStatus = async (req, res) => {
       return res.status(404).json({ error: "Report not found" });
     }
 
-    // 3️⃣ Fetch report owner
     const [userRows] = await db.query(
       "SELECT email, first_name, last_name FROM users WHERE id = ?",
       [report.user_id]
@@ -203,19 +202,20 @@ exports.updateReportStatus = async (req, res) => {
     const displayName = `${user.first_name} ${user.last_name}`.trim();
     const emailMessage = `Hello ${displayName}, your report "${report.title}" status has been updated to "${status}".`;
 
-    // 4️⃣ In-app notification
+    // 3️⃣ Insert in-app notification
     await db.execute(
       "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
       [report.user_id, emailMessage]
     );
 
-    // 5️⃣ Send email
-    await sendEmail({
+    // 4️⃣ Send email asynchronously (non-blocking)
+    sendEmail({
       to: user.email,
       subject: `Report Status Updated: ${report.title}`,
       text: emailMessage,
-    });
+    }).catch((err) => console.error("Error sending status update email:", err));
 
+    // ✅ Respond immediately
     res.json({ message: "Report status updated successfully" });
   } catch (err) {
     console.error("Update report status error:", err);
