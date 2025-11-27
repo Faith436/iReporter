@@ -1,7 +1,6 @@
 // utils/sendEmail.js
-const sgMail = require ("@sendgrid/mail");
+const sgMail = require("@sendgrid/mail");
 
-// Use environment variable directly
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_SENDER = process.env.SENDGRID_SENDER;
 
@@ -11,7 +10,7 @@ if (!SENDGRID_API_KEY || !SENDGRID_API_KEY.startsWith("SG.")) {
 
 sgMail.setApiKey(SENDGRID_API_KEY);
 
-export const sendEmail = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ to, subject, text, html }) => {
   try {
     await sgMail.send({
       to,
@@ -25,3 +24,5 @@ export const sendEmail = async ({ to, subject, text, html }) => {
     console.error("❌ Error sending email:", err);
   }
 };
+
+module.exports = sendEmail;
