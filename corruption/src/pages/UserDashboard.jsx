@@ -1,5 +1,5 @@
 // src/pages/UserDashboard.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
   Flag,
@@ -14,11 +14,13 @@ import {
 
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
-import { useNotifications } from "../contexts/NotificationContext"; // ✅ IMPORTANT
+import { useNotifications } from "../contexts/NotificationContext";
 import ReportStepper from "../components/ReportStepper";
-import { useNavigate } from "react-router-dom";
 import UserReportsView from "../components/UserReportsView";
-import toast, { Toaster } from "react-hot-toast";
+import FirstLoginPopup from "../components/FirstLoginPopup";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import apiService from "../services/api"; // ⭐ Add this if missing
 
 // ─────────────────────────────────────────────
 // STAT CARD COMPONENT
@@ -48,12 +50,12 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
 };
 
 // ─────────────────────────────────────────────
-// NOTIFICATION LIST + DELETE BUTTON
+// NOTIFICATIONS
 // ─────────────────────────────────────────────
 const RecentNotifications = ({
   notifications,
   currentUser,
-  deleteNotification, // ✅ RECEIVED FROM PARENT
+  deleteNotification,
 }) => {
   const [removing, setRemoving] = useState(null);
 
@@ -70,13 +72,14 @@ const RecentNotifications = ({
   const handleDelete = async (id) => {
     setRemoving(id);
     setTimeout(() => {
-      deleteNotification(id); // ✅ WORKING NOW
+      deleteNotification(id);
       setRemoving(null);
     }, 200);
+
     try {
       await deleteNotification(id);
       toast.success("Notification deleted", { position: "top-center" });
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete notification", { position: "top-center" });
     }
   };
@@ -121,7 +124,6 @@ const RecentNotifications = ({
                 </div>
               </div>
 
-              {/* DELETE BUTTON */}
               <button
                 onClick={() => handleDelete(n.id)}
                 className="p-1 rounded hover:bg-red-100 transition"
@@ -141,6 +143,7 @@ const RecentNotifications = ({
 // ─────────────────────────────────────────────
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
+
   const actions = [
     {
       label: "Add Red-Flag Record",
@@ -162,25 +165,22 @@ const QuickActions = ({ openStepper, setType }) => {
     },
   ];
 
-  const handleAction = (action) => {
-    if (action.type === "view") navigate("/dashboard/reports");
-    else {
-      setType(action.type);
-      setTimeout(() => openStepper(), 50);
-    }
-  };
-
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Quick Actions
       </h2>
+
       <div className="space-y-3">
         {actions.map((a, i) => (
           <button
             key={i}
-            onClick={() => handleAction(a)}
-            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition duration-150 ease-in-out ${
+            onClick={() =>
+              a.type === "view"
+                ? navigate("/dashboard/reports")
+                : (setType(a.type), openStepper())
+            }
+            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${
               a.className
             } ${a.className.includes("bg-gray") ? "" : "shadow-md"}`}
           >
@@ -194,28 +194,55 @@ const QuickActions = ({ openStepper, setType }) => {
 };
 
 // ─────────────────────────────────────────────
-// MAIN USER DASHBOARD
+// MAIN DASHBOARD
 // ─────────────────────────────────────────────
 const Dashboard = () => {
-  const { currentUser } = useUsers();
+  const { currentUser, setCurrentUser } = useUsers();
   const { reports } = useReports();
-
-  const {
-    notifications,
-    deleteNotification, // ✅ GET FROM CONTEXT
-  } = useNotifications();
+  const { notifications, deleteNotification } = useNotifications();
 
   const [stats, setStats] = useState({});
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
 
-  const [showNoReportsOverlay, setShowNoReportsOverlay] = useState(false);
+  // ⭐ FIRST LOGIN POPUP
+  const [showFirstPopup, setShowFirstPopup] = useState(false);
+
+  // ────────────────────────────────
+  // ⭐ SHOW ONLY IF:
+  //   1. user.firstloginshown = 0
+  //   2. user has NO reports
+  // ────────────────────────────────
   useEffect(() => {
-    if (currentUser && reports) {
-      setShowNoReportsOverlay(reports.length === 0);
+    if (!currentUser) return;
+
+    const shouldShow =
+      Number(currentUser.firstloginshown) === 0 &&
+      reports &&
+      reports.length === 0;
+
+    if (shouldShow) {
+      setTimeout(() => setShowFirstPopup(true), 300);
     }
   }, [currentUser, reports]);
+
+  // ⭐ UPDATE DB so the popup never shows again
+  const markFirstLoginShown = async () => {
+    try {
+      await apiService.put(`/users/${currentUser.id}/first-login-shown`, {
+        firstloginshown: 1,
+      });
+
+      // Update state so popup never shows again
+      setCurrentUser({
+        ...currentUser,
+        firstloginshown: 1,
+      });
+    } catch (err) {
+      console.error("Failed to update firstloginshown:", err);
+    }
+  };
 
   // Compute stats
   useEffect(() => {
@@ -237,6 +264,24 @@ const Dashboard = () => {
 
   return (
     <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative">
+      {/* ⭐ FIRST LOGIN POPUP OVERLAY */}
+      {showFirstPopup && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <FirstLoginPopup
+            onClose={() => {
+              setShowFirstPopup(false);
+              markFirstLoginShown(); // ⭐ Update DB
+            }}
+            onAddReport={() => {
+              setShowFirstPopup(false);
+              markFirstLoginShown(); // ⭐ Update DB
+              setDefaultReportType("");
+              setStepperOpen(true);
+            }}
+          />
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
@@ -308,11 +353,10 @@ const Dashboard = () => {
             setType={setDefaultReportType}
           />
 
-          {/* 👉 PASS THE DELETE FUNCTION HERE */}
           <RecentNotifications
             notifications={notifications}
             currentUser={currentUser}
-            deleteNotification={deleteNotification} // ✅ FIXED
+            deleteNotification={deleteNotification}
           />
         </div>
       </div>

@@ -9,7 +9,7 @@ const router = express.Router();
 router.get("/", authMiddleware, adminAuth, async (req, res) => {
   try {
     const [users] = await db.query(
-      "SELECT id, first_name, last_name, email, phone, role FROM users"
+      "SELECT id, first_name, last_name, email, phone, role, firstloginshown FROM users"
     );
 
     res.json(
@@ -20,6 +20,7 @@ router.get("/", authMiddleware, adminAuth, async (req, res) => {
         email: u.email,
         phone: u.phone,
         role: u.role,
+        firstLoginShown: u.firstloginshown, // include this for frontend check
       }))
     );
   } catch (error) {
@@ -48,6 +49,32 @@ router.patch("/:id/role", authMiddleware, adminAuth, async (req, res) => {
   } catch (error) {
     console.error("Update role error:", error);
     res.status(500).json({ message: "Server error updating role" });
+  }
+});
+
+// --- Update first login shown flag (User only) ---
+router.put("/:id/first-login-shown", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstloginshown } = req.body;
+
+    if (firstloginshown === undefined) {
+      return res.status(400).json({ message: "firstloginshown is required" });
+    }
+
+    const [result] = await db.query(
+      "UPDATE users SET firstloginshown = ? WHERE id = ?",
+      [firstloginshown, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "First login flag updated successfully" });
+  } catch (error) {
+    console.error("Update first login error:", error);
+    res.status(500).json({ message: "Server error updating first login flag" });
   }
 });
 

@@ -95,6 +95,13 @@ const apiService = {
     return res.data;
   },
 
+  markFirstLoginShown: async (userId) => {
+    const res = await api.put(`${USERS_URL}/${userId}/first-login-shown`, {
+      firstloginshown: true,
+    });
+    return res.data;
+  },
+
   // --- Notifications ---
   getNotifications: async () => {
     const res = await api.get(NOTIFICATIONS_URL);
@@ -126,12 +133,7 @@ const apiService = {
     return { success: true };
   },
 
-  // --- First login / Onboarding ---
-  markFirstLogin: async () => {
-    const res = await api.put(`${AUTH_URL}/first-login-seen`);
-    return res.data;
-  },
-
+  // --- Onboarding ---
   getOnboardingStatus: async () => {
     const res = await api.get(`${AUTH_URL}/onboarding-status`);
     return res.data;
