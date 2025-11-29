@@ -212,7 +212,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!currentUser) return;
 
-    const shouldShow = Number(currentUser.firstloginshown) === 0;
+    const shouldShow = Number(currentUser.firstLoginShown) === 0;
 
     if (shouldShow) {
       setTimeout(() => setShowFirstPopup(true), 300);
@@ -223,16 +223,16 @@ const Dashboard = () => {
   const markFirstLoginShown = async () => {
     try {
       await apiService.put(`/users/${currentUser.id}/first-login-shown`, {
-        firstloginshown: 1,
+        firstLoginShown: 1,
       });
 
       // Update state so popup never shows again
       setCurrentUser({
         ...currentUser,
-        firstloginshown: 1,
+        firstLoginShown: 1,
       });
     } catch (err) {
-      console.error("Failed to update firstloginshown:", err);
+      console.error("Failed to update firstLoginShown:", err);
     }
   };
 
