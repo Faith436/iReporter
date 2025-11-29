@@ -73,7 +73,6 @@ const LoginForm = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [status, setStatus] = useState({ type: null, message: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -104,15 +103,6 @@ const LoginForm = () => {
 
       // 2️⃣ Fetch current user
       const fullUser = await apiService.getCurrentUser();
-
-      // ⭐⭐⭐ TEST MODE FOR FIRST LOGIN (LOCAL ONLY) ⭐⭐⭐
-      if (import.meta.env.VITE_TEST_FIRST_LOGIN === "true") {
-        console.warn("⚠️ FIRST LOGIN TEST MODE ACTIVE — not reading database");
-        fullUser.user.firstLoginShown = false;
-        fullUser.user.reports = [];
-      }
-      // ⭐⭐⭐ END OF TEST MODE ⭐⭐⭐
-
       setCurrentUser(fullUser.user);
 
       // 3️⃣ First login logic
@@ -130,7 +120,7 @@ const LoginForm = () => {
         message: "Login successful! Redirecting...",
       });
 
-      // 5️⃣ Redirect
+      // 5️⃣ Redirect based on role
       setTimeout(() => {
         if (fullUser.user.role === "admin") navigate("/admin");
         else navigate("/dashboard");
