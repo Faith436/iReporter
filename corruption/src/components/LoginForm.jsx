@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api";
 import { useUsers } from "../contexts/UserContext";
-import API_BASE_URL from "../config/api"; // adjust the relative path as needed
+import API_BASE_URL from "../config/api";
 
 const AuthInput = ({
   label,
@@ -78,7 +78,6 @@ const LoginForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Live Validation
   const validate = () => {
     const newErrors = {};
 
@@ -100,20 +99,29 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      // 1️⃣ Login → token handled via axios cookies
+      // 1️⃣ Login
       await apiService.login(email, password);
 
-      // 2️⃣ Fetch full user info
+      // 2️⃣ Fetch current user
       const fullUser = await apiService.getCurrentUser();
+
+      // ⭐⭐⭐ TEST MODE FOR FIRST LOGIN (LOCAL ONLY) ⭐⭐⭐
+      if (import.meta.env.VITE_TEST_FIRST_LOGIN === "true") {
+        console.warn("⚠️ FIRST LOGIN TEST MODE ACTIVE — not reading database");
+        fullUser.user.firstLoginShown = false;
+        fullUser.user.reports = [];
+      }
+      // ⭐⭐⭐ END OF TEST MODE ⭐⭐⭐
+
       setCurrentUser(fullUser.user);
 
-      // 3️⃣ First login check
+      // 3️⃣ First login logic
       if (
         !fullUser.user.firstLoginShown &&
         (!fullUser.user.reports || fullUser.user.reports.length === 0) &&
         markFirstLoginSeen
       ) {
-        await markFirstLoginSeen(); // mark first login as seen on backend
+        await markFirstLoginSeen();
       }
 
       // 4️⃣ Success message
@@ -122,7 +130,7 @@ const LoginForm = () => {
         message: "Login successful! Redirecting...",
       });
 
-      // 5️⃣ Redirect based on role
+      // 5️⃣ Redirect
       setTimeout(() => {
         if (fullUser.user.role === "admin") navigate("/admin");
         else navigate("/dashboard");
@@ -147,7 +155,6 @@ const LoginForm = () => {
       <StatusMessage type={status.type} message={status.message} />
 
       <form onSubmit={handleLogin} className="w-full" noValidate>
-        {/* EMAIL */}
         <div className="mb-4">
           <AuthInput
             label="Email Address"
@@ -165,7 +172,6 @@ const LoginForm = () => {
           )}
         </div>
 
-        {/* PASSWORD */}
         <div className="mb-4">
           <AuthInput
             label="Password"
@@ -183,7 +189,6 @@ const LoginForm = () => {
           )}
         </div>
 
-        {/* BUTTON */}
         <button
           type="submit"
           disabled={loading}

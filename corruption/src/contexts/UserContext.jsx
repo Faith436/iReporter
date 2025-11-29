@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import apiService from "../services/api";
 
 const UserContext = createContext();
@@ -25,8 +31,12 @@ export const UserProvider = ({ children }) => {
         const data = await apiService.getCurrentUser();
         setCurrentUser(data.user);
 
-        // Check first-login logic
-        checkFirstLogin(data.user);
+        // ⛔ TEMPORARY: Force first-login popup for ANY user
+        checkFirstLogin({
+          ...data.user,
+          firstLoginShown: false,
+          reports: [],
+        });
       } catch (err) {
         console.error("Failed to fetch current user:", err);
         setCurrentUser(null);
