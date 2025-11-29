@@ -105,12 +105,7 @@ const LoginForm = () => {
       const fullUser = await apiService.getCurrentUser();
       setCurrentUser(fullUser.user);
 
-      // 3️⃣ First login logic
-      if (
-        !fullUser.user.firstLoginShown &&
-        (!fullUser.user.reports || fullUser.user.reports.length === 0) &&
-        markFirstLoginSeen
-      ) {
+      if (!fullUser.user.firstLoginShown && markFirstLoginSeen) {
         await markFirstLoginSeen();
       }
 

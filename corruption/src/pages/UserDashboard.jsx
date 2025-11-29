@@ -209,18 +209,10 @@ const Dashboard = () => {
   // ⭐ FIRST LOGIN POPUP
   const [showFirstPopup, setShowFirstPopup] = useState(false);
 
-  // ────────────────────────────────
-  // ⭐ SHOW ONLY IF:
-  //   1. user.firstloginshown = 0
-  //   2. user has NO reports
-  // ────────────────────────────────
   useEffect(() => {
     if (!currentUser) return;
 
-    const shouldShow =
-      Number(currentUser.firstloginshown) === 0 &&
-      reports &&
-      reports.length === 0;
+    const shouldShow = Number(currentUser.firstloginshown) === 0;
 
     if (shouldShow) {
       setTimeout(() => setShowFirstPopup(true), 300);
