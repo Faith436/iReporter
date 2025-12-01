@@ -89,16 +89,11 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
 
     if (!formData.reportType || !formData.title || !formData.description) {
       setIsSubmitting(false);
-      return toast.error(
-        "Please complete all required fields before submitting.",
-        { duration: 5000, position: "top-center" }
-      );
+      return toast.error("Please complete all required fields.");
     }
 
-    // Create temporary report
-    const tempId = `temp-${Date.now()}`;
-    const tempReport = {
-      id: tempId,
+    // Prepare a clean object
+    const payload = {
       type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
       title: formData.title,
       description: formData.description,
@@ -106,46 +101,16 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
       lat: formData.lat,
       lng: formData.lng,
       media: formData.media || null,
-      status: "Pending",
     };
 
-    // Instantly show on dashboard
-    addReportToDashboard(tempReport);
-
-    // Prepare payload
-    const payload = new FormData();
-    payload.append("type", tempReport.type);
-    payload.append("title", tempReport.title);
-    payload.append("description", tempReport.description);
-    payload.append("location", tempReport.location);
-    payload.append("lat", tempReport.lat);
-    payload.append("lng", tempReport.lng);
-    if (tempReport.media) payload.append("media", tempReport.media);
-
-    // FIRE & FORGET — DO NOT AWAIT
-    createReport(payload)
-      .then((savedReport) => {
-        replaceTempReport(tempId, savedReport);
-      })
-      .catch((err) => {
-        console.error(err);
-        removeTempReport(tempId);
-        toast.error("Failed to submit report. Please try again.", {
-          duration: 5000,
-          position: "top-center",
-        });
-      });
-
-    // Instantly finish submitting
-    setIsSubmitting(false);
-
-    toast.success("Report submitted successfully!", {
-      duration: 3000,
-      position: "top-center",
+    // FIRE & FORGET (optimistic)
+    createReport(payload).catch(() => {
+      toast.error("Failed to submit report");
     });
 
-    // Close stepper immediately
-    if (onClose) onClose();
+    setIsSubmitting(false);
+    toast.success("Report submitted!");
+    onClose?.();
   };
 
   const steps = ["Type & Description", "Location & Map", "Review & Submit"];

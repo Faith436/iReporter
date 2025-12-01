@@ -181,49 +181,59 @@ export const ReportProvider = ({ children }) => {
   /** ---------------------------------------------------
    * Create Report (Optimistic)
    * --------------------------------------------------- */
-  const createReport = async (reportData) => {
-    if (!currentUser) throw new Error("User not logged in");
+  const createReport = async (data) => {
+  if (!currentUser) throw new Error("User not logged in");
 
-    const tempId = `temp-${Date.now()}`;
+  const tempId = `temp-${Date.now()}`;
 
-    const tempReport = {
-      id: tempId,
-      type: normalizeType(reportData.type),
-      title: reportData.title,
-      description: reportData.description,
-      location: reportData.location,
-      lat: reportData.lat,
-      lng: reportData.lng,
-      media: reportData.media || null,
-      status: "Pending",
-    };
-
-    // Instant UI update
-    addReportToDashboard(tempReport);
-
-    try {
-      // Send to backend
-      const res = await apiService.createReport(reportData);
-      const savedReport = res?.report || res;
-
-      savedReport.type = normalizeType(savedReport.type);
-
-      // Replace temporary report
-      replaceTempReport(tempId, savedReport);
-
-      if (!hasCreatedFirstReport) setHasCreatedFirstReport(true);
-
-      if (currentUser.role !== "admin") {
-        fetchNotifications();
-      }
-
-      return savedReport;
-    } catch (err) {
-      console.error("Create report error:", err);
-      removeTempReport(tempId);
-      throw err;
-    }
+  const tempReport = {
+    id: tempId,
+    type: normalizeType(data.type),
+    title: data.title,
+    description: data.description,
+    location: data.location,
+    lat: data.lat,
+    lng: data.lng,
+    media: data.media || null,
+    status: "Pending",
   };
+
+  // Optimistic: instant UI update
+  addReportToDashboard(tempReport);
+
+  try {
+    // Convert raw data into FormData for backend
+    const form = new FormData();
+    form.append("type", data.type);
+    form.append("title", data.title);
+    form.append("description", data.description);
+    form.append("location", data.location);
+    form.append("lat", data.lat);
+    form.append("lng", data.lng);
+    if (data.media) form.append("media", data.media);
+
+    // Send to backend
+    const res = await apiService.createReport(form);
+    const savedReport = res?.report || res;
+
+    savedReport.type = normalizeType(savedReport.type);
+
+    // Replace temporary report with real one
+    replaceTempReport(tempId, savedReport);
+
+    if (!hasCreatedFirstReport) setHasCreatedFirstReport(true);
+
+    if (currentUser.role !== "admin") {
+      fetchNotifications();
+    }
+
+    return savedReport;
+  } catch (err) {
+    removeTempReport(tempId);
+    throw err;
+  }
+};
+
 
   /** ---------------------------------------------------
    * Update Report
