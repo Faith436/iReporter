@@ -83,35 +83,65 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
   };
 
-  const handleSubmit = () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+  const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
 
-    if (!formData.reportType || !formData.title || !formData.description) {
-      setIsSubmitting(false);
-      return toast.error("Please complete all required fields.");
-    }
+  if (!formData.reportType || !formData.title || !formData.description) {
+    setIsSubmitting(false);
+    return toast.error("Please complete all required fields.");
+  }
 
-    // Prepare a clean object
-    const payload = {
-      type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
-      title: formData.title,
-      description: formData.description,
-      location: formData.location,
-      lat: formData.lat,
-      lng: formData.lng,
-      media: formData.media || null,
-    };
+  try {
+    // Prepare FormData for multipart/form-data
+    const formPayload = new FormData();
+    formPayload.append("type", formData.reportType === "Red Flag" ? "red-flag" : "intervention");
+    formPayload.append("title", formData.title);
+    formPayload.append("description", formData.description);
+    formPayload.append("location", formData.location);
+    formPayload.append("lat", formData.lat);
+    formPayload.append("lng", formData.lng);
+    if (formData.media) formPayload.append("media", formData.media);
 
-    // FIRE & FORGET (optimistic)
-    createReport(payload).catch(() => {
-      toast.error("Failed to submit report");
+    // Use your local backend URL (or deployed backend URL)
+    const backendUrl = "https://ireporter-xafr.onrender.com/api"; // <-- replace with your deployed backend if needed
+
+    const response = await fetch(backendUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // include token if auth is required
+      },
+      body: formPayload,
     });
 
-    setIsSubmitting(false);
+    // Parse response safely
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+
+    if (!response.ok) throw new Error(data.error || "Failed to submit report");
+
+    // Optimistic UI update
+    addReportToDashboard(data.report || data); // adjust depending on backend response
+
     toast.success("Report submitted!");
     onClose?.();
-  };
+    setFormData({
+      reportType: defaultType || "",
+      title: "",
+      description: "",
+      location: "",
+      lat: "",
+      lng: "",
+      media: null,
+    });
+  } catch (err) {
+    console.error("Submit report error:", err);
+    toast.error(err.message || "Failed to submit report");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const steps = ["Type & Description", "Location & Map", "Review & Submit"];
 
