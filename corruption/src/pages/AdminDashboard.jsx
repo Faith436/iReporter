@@ -265,7 +265,7 @@ const RecentNotifications = ({ notifications }) => (
 );
 
 // --- Admin Dashboard ---
-const AdminDashboard = ({ onDelete }) => {
+  const AdminDashboard = ({ onDelete }) => {
   const { reports, loading, currentUser, fetchReports } = useReports();
   const metrics = useMemo(() => calculateMetrics(reports), [reports]);
   const [notifications, setNotifications] = useState([]);
@@ -401,101 +401,6 @@ const AdminDashboard = ({ onDelete }) => {
   );
 };
 
-// --- Main Admin Dashboard ---
-const AdminDashboard = ({ onDelete }) => {
-  const { reports, loading, currentUser, fetchReports } = useReports();
-  const metrics = useMemo(() => calculateMetrics(reports), [reports]);
-  const [notifications, setNotifications] = useState([]);
 
-  useEffect(() => {
-    fetchReports();
-    fetchNotifications();
-  }, [fetchReports]);
-
-  const fetchNotifications = async () => {
-    try {
-      const data = await api.getNotifications();
-      setNotifications(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
-
-  const STATUS_API_MAP = {
-    pending: "pending",
-    "under-investigation": "under-investigation",
-    resolved: "resolved",
-    rejected: "rejected",
-  };
-
-  const handleStatusUpdate = async (reportId, newStatus, userId) => {
-    const formattedStatus = STATUS_API_MAP[newStatus];
-    if (!formattedStatus) return console.error("Invalid status:", newStatus);
-
-    try {
-      await api.updateReportStatus(reportId, formattedStatus);
-
-      if (userId) {
-        const newNotification = {
-          user_id: userId,
-          title: "Report Update",
-          message: `Your report status has been updated to "${formattedStatus}"`,
-          is_read: 0,
-          created_at: new Date().toISOString(),
-        };
-
-        await api.createNotification(newNotification);
-
-        // Instant update in the dashboard
-        setNotifications((prev) => [newNotification, ...prev]);
-      }
-
-      fetchReports();
-      toast.success(`Report status updated to "${formattedStatus}"`);
-    } catch (err) {
-      console.error("Error updating status or sending notification:", err);
-      toast.error("Failed to update status.");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-lg text-gray-600">Loading Dashboard Data...</p>
-      </div>
-    );
-  }
-
-  const userName = currentUser?.name || "Admin";
-  const displayName = userName.split(" ")[0] || "Admin";
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <Toaster position="top-center" />
-      <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
-      <p className="text-gray-600 mt-1 mb-8">
-        Welcome back, {displayName} — here’s a quick summary of your reports.
-      </p>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <KPICard title="Pending" count={metrics.pending} icon={Clock} color="bg-pink-500" trend={metrics.pendingTrend} />
-        <KPICard title="Resolved" count={metrics.resolved} icon={CheckCircle} color="bg-green-500" trend={metrics.resolvedTrend} />
-        <KPICard title="Rejected" count={metrics.rejected} icon={XCircle} color="bg-red-500" trend={metrics.rejectedTrend} />
-        <KPICard title="Total Red-Flags" count={metrics.totalRedFlags} icon={Flag} color="bg-red-500" trend={metrics.totalRedFlagsTrend} />
-        <KPICard title="Interventions" count={metrics.interventions} icon={Zap} color="bg-blue-500" trend={metrics.interventionsTrend} />
-        <KPICard title="Under Investigation" count={metrics.underInvestigation} icon={Search} color="bg-yellow-500" trend={metrics.underInvestigationTrend} />
-      </div>
-
-      {/* Reports + Notifications */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <RecentReportsTable reports={reports} onDelete={onDelete} onStatusUpdate={handleStatusUpdate} />
-        </div>
-        <RecentNotifications notifications={notifications} />
-      </div>
-    </div>
-  );
-};
 
 export default AdminDashboard;

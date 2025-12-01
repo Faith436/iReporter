@@ -13,11 +13,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-<<<<<<< HEAD
-=======
     "@sendgrid/mail": "^8.1.6",
     "bcrypt": "^6.0.0",
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "cookie-parser": "^1.4.7",
@@ -28,12 +25,8 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "mysql2": "^3.15.3",
-<<<<<<< HEAD
-    "nodemailer": "^7.0.10"
-=======
     "nodemailer": "^7.0.10",
     "resend": "^6.5.2"
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
