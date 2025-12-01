@@ -35,11 +35,12 @@ const ReportMap = () => {
   const defaultCenter = [0.347596, 32.58252]; // Kampala
 
   return (
-    <div className="relative w-full h-96">
+    <div className="relative w-full h-96 z-0">
       <MapContainer
         center={defaultCenter}
         zoom={10}
-        style={{ height: "100%", width: "100%" }}
+        className="w-full h-full relative z-0"
+        scrollWheelZoom={true}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
@@ -49,7 +50,7 @@ const ReportMap = () => {
             position={[loc.lat, loc.lng]}
             icon={locationIcon}
           >
-            <Popup>
+            <Popup className="z-40">
               <div className="space-y-1">
                 <h3 className="font-bold text-red-600">{loc.title}</h3>
                 <p>

@@ -1,203 +1,148 @@
 import axios from "axios";
+import API_BASE_URL from "../config/api"; // adjust path as needed
 
-const API_URL = "http://localhost:5000/api";
-const AUTH_URL = `${API_URL}/auth`;
-const REPORTS_URL = `${API_URL}/reports`;
-const USERS_URL = `${API_URL}/users`;
-const NOTIFICATIONS_URL = `${API_URL}/notifications`;
+const AUTH_URL = "/auth";
+const REPORTS_URL = "/reports";
+const USERS_URL = "/users";
+const NOTIFICATIONS_URL = "/notifications";
+
+// Create a single axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Interceptor to attach token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 const apiService = {
   // --- Auth ---
   register: async (userData) => {
-    const res = await axios.post(`${AUTH_URL}/signup`, userData, {
-      withCredentials: true,
-    });
+    const res = await api.post(`${AUTH_URL}/register`, userData);
     return res.data;
   },
-  login: async (email, password) => {
-    const res = await axios.post(
-      `${AUTH_URL}/login`,
-      { email, password },
-      { withCredentials: true }
-    );
 
-    // ✅ Store token if returned by backend
-    if (res.data.token) localStorage.setItem("token", res.data.token);
+  login: async (email, password) => {
+    const res = await api.post(`${AUTH_URL}/login`, { email, password });
+    console.log("LOGIN RESPONSE:", res.data);
+
+    if (res.data.token) {
+      localStorage.setItem("token", res.data.token); // store token
+    }
+
     return res.data;
   },
+
   getCurrentUser: async () => {
     const token = localStorage.getItem("token");
-    const res = await axios.get(`${AUTH_URL}/me`, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    if (!token) throw new Error("No token found");
+
+    const res = await api.get(`${AUTH_URL}/me`);
     return res.data;
   },
+
   logout: async () => {
-    localStorage.removeItem("token"); // remove stored token
-    const res = await axios.post(
-      `${AUTH_URL}/logout`,
-      {},
-      { withCredentials: true }
-    );
-    return res.data;
+    localStorage.removeItem("token");
+    return { message: "Logged out" };
   },
 
   // --- Reports ---
   getReports: async (userId) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(
-      `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`,
-      {
-        withCredentials: true,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
+    const res = await api.get(
+      `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`
     );
     return res.data;
   },
 
   createReport: async (data) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.post(REPORTS_URL, data, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await api.post(REPORTS_URL, data);
     return res.data;
   },
 
   updateReport: async (reportId, data) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.put(`${REPORTS_URL}/${reportId}`, data, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await api.put(`${REPORTS_URL}/${reportId}`, data);
     return res.data;
   },
 
   updateReportStatus: async (reportId, status) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.put(
-      `${REPORTS_URL}/${reportId}/status`,
-      { status },
-      {
-        withCredentials: true,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
-    );
-    return res.data;
+    try {
+      const res = await api.put(`${REPORTS_URL}/${reportId}/status`, {
+        status,
+      });
+      return res.data;
+    } catch (error) {
+      console.error(
+        "Error updating report status:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
   },
 
   deleteReport: async (reportId) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.delete(`${REPORTS_URL}/${reportId}`, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await api.delete(`${REPORTS_URL}/${reportId}`);
     return res.data;
   },
 
   // --- Users ---
   getUsers: async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(USERS_URL, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    const res = await api.get(USERS_URL);
+    return res.data;
+  },
+
+  markFirstLoginShown: async (userId) => {
+    const res = await api.put(`${USERS_URL}/${userId}/first-login-shown`, {
+      firstloginshown: true,
     });
     return res.data;
   },
 
   // --- Notifications ---
-  createNotification: async (data) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.post(NOTIFICATIONS_URL, data, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    return res.data;
-  },
-
   getNotifications: async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(NOTIFICATIONS_URL, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await api.get(NOTIFICATIONS_URL);
     return res.data.notifications;
   },
 
+  createNotification: async (data) => {
+    const res = await api.post(NOTIFICATIONS_URL, data);
+    return res.data;
+  },
+
   markNotificationRead: async (id) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.patch(
-      `${NOTIFICATIONS_URL}/${id}/read`,
-      {},
-      {
-        withCredentials: true,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
-    );
+    const res = await api.patch(`${NOTIFICATIONS_URL}/${id}/read`);
     return res.data;
   },
 
   deleteNotification: async (id) => {
-    const token = localStorage.getItem("token");
-    const res = await axios.delete(`${NOTIFICATIONS_URL}/${id}`, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const res = await api.delete(`${NOTIFICATIONS_URL}/${id}`);
     return res.data;
   },
 
   deleteAllNotifications: async () => {
-    const token = localStorage.getItem("token");
-    const allNotifications = await axios.get(NOTIFICATIONS_URL, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    const allNotifications = await api.get(NOTIFICATIONS_URL);
     await Promise.all(
       allNotifications.data.notifications.map((n) =>
-        axios.delete(`${NOTIFICATIONS_URL}/${n.id}`, {
-          withCredentials: true,
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+        api.delete(`${NOTIFICATIONS_URL}/${n.id}`)
       )
     );
     return { success: true };
   },
 
-  // --- Mark first login seen ---
-  markFirstLogin: async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.put(
-      `${AUTH_URL}/first-login-seen`,
-      {},
-      {
-        withCredentials: true,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
-    );
+  // --- Onboarding ---
+  getOnboardingStatus: async () => {
+    const res = await api.get(`${AUTH_URL}/onboarding-status`);
     return res.data;
   },
 
-  // --- ✅ NEW: Onboarding Tracking ---
-  getOnboardingStatus: async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(`${AUTH_URL}/onboarding-status`, {
-      withCredentials: true,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    return res.data; // { onboardingShown: true/false }
-  },
-
   updateOnboardingStatus: async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.patch(
-      `${AUTH_URL}/onboarding-status`,
-      { onboardingShown: true },
-      {
-        withCredentials: true,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
-    );
+    const res = await api.patch(`${AUTH_URL}/onboarding-status`, {
+      onboardingShown: true,
+    });
     return res.data;
   },
 };

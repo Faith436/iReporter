@@ -2,8 +2,26 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* Custom slide-up animation */
+@layer utilities {
+  @keyframes slideUp {
+    from {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.35s ease-out forwards;
+  }
+}
+
 /* index.css */
-@import url('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+@import url("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
 @import "leaflet/dist/leaflet.css";
 
 .leaflet-container {
@@ -12,8 +30,14 @@
   border-radius: 0.5rem;
 }
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .animate-slideDown {
   animation: slideDown 0.3s ease-out;
@@ -54,14 +78,14 @@ input[type="date"] {
   appearance: none;
   -webkit-appearance: none;
 }
-.from-stem{
+.from-stem {
   width: 650px !important;
 }
 
 body {
-    background-color: #211e2f; 
+  background-color: #211e2f;
 }
 
 .sidebar-gradient {
-    background: linear-gradient(135deg, #6c4b9d 0%, #30264d 100%);
+  background: linear-gradient(135deg, #6c4b9d 0%, #30264d 100%);
 }
