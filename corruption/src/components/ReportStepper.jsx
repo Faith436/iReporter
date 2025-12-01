@@ -84,64 +84,83 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
   };
 
   const handleSubmit = async () => {
-  if (isSubmitting) return;
-  setIsSubmitting(true);
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-  if (!formData.reportType || !formData.title || !formData.description) {
-    setIsSubmitting(false);
-    return toast.error("Please complete all required fields.");
-  }
+    if (!formData.reportType || !formData.title || !formData.description) {
+      setIsSubmitting(false);
+      return toast.error("Please complete all required fields.");
+    }
 
-  try {
-    // Prepare FormData for multipart/form-data
-    const formPayload = new FormData();
-    formPayload.append("type", formData.reportType === "Red Flag" ? "red-flag" : "intervention");
-    formPayload.append("title", formData.title);
-    formPayload.append("description", formData.description);
-    formPayload.append("location", formData.location);
-    formPayload.append("lat", formData.lat);
-    formPayload.append("lng", formData.lng);
-    if (formData.media) formPayload.append("media", formData.media);
+    // Create a temporary ID for optimistic UI
+    const tempId = Date.now();
 
-    // Use your local backend URL (or deployed backend URL)
-    const backendUrl = "https://ireporter-xafr.onrender.com/api"; // <-- replace with your deployed backend if needed
+    // Prepare a temp report for immediate dashboard display
+    const tempReport = {
+      id: tempId,
+      type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
+      title: formData.title,
+      description: formData.description,
+      location: formData.location,
+      lat: formData.lat,
+      lng: formData.lng,
+      media: formData.media ? URL.createObjectURL(formData.media) : null,
+      status: "pending",
+    };
 
-    const response = await fetch(backendUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`, // include token if auth is required
-      },
-      body: formPayload,
-    });
+    // Add it optimistically
+    addReportToDashboard(tempReport);
 
-    // Parse response safely
-    const text = await response.text();
-    const data = text ? JSON.parse(text) : {};
+    try {
+      // Prepare FormData for file upload
+      const formPayload = new FormData();
+      formPayload.append("type", tempReport.type);
+      formPayload.append("title", tempReport.title);
+      formPayload.append("description", tempReport.description);
+      formPayload.append("location", tempReport.location);
+      formPayload.append("lat", tempReport.lat);
+      formPayload.append("lng", tempReport.lng);
+      if (formData.media) formPayload.append("media", formData.media);
 
-    if (!response.ok) throw new Error(data.error || "Failed to submit report");
+      const backendUrl = "https://ireporter-xafr.onrender.com/api/reports";
 
-    // Optimistic UI update
-    addReportToDashboard(data.report || data); // adjust depending on backend response
+      const response = await fetch(backendUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formPayload,
+      });
 
-    toast.success("Report submitted!");
-    onClose?.();
-    setFormData({
-      reportType: defaultType || "",
-      title: "",
-      description: "",
-      location: "",
-      lat: "",
-      lng: "",
-      media: null,
-    });
-  } catch (err) {
-    console.error("Submit report error:", err);
-    toast.error(err.message || "Failed to submit report");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
 
+      if (!response.ok)
+        throw new Error(data.error || "Failed to submit report");
+
+      // Replace the temp report with the real one returned by backend
+      replaceTempReport(tempId, data.report || data);
+
+      toast.success("Report submitted!");
+      onClose?.();
+      setFormData({
+        reportType: defaultType || "",
+        title: "",
+        description: "",
+        location: "",
+        lat: "",
+        lng: "",
+        media: null,
+      });
+    } catch (err) {
+      // Remove temp report on error
+      removeTempReport(tempId);
+      console.error("Submit report error:", err);
+      toast.error(err.message || "Failed to submit report");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const steps = ["Type & Description", "Location & Map", "Review & Submit"];
 
