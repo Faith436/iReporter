@@ -27,7 +27,7 @@ const isStepComplete = (step, formData) => {
 };
 
 const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
-  const { createReport, updateReport, reports, setReports } = useReports();
+  const { setReports } = useReports();
   const { token } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -39,7 +39,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     location: "",
     lat: "",
     lng: "",
-    media: null,
+    media: [],
   });
 
   useEffect(() => {
@@ -52,7 +52,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         location: reportToEdit.location || "",
         lat: reportToEdit.lat || "",
         lng: reportToEdit.lng || "",
-        media: null,
+        media: [],
       });
       setCurrentStep(1);
     } else if (defaultType) {
@@ -65,25 +65,16 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
 
   const handleNext = () => {
     if (isStepComplete(currentStep, formData)) nextStep();
-    else alert("Please complete all fields in this step before proceeding.");
+    else toast.error("Please complete all fields in this step.");
   };
 
   /** --- Optimistic UI helpers --- */
-  const addReportToDashboard = (tempReport) => {
-    setReports((prev) => [tempReport, ...(prev || [])]);
+  const addReportToDashboard = (report) => {
+    setReports((prev) => [report, ...(prev || [])]);
   };
 
-  const replaceTempReport = (tempId, savedReport) => {
-    setReports((prev) =>
-      (prev || []).map((r) => (r.id === tempId ? savedReport : r))
-    );
-  };
-
-  const removeTempReport = (tempId) => {
-    setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
-  };
-
-  const handleSubmit = () => {
+  /** --- Handle form submission --- */
+  const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -92,25 +83,40 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
       return toast.error("Please complete all required fields.");
     }
 
-    // Prepare a clean object
-    const payload = {
-      type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
-      title: formData.title,
-      description: formData.description,
-      location: formData.location,
-      lat: formData.lat,
-      lng: formData.lng,
-      media: formData.media || null,
-    };
+    try {
+      const formPayload = new FormData();
+      formPayload.append(
+        "type",
+        formData.reportType === "Red Flag" ? "red-flag" : "intervention"
+      );
+      formPayload.append("title", formData.title);
+      formPayload.append("description", formData.description);
+      formPayload.append("location", formData.location);
+      formPayload.append("lat", formData.lat);
+      formPayload.append("lng", formData.lng);
 
-    // FIRE & FORGET (optimistic)
-    createReport(payload).catch(() => {
-      toast.error("Failed to submit report");
-    });
+      if (formData.media.length > 0) {
+        formData.media.forEach((file) => formPayload.append("media", file));
+      }
 
-    setIsSubmitting(false);
-    toast.success("Report submitted!");
-    onClose?.();
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formPayload,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to submit report");
+
+      addReportToDashboard(data.report);
+      toast.success("Report submitted successfully!");
+      onClose?.();
+    } catch (err) {
+      console.error("Submit report error:", err);
+      toast.error(err.message || "Failed to submit report");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const steps = ["Type & Description", "Location & Map", "Review & Submit"];
@@ -118,6 +124,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md max-h-[90vh] overflow-y-auto">
       <Toaster />
+
       {/* Step indicators */}
       <div className="flex justify-between mb-6">
         {steps.map((label, i) => {
@@ -127,11 +134,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             <div key={i} className="flex-1 flex flex-col items-center">
               <div
                 className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-white ${
-                  complete
-                    ? "bg-teal-500"
-                    : inProgress
-                    ? "bg-blue-500"
-                    : "bg-gray-300"
+                  complete ? "bg-teal-500" : inProgress ? "bg-blue-500" : "bg-gray-300"
                 }`}
               >
                 {i + 1}
@@ -148,10 +151,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
           <div className="space-y-4 p-4 bg-white border rounded-md">
             <div className="flex gap-6">
               {["Red Flag", "Intervention"].map((type) => (
-                <label
-                  key={type}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={type} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="reportType"
@@ -166,30 +166,24 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 </label>
               ))}
             </div>
+
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Report Title
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Report Title</label>
               <input
                 type="text"
                 placeholder="Enter report title"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="border border-gray-300 p-3 rounded-md w-full"
               />
             </div>
+
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
               <textarea
                 placeholder="Provide a detailed account..."
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="border border-gray-300 p-3 rounded-md w-full h-36 resize-y"
               />
             </div>
@@ -203,9 +197,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 type="text"
                 placeholder="Location"
                 value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 className="border p-2 rounded w-full"
               />
               <div className="flex gap-2">
@@ -213,63 +205,63 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                   type="text"
                   placeholder="Latitude"
                   value={formData.lat}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lat: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
                   className="border p-2 rounded w-1/2"
                 />
                 <input
                   type="text"
                   placeholder="Longitude"
                   value={formData.lng}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lng: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
                   className="border p-2 rounded w-1/2"
                 />
               </div>
+
+              {/* File input */}
               <input
                 type="file"
                 accept="image/*,video/*"
+                multiple
                 onChange={(e) =>
-                  setFormData({ ...formData, media: e.target.files?.[0] })
+                  setFormData({ ...formData, media: Array.from(e.target.files) })
                 }
                 className="border p-2 rounded"
               />
-              {formData.media && (
-                <div className="mt-2">
-                  {formData.media.type.startsWith("image/") ? (
-                    <img
-                      src={URL.createObjectURL(formData.media)}
-                      alt="preview"
-                      className="w-full h-48 object-cover rounded"
-                    />
-                  ) : (
-                    <video
-                      src={URL.createObjectURL(formData.media)}
-                      controls
-                      className="w-full h-48 object-cover rounded"
-                    />
+
+              {/* Preview files */}
+              {formData.media.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {formData.media.map((file, idx) =>
+                    file.type.startsWith("image/") ? (
+                      <img
+                        key={idx}
+                        src={URL.createObjectURL(file)}
+                        alt="preview"
+                        className="w-full h-48 object-cover rounded"
+                      />
+                    ) : (
+                      <video
+                        key={idx}
+                        src={URL.createObjectURL(file)}
+                        controls
+                        className="w-full h-48 object-cover rounded"
+                      />
+                    )
                   )}
                 </div>
               )}
             </div>
+
             <div className="flex-1 h-64 md:h-auto">
               <MapContainer
-                center={[
-                  parseFloat(formData.lat) || 0,
-                  parseFloat(formData.lng) || 0,
-                ]}
+                center={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
                 zoom={13}
                 scrollWheelZoom={false}
                 className="w-full h-full rounded"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker
-                  position={[
-                    parseFloat(formData.lat) || 0,
-                    parseFloat(formData.lng) || 0,
-                  ]}
+                  position={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
                   icon={markerIcon}
                 >
                   <Popup>{formData.location || "No Location"}</Popup>
@@ -296,28 +288,33 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             <p>
               <strong>Coordinates:</strong> {formData.lat}, {formData.lng}
             </p>
-            {formData.media && (
-              <>
-                {formData.media.type.startsWith("image/") ? (
-                  <img
-                    src={URL.createObjectURL(formData.media)}
-                    alt="media"
-                    className="w-full h-48 object-cover rounded"
-                  />
-                ) : (
-                  <video
-                    src={URL.createObjectURL(formData.media)}
-                    controls
-                    className="w-full h-48 object-cover rounded"
-                  />
+
+            {formData.media.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {formData.media.map((file, idx) =>
+                  file.type.startsWith("image/") ? (
+                    <img
+                      key={idx}
+                      src={URL.createObjectURL(file)}
+                      alt="media"
+                      className="w-full h-48 object-cover rounded"
+                    />
+                  ) : (
+                    <video
+                      key={idx}
+                      src={URL.createObjectURL(file)}
+                      controls
+                      className="w-full h-48 object-cover rounded"
+                    />
+                  )
                 )}
-              </>
+              </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation buttons */}
       <div className="flex justify-between mt-4">
         {currentStep > 1 && (
           <button onClick={prevStep} className="px-4 py-2 rounded bg-gray-300">
