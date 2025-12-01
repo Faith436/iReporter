@@ -92,54 +92,20 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
       return toast.error("Please complete all required fields.");
     }
 
-    // Create a temporary ID for optimistic UI
-    const tempId = Date.now();
-
-    // Prepare a temp report for immediate dashboard display
-    const tempReport = {
-      id: tempId,
-      type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
-      title: formData.title,
-      description: formData.description,
-      location: formData.location,
-      lat: formData.lat,
-      lng: formData.lng,
-      media: formData.media ? URL.createObjectURL(formData.media) : null,
-      status: "pending",
-    };
-
-    // Add it optimistically
-    addReportToDashboard(tempReport);
-
     try {
-      // Prepare FormData for file upload
-      const formPayload = new FormData();
-      formPayload.append("type", tempReport.type);
-      formPayload.append("title", tempReport.title);
-      formPayload.append("description", tempReport.description);
-      formPayload.append("location", tempReport.location);
-      formPayload.append("lat", tempReport.lat);
-      formPayload.append("lng", tempReport.lng);
-      if (formData.media) formPayload.append("media", formData.media);
+      // Prepare payload
+      const payload = {
+        type: formData.reportType,
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        lat: formData.lat,
+        lng: formData.lng,
+        media: formData.media,
+      };
 
-      const backendUrl = "https://ireporter-xafr.onrender.com/api/reports";
-
-      const response = await fetch(backendUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formPayload,
-      });
-
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
-
-      if (!response.ok)
-        throw new Error(data.error || "Failed to submit report");
-
-      // Replace the temp report with the real one returned by backend
-      replaceTempReport(tempId, data.report || data);
+      // Use context function
+      const savedReport = await createReport(payload);
 
       toast.success("Report submitted!");
       onClose?.();
@@ -153,8 +119,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         media: null,
       });
     } catch (err) {
-      // Remove temp report on error
-      removeTempReport(tempId);
       console.error("Submit report error:", err);
       toast.error(err.message || "Failed to submit report");
     } finally {
