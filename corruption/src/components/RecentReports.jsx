@@ -1,8 +1,16 @@
 import React from "react";
 
-const RecentReports = ({ reports = [], onEditReport }) => {
-  // Make sure reports is always an array and remove any invalid entries
-  const safeReports = Array.isArray(reports) ? reports.filter(r => r && typeof r === "object") : [];
+const STATUS_OPTIONS = {
+  pending: "pending",
+  "under-investigation": "under-investigation",
+  resolved: "resolved",
+  rejected: "rejected",
+};
+
+const RecentReports = ({ reports = [], onEditReport, onStatusUpdate }) => {
+  const safeReports = Array.isArray(reports)
+    ? reports.filter((r) => r && typeof r === "object")
+    : [];
   const recent = safeReports.slice(0, 5);
 
   if (recent.length === 0) {
@@ -21,15 +29,39 @@ const RecentReports = ({ reports = [], onEditReport }) => {
           className="p-4 bg-white rounded shadow flex justify-between items-center border border-gray-200"
         >
           <div>
-            <h4 className="font-semibold">{report?.title ?? "Untitled Report"}</h4>
-            <p className="text-sm text-gray-600">{report?.description ?? "No description"}</p>
-            <p className="text-xs text-gray-400">
-              Status: {report?.status ?? "Pending"}
+            <h4 className="font-semibold">
+              {report?.title ?? "Untitled Report"}
+            </h4>
+            <p className="text-sm text-gray-600">
+              {report?.description ?? "No description"}
             </p>
+            <div className="mt-1 text-xs text-gray-400">
+              Status:{" "}
+              <select
+                value={
+                  STATUS_OPTIONS[report?.status] ? report.status : "pending"
+                }
+                onChange={(e) =>
+                  onStatusUpdate?.(
+                    report.id,
+                    e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                    report.user_id
+                  )
+                }
+                className="text-xs rounded px-2 py-1 border"
+              >
+                {Object.entries(STATUS_OPTIONS).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label.charAt(0).toUpperCase() +
+                      label.slice(1).replace("-", " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          {report?.status === "pending" && (
+          {report?.status === "pending" && onEditReport && (
             <button
-              onClick={() => report && onEditReport?.(report)}
+              onClick={() => onEditReport(report)}
               className="bg-teal-600 text-white px-3 py-1 rounded text-sm hover:bg-teal-700"
             >
               Edit

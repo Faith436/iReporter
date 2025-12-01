@@ -11,6 +11,13 @@
 # production
 /build
 
+# Frontend env files
+corruption/.env
+corruption/.env.local
+corruption/.env.development.local
+corruption/.env.test.local
+corruption/.env.production.local
+
 # misc
 .DS_Store
 .env.local

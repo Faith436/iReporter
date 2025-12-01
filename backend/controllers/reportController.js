@@ -89,7 +89,7 @@ exports.createReport = async (req, res) => {
 
     // Email to admin
     await sendEmail({
-      to: process.env.ADMIN_EMAIL || "admin@example.com", // fallback admin email
+      to: process.env.ADMIN_EMAIL || "wisdomjeremiah57@gmail.com", // fallback admin email
       subject: "New Report Created",
       text: message,
     });
@@ -155,17 +155,13 @@ exports.updateReportStatus = async (req, res) => {
   const { id } = req.params;
 
   if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(400).json({
-      error: "Request body cannot be empty",
-    });
+    return res.status(400).json({ error: "Request body cannot be empty" });
   }
 
   const { status } = req.body;
 
   if (!status) {
-    return res.status(400).json({
-      error: "Status field is required",
-    });
+    return res.status(400).json({ error: "Status field is required" });
   }
 
   const allowed = ["pending", "under-investigation", "resolved", "rejected"];
@@ -177,36 +173,49 @@ exports.updateReportStatus = async (req, res) => {
   }
 
   try {
+    // 1️⃣ Update the report status
     await db.query("UPDATE reports SET status = ? WHERE id = ?", [status, id]);
 
-    // --- In-app notification & email to report owner ---
+    // 2️⃣ Fetch report & user
     const [reportRows] = await db.query("SELECT * FROM reports WHERE id = ?", [
       id,
     ]);
     const report = reportRows[0];
 
+    if (!report) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+
     const [userRows] = await db.query(
       "SELECT email, first_name, last_name FROM users WHERE id = ?",
       [report.user_id]
     );
-    const user = userRows[0];
 
+    if (!userRows || userRows.length === 0) {
+      console.error("❌ No user found for report:", report);
+      return res.status(500).json({
+        error: "Report owner not found — cannot send notification or email",
+      });
+    }
+
+    const user = userRows[0];
     const displayName = `${user.first_name} ${user.last_name}`.trim();
     const emailMessage = `Hello ${displayName}, your report "${report.title}" status has been updated to "${status}".`;
 
-    // In-app notification
+    // 3️⃣ Insert in-app notification
     await db.execute(
       "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
       [report.user_id, emailMessage]
     );
 
-    // Send email
-    await sendEmail({
+    // 4️⃣ Send email asynchronously (non-blocking)
+    sendEmail({
       to: user.email,
       subject: `Report Status Updated: ${report.title}`,
       text: emailMessage,
-    });
+    }).catch((err) => console.error("Error sending status update email:", err));
 
+    // ✅ Respond immediately
     res.json({ message: "Report status updated successfully" });
   } catch (err) {
     console.error("Update report status error:", err);

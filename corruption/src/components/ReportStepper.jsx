@@ -69,9 +69,12 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     else alert("Please complete all fields in this step before proceeding.");
   };
 
-    const handleSubmit = async () => {
+  const handleSubmit = async () => {
     if (!formData.reportType || !formData.title || !formData.description) {
-      return toast.error("Please complete all required fields before submitting.", { duration: 5000, position: "top-center" });
+      return toast.error(
+        "Please complete all required fields before submitting.",
+        { duration: 5000, position: "top-center" }
+      );
     }
 
     try {
@@ -93,11 +96,17 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         await createReport(payload, token);
       }
 
-      toast.success("Report submitted successfully!", { duration: 5000, position: "top-center" });
+      toast.success("Report submitted successfully!", {
+        duration: 5000,
+        position: "top-center",
+      });
       if (onClose) onClose();
     } catch (err) {
       console.error(err);
-      toast.error("Failed to submit report. Please try again.", { duration: 5000, position: "top-center" });
+      toast.error("Failed to submit report. Please try again.", {
+        duration: 5000,
+        position: "top-center",
+      });
     }
   };
 
@@ -224,6 +233,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 />
               </div>
 
+              {/* File input */}
               <input
                 type="file"
                 accept="image/*,video/*"
@@ -232,6 +242,25 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 }
                 className="border p-2 rounded"
               />
+
+              {/* --- MEDIA PREVIEW --- */}
+              {formData.media && (
+                <div className="mt-2">
+                  {formData.media.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(formData.media)}
+                      alt="preview"
+                      className="w-full h-48 object-cover rounded"
+                    />
+                  ) : (
+                    <video
+                      src={URL.createObjectURL(formData.media)}
+                      controls
+                      className="w-full h-48 object-cover rounded"
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex-1 h-64 md:h-auto">

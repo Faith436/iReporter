@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Mail, Lock, CheckCircle, XCircle } from "lucide-react";
 import apiService from "../services/api";
 import { useUsers } from "../contexts/UserContext";
+import API_BASE_URL from "../config/api";
 
 const AuthInput = ({
   label,
@@ -68,16 +69,14 @@ const StatusMessage = ({ type, message }) => {
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { setCurrentUser } = useUsers();
+  const { setCurrentUser, markFirstLoginSeen } = useUsers();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [status, setStatus] = useState({ type: null, message: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Live Validation
   const validate = () => {
     const newErrors = {};
 
@@ -99,17 +98,24 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const data = await apiService.login(email, password);
-      localStorage.setItem("token", data.token);
+      // 1️⃣ Login
+      await apiService.login(email, password);
 
+      // 2️⃣ Fetch current user
       const fullUser = await apiService.getCurrentUser();
       setCurrentUser(fullUser.user);
 
+      if (!fullUser.user.firstLoginShown && markFirstLoginSeen) {
+        await markFirstLoginSeen();
+      }
+
+      // 4️⃣ Success message
       setStatus({
         type: "success",
         message: "Login successful! Redirecting...",
       });
 
+      // 5️⃣ Redirect based on role
       setTimeout(() => {
         if (fullUser.user.role === "admin") navigate("/admin");
         else navigate("/dashboard");
@@ -134,7 +140,6 @@ const LoginForm = () => {
       <StatusMessage type={status.type} message={status.message} />
 
       <form onSubmit={handleLogin} className="w-full" noValidate>
-        {/* EMAIL */}
         <div className="mb-4">
           <AuthInput
             label="Email Address"
@@ -152,7 +157,6 @@ const LoginForm = () => {
           )}
         </div>
 
-        {/* PASSWORD */}
         <div className="mb-4">
           <AuthInput
             label="Password"
@@ -170,7 +174,6 @@ const LoginForm = () => {
           )}
         </div>
 
-        {/* BUTTON */}
         <button
           type="submit"
           disabled={loading}
