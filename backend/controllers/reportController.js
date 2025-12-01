@@ -1,22 +1,23 @@
 // controllers/reportController.js
 const db = require("../db");
 const path = require("path");
-const sendEmail = require("../utils/sendEmail"); // ✅ Import email utility
+const sendEmail = require("../utils/sendEmail");
 
 // --- CREATE REPORT ---
 exports.createReport = async (req, res) => {
   const user = req.user;
 
-  const body = req.body || {};
   const {
     title = "",
     description = "",
     location = "",
-    status = "pending",
     type = "general",
     lat,
     lng,
-  } = body;
+  } = req.body;
+
+  // Default status
+  const status = "pending";
 
   if (!title.trim() || !description.trim() || !location.trim()) {
     return res.status(400).json({
@@ -24,23 +25,22 @@ exports.createReport = async (req, res) => {
     });
   }
 
-  const parsedLat = parseFloat(lat);
-  const parsedLng = parseFloat(lng);
+  const parsedLat = parseFloat(lat) || 0;
+  const parsedLng = parseFloat(lng) || 0;
 
-  const finalLat = isNaN(parsedLat) ? 0 : parsedLat;
-  const finalLng = isNaN(parsedLng) ? 0 : parsedLng;
-
+  // Handle multiple files from multer
   let mediaPaths = [];
-  if (req.files && req.files.length > 0) {
+  if (req.files?.length > 0) {
     mediaPaths = req.files.map(
       (file) => `/uploads/${file.destination.split("/")[1]}/${file.filename}`
     );
   }
 
   try {
-    // --- Insert report ---
+    // Insert report
     const [result] = await db.query(
-      `INSERT INTO reports (user_id, title, description, type, status, location, lat, lng, media)
+      `INSERT INTO reports 
+       (user_id, title, description, type, status, location, lat, lng, media)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.id,
@@ -49,24 +49,23 @@ exports.createReport = async (req, res) => {
         type,
         status,
         location,
-        finalLat,
-        finalLng,
+        parsedLat,
+        parsedLng,
         JSON.stringify(mediaPaths),
       ]
     );
 
+    // Fetch inserted report safely
     const [rows] = await db.query("SELECT * FROM reports WHERE id = ?", [
       result.insertId,
     ]);
+    if (!rows[0]) return res.status(500).json({ error: "Failed to fetch inserted report" });
 
     const report = rows[0];
     report.media = JSON.parse(report.media || "[]");
 
-    /** ------------------------------------------
-     * 🔥 CREATE ADMIN NOTIFICATION & EMAIL
-     * ------------------------------------------ */
-    const ADMIN_ID = 1; // Change if needed
-
+    // Notify admin
+    const ADMIN_ID = 1;
     const [userRow] = await db.query(
       "SELECT first_name, last_name, email FROM users WHERE id = ?",
       [user.id]
@@ -75,26 +74,21 @@ exports.createReport = async (req, res) => {
     const firstName = userRow[0]?.first_name || "";
     const lastName = userRow[0]?.last_name || "";
     const email = userRow[0]?.email || "Unknown";
-
-    const displayName =
-      firstName || lastName ? `${firstName} ${lastName}`.trim() : email;
-
+    const displayName = firstName || lastName ? `${firstName} ${lastName}`.trim() : email;
     const message = `New report created by ${displayName}: ${title}`;
 
     // In-app notification
-    await db.execute(
-      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
-      [ADMIN_ID, message]
-    );
+    await db.execute("INSERT INTO notifications (user_id, message) VALUES (?, ?)", [
+      ADMIN_ID,
+      message,
+    ]);
 
     // Email to admin
     await sendEmail({
-      to: process.env.ADMIN_EMAIL || "wisdomjeremiah57@gmail.com", // fallback admin email
+      to: process.env.ADMIN_EMAIL || "wisdomjeremiah57@gmail.com",
       subject: "New Report Created",
       text: message,
     });
-
-    /** ------------------------------------------ */
 
     res.status(201).json({ message: "Report created successfully", report });
   } catch (err) {
@@ -114,11 +108,10 @@ exports.getAllReports = async (req, res) => {
     `);
 
     rows.forEach((r) => (r.media = r.media ? JSON.parse(r.media) : []));
-
     const mappedRows = rows.map((r) => ({
       ...r,
       createdBy: r.user_id,
-      userName: `${r.first_name} ${r.last_name}`,
+      userName: `${r.first_name} ${r.last_name}`.trim(),
     }));
 
     res.json(mappedRows);
@@ -137,11 +130,7 @@ exports.getUserReports = async (req, res) => {
     );
 
     rows.forEach((r) => (r.media = r.media ? JSON.parse(r.media) : []));
-
-    const mappedRows = rows.map((r) => ({
-      ...r,
-      createdBy: r.user_id,
-    }));
+    const mappedRows = rows.map((r) => ({ ...r, createdBy: r.user_id }));
 
     res.json(mappedRows);
   } catch (err) {
@@ -153,12 +142,7 @@ exports.getUserReports = async (req, res) => {
 // --- UPDATE REPORT STATUS (Admin only) ---
 exports.updateReportStatus = async (req, res) => {
   const { id } = req.params;
-
-  if (!req.body || Object.keys(req.body).length === 0) {
-    return res.status(400).json({ error: "Request body cannot be empty" });
-  }
-
-  const { status } = req.body;
+  const { status } = req.body || {};
 
   if (!status) {
     return res.status(400).json({ error: "Status field is required" });
@@ -166,56 +150,36 @@ exports.updateReportStatus = async (req, res) => {
 
   const allowed = ["pending", "under-investigation", "resolved", "rejected"];
   if (!allowed.includes(status)) {
-    return res.status(400).json({
-      error:
-        "Invalid status. Allowed: pending, under-investigation, resolved, rejected",
-    });
+    return res.status(400).json({ error: "Invalid status value" });
   }
 
   try {
-    // 1️⃣ Update the report status
     await db.query("UPDATE reports SET status = ? WHERE id = ?", [status, id]);
 
-    // 2️⃣ Fetch report & user
-    const [reportRows] = await db.query("SELECT * FROM reports WHERE id = ?", [
-      id,
-    ]);
+    const [reportRows] = await db.query("SELECT * FROM reports WHERE id = ?", [id]);
     const report = reportRows[0];
+    if (!report) return res.status(404).json({ error: "Report not found" });
 
-    if (!report) {
-      return res.status(404).json({ error: "Report not found" });
-    }
-
-    const [userRows] = await db.query(
-      "SELECT email, first_name, last_name FROM users WHERE id = ?",
-      [report.user_id]
-    );
-
-    if (!userRows || userRows.length === 0) {
-      console.error("❌ No user found for report:", report);
-      return res.status(500).json({
-        error: "Report owner not found — cannot send notification or email",
-      });
-    }
+    const [userRows] = await db.query("SELECT email, first_name, last_name FROM users WHERE id = ?", [
+      report.user_id,
+    ]);
+    if (!userRows?.length) return res.status(500).json({ error: "Report owner not found" });
 
     const user = userRows[0];
     const displayName = `${user.first_name} ${user.last_name}`.trim();
     const emailMessage = `Hello ${displayName}, your report "${report.title}" status has been updated to "${status}".`;
 
-    // 3️⃣ Insert in-app notification
-    await db.execute(
-      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
-      [report.user_id, emailMessage]
-    );
+    await db.execute("INSERT INTO notifications (user_id, message) VALUES (?, ?)", [
+      report.user_id,
+      emailMessage,
+    ]);
 
-    // 4️⃣ Send email asynchronously (non-blocking)
     sendEmail({
       to: user.email,
       subject: `Report Status Updated: ${report.title}`,
       text: emailMessage,
     }).catch((err) => console.error("Error sending status update email:", err));
 
-    // ✅ Respond immediately
     res.json({ message: "Report status updated successfully" });
   } catch (err) {
     console.error("Update report status error:", err);
@@ -230,11 +194,8 @@ exports.deleteReport = async (req, res) => {
 
   try {
     const [report] = await db.query("SELECT * FROM reports WHERE id = ?", [id]);
-    if (report.length === 0)
-      return res.status(404).json({ error: "Report not found" });
-
-    if (userId !== report[0].user_id)
-      return res.status(403).json({ error: "Unauthorized" });
+    if (!report.length) return res.status(404).json({ error: "Report not found" });
+    if (userId !== report[0].user_id) return res.status(403).json({ error: "Unauthorized" });
 
     await db.query("DELETE FROM reports WHERE id = ?", [id]);
     res.json({ message: "Report deleted successfully" });
