@@ -1,4 +1,3 @@
-// src/components/ReportStepper.jsx
 import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
@@ -28,10 +27,11 @@ const isStepComplete = (step, formData) => {
 };
 
 const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
-  const { createReport, updateReport } = useReports();
+  const { createReport, updateReport, reports, setReports } = useReports();
   const { token } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
 
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     reportType: defaultType || "",
     title: "",
@@ -42,7 +42,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     media: null,
   });
 
-  // ✔ FIXED: Populate form if editing
   useEffect(() => {
     if (reportToEdit) {
       setFormData({
@@ -53,7 +52,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         location: reportToEdit.location || "",
         lat: reportToEdit.lat || "",
         lng: reportToEdit.lng || "",
-        media: null, // Let user reupload. Do NOT prefill File objects
+        media: null,
       });
       setCurrentStep(1);
     } else if (defaultType) {
@@ -69,51 +68,89 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     else alert("Please complete all fields in this step before proceeding.");
   };
 
+  /** --- Optimistic UI helpers --- */
+  const addReportToDashboard = (tempReport) => {
+    setReports((prev) => [tempReport, ...(prev || [])]);
+  };
+
+  const replaceTempReport = (tempId, savedReport) => {
+    setReports((prev) =>
+      (prev || []).map((r) => (r.id === tempId ? savedReport : r))
+    );
+  };
+
+  const removeTempReport = (tempId) => {
+    setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
+  };
+
+  /** --- Handle submit --- */
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     if (!formData.reportType || !formData.title || !formData.description) {
+      setIsSubmitting(false);
       return toast.error(
         "Please complete all required fields before submitting.",
         { duration: 5000, position: "top-center" }
       );
     }
 
-    try {
-      const payload = new FormData();
-      payload.append(
-        "type",
-        formData.reportType === "Red Flag" ? "red-flag" : "intervention"
-      );
-      payload.append("title", formData.title);
-      payload.append("description", formData.description);
-      payload.append("location", formData.location);
-      payload.append("lat", formData.lat);
-      payload.append("lng", formData.lng);
-      if (formData.media) payload.append("media", formData.media);
+    // Temporary report for instant UI
+    const tempReport = {
+      id: `temp-${Date.now()}`,
+      type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
+      title: formData.title,
+      description: formData.description,
+      location: formData.location,
+      lat: formData.lat,
+      lng: formData.lng,
+      media: formData.media || null,
+      status: "Pending",
+    };
 
-      if (reportToEdit) {
-        await updateReport(reportToEdit.id, payload, token);
-      } else {
-        await createReport(payload, token);
-      }
+    addReportToDashboard(tempReport);
+
+    try {
+      // Prepare payload
+      const payload = new FormData();
+      payload.append("type", tempReport.type);
+      payload.append("title", tempReport.title);
+      payload.append("description", tempReport.description);
+      payload.append("location", tempReport.location);
+      payload.append("lat", tempReport.lat);
+      payload.append("lng", tempReport.lng);
+      if (tempReport.media) payload.append("media", tempReport.media);
+
+      const savedReport = reportToEdit
+        ? await updateReport(reportToEdit.id, payload, token)
+        : await createReport(payload, token);
+
+      replaceTempReport(tempReport.id, savedReport);
 
       toast.success("Report submitted successfully!", {
         duration: 5000,
         position: "top-center",
       });
+
       if (onClose) onClose();
     } catch (err) {
       console.error(err);
+      removeTempReport(tempReport.id);
       toast.error("Failed to submit report. Please try again.", {
         duration: 5000,
         position: "top-center",
       });
     }
+
+    setIsSubmitting(false);
   };
 
   const steps = ["Type & Description", "Location & Map", "Review & Submit"];
 
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md max-h-[90vh] overflow-y-auto">
+      <Toaster />
       {/* Step indicators */}
       <div className="flex justify-between mb-6">
         {steps.map((label, i) => {
@@ -140,7 +177,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
 
       {/* Step content */}
       <div className="space-y-4">
-        {/* Step 1 */}
         {currentStep === 1 && (
           <div className="space-y-4 p-4 bg-white border rounded-md">
             <div className="flex gap-6">
@@ -163,8 +199,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 </label>
               ))}
             </div>
-
-            {/* Title */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Report Title
@@ -179,8 +213,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 className="border border-gray-300 p-3 rounded-md w-full"
               />
             </div>
-
-            {/* Description */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Description
@@ -197,7 +229,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
           </div>
         )}
 
-        {/* Step 2 */}
         {currentStep === 2 && (
           <div className="p-4 bg-white border rounded-md flex flex-col md:flex-row gap-4">
             <div className="flex-1 flex flex-col gap-2">
@@ -210,7 +241,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 }
                 className="border p-2 rounded w-full"
               />
-
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -221,7 +251,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                   }
                   className="border p-2 rounded w-1/2"
                 />
-
                 <input
                   type="text"
                   placeholder="Longitude"
@@ -232,8 +261,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                   className="border p-2 rounded w-1/2"
                 />
               </div>
-
-              {/* File input */}
               <input
                 type="file"
                 accept="image/*,video/*"
@@ -242,8 +269,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 }
                 className="border p-2 rounded"
               />
-
-              {/* --- MEDIA PREVIEW --- */}
               {formData.media && (
                 <div className="mt-2">
                   {formData.media.type.startsWith("image/") ? (
@@ -262,23 +287,16 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
                 </div>
               )}
             </div>
-
             <div className="flex-1 h-64 md:h-auto">
               <MapContainer
-                center={[
-                  parseFloat(formData.lat) || 0,
-                  parseFloat(formData.lng) || 0,
-                ]}
+                center={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
                 zoom={13}
                 scrollWheelZoom={false}
                 className="w-full h-full rounded"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker
-                  position={[
-                    parseFloat(formData.lat) || 0,
-                    parseFloat(formData.lng) || 0,
-                  ]}
+                  position={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
                   icon={markerIcon}
                 >
                   <Popup>{formData.location || "No Location"}</Popup>
@@ -288,7 +306,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
           </div>
         )}
 
-        {/* Step 3 */}
         {currentStep === 3 && (
           <div className="p-4 bg-white border rounded-md space-y-2">
             <p>
@@ -334,7 +351,6 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             Back
           </button>
         )}
-
         {currentStep < 3 && (
           <button
             onClick={handleNext}
@@ -343,13 +359,15 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             Next
           </button>
         )}
-
         {currentStep === 3 && (
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 rounded bg-teal-500 text-white ml-auto"
+            disabled={isSubmitting}
+            className={`px-4 py-2 rounded text-white ml-auto ${
+              isSubmitting ? "bg-teal-300 cursor-not-allowed" : "bg-teal-500"
+            }`}
           >
-            Submit
+            {isSubmitting ? "Submitting..." : "Submit"}
           </button>
         )}
       </div>

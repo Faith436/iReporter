@@ -52,13 +52,18 @@ const apiService = {
   },
 
   // --- Reports ---
-  getReports: async (userId) => {
-    const res = await api.get(
-      `${REPORTS_URL}${userId ? "?userId=" + userId : ""}`
-    );
+  getReports: async (userId, options = {}) => {
+    // options.minimal = true to fetch minimal fields for fast dashboard render
+    const { minimal = false } = options;
+
+    let url = `${REPORTS_URL}`;
+    if (userId) url += `?userId=${userId}`;
+
+    if (minimal) url += userId ? "&minimal=true" : "?minimal=true";
+
+    const res = await api.get(url);
     return res.data;
   },
-
   createReport: async (data) => {
     const res = await api.post(REPORTS_URL, data);
     return res.data;
