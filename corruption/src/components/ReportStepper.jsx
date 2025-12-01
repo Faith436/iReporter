@@ -83,8 +83,7 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
     setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
   };
 
-  /** --- Handle submit --- */
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -96,9 +95,10 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
       );
     }
 
-    // Temporary report for instant UI
+    // Create temporary report
+    const tempId = `temp-${Date.now()}`;
     const tempReport = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       type: formData.reportType === "Red Flag" ? "red-flag" : "intervention",
       title: formData.title,
       description: formData.description,
@@ -109,41 +109,43 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
       status: "Pending",
     };
 
+    // Instantly show on dashboard
     addReportToDashboard(tempReport);
 
-    try {
-      // Prepare payload
-      const payload = new FormData();
-      payload.append("type", tempReport.type);
-      payload.append("title", tempReport.title);
-      payload.append("description", tempReport.description);
-      payload.append("location", tempReport.location);
-      payload.append("lat", tempReport.lat);
-      payload.append("lng", tempReport.lng);
-      if (tempReport.media) payload.append("media", tempReport.media);
+    // Prepare payload
+    const payload = new FormData();
+    payload.append("type", tempReport.type);
+    payload.append("title", tempReport.title);
+    payload.append("description", tempReport.description);
+    payload.append("location", tempReport.location);
+    payload.append("lat", tempReport.lat);
+    payload.append("lng", tempReport.lng);
+    if (tempReport.media) payload.append("media", tempReport.media);
 
-      const savedReport = reportToEdit
-        ? await updateReport(reportToEdit.id, payload, token)
-        : await createReport(payload, token);
-
-      replaceTempReport(tempReport.id, savedReport);
-
-      toast.success("Report submitted successfully!", {
-        duration: 5000,
-        position: "top-center",
+    // FIRE & FORGET — DO NOT AWAIT
+    createReport(payload)
+      .then((savedReport) => {
+        replaceTempReport(tempId, savedReport);
+      })
+      .catch((err) => {
+        console.error(err);
+        removeTempReport(tempId);
+        toast.error("Failed to submit report. Please try again.", {
+          duration: 5000,
+          position: "top-center",
+        });
       });
 
-      if (onClose) onClose();
-    } catch (err) {
-      console.error(err);
-      removeTempReport(tempReport.id);
-      toast.error("Failed to submit report. Please try again.", {
-        duration: 5000,
-        position: "top-center",
-      });
-    }
-
+    // Instantly finish submitting
     setIsSubmitting(false);
+
+    toast.success("Report submitted successfully!", {
+      duration: 3000,
+      position: "top-center",
+    });
+
+    // Close stepper immediately
+    if (onClose) onClose();
   };
 
   const steps = ["Type & Description", "Location & Map", "Review & Submit"];
@@ -289,14 +291,20 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
             </div>
             <div className="flex-1 h-64 md:h-auto">
               <MapContainer
-                center={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
+                center={[
+                  parseFloat(formData.lat) || 0,
+                  parseFloat(formData.lng) || 0,
+                ]}
                 zoom={13}
                 scrollWheelZoom={false}
                 className="w-full h-full rounded"
               >
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker
-                  position={[parseFloat(formData.lat) || 0, parseFloat(formData.lng) || 0]}
+                  position={[
+                    parseFloat(formData.lat) || 0,
+                    parseFloat(formData.lng) || 0,
+                  ]}
                   icon={markerIcon}
                 >
                   <Popup>{formData.location || "No Location"}</Popup>
