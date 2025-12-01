@@ -1,4 +1,5 @@
 // src/pages/UserDashboard.jsx
+
 import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
@@ -20,7 +21,7 @@ import UserReportsView from "../components/UserReportsView";
 import FirstLoginPopup from "../components/FirstLoginPopup";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import apiService from "../services/api"; // ⭐ Add this if missing
+import apiService from "../services/api";
 
 // ─────────────────────────────────────────────
 // STAT CARD COMPONENT
@@ -41,16 +42,15 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
       >
         <Icon className="w-6 h-6" />
       </div>
-      <div>
-        <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
-        <p className="text-3xl font-bold text-gray-800 mt-2">{value}</p>
-      </div>
+
+      <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
+      <p className="text-3xl font-bold text-gray-800 mt-2">{value}</p>
     </div>
   );
 };
 
 // ─────────────────────────────────────────────
-// NOTIFICATIONS
+// NOTIFICATIONS LIST
 // ─────────────────────────────────────────────
 const RecentNotifications = ({
   notifications,
@@ -71,6 +71,7 @@ const RecentNotifications = ({
 
   const handleDelete = async (id) => {
     setRemoving(id);
+
     setTimeout(() => {
       deleteNotification(id);
       setRemoving(null);
@@ -89,12 +90,14 @@ const RecentNotifications = ({
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Recent Notifications
       </h2>
+
       <div className="space-y-4">
         {userNotifications.length === 0 && (
           <p className="text-gray-500 text-sm text-center">
             No notifications yet.
           </p>
         )}
+
         {userNotifications.map((n) => {
           const { Icon, bg, color } = IconMap[n.type] || {
             Icon: Info,
@@ -168,6 +171,7 @@ const QuickActions = ({ openStepper, setType }) => {
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Quick Actions
       </h2>
+
       <div className="space-y-3">
         {actions.map((a, i) => (
           <button
@@ -177,9 +181,9 @@ const QuickActions = ({ openStepper, setType }) => {
                 ? navigate("/dashboard/reports")
                 : (setType(a.type), openStepper())
             }
-            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${
-              a.className
-            } ${a.className.includes("bg-gray") ? "" : "shadow-md"}`}
+            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${a.className} ${
+              a.className.includes("bg-gray") ? "" : "shadow-md"
+            }`}
           >
             <a.icon className="w-5 h-5" />
             <span>{a.label}</span>
@@ -203,27 +207,24 @@ const Dashboard = () => {
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
 
-  // ⭐ FIRST LOGIN POPUP
+  // First login popup
   const [showFirstPopup, setShowFirstPopup] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
 
     const shouldShow = Number(currentUser.firstLoginShown) === 0;
-
     if (shouldShow) {
       setTimeout(() => setShowFirstPopup(true), 300);
     }
   }, [currentUser, reports]);
 
-  // ⭐ UPDATE DB so the popup never shows again
   const markFirstLoginShown = async () => {
     try {
       await apiService.put(`/users/${currentUser.id}/first-login-shown`, {
         firstLoginShown: 1,
       });
 
-      // Update state so popup never shows again
       setCurrentUser({
         ...currentUser,
         firstLoginShown: 1,
@@ -233,7 +234,7 @@ const Dashboard = () => {
     }
   };
 
-  // Compute stats
+  // Calculate stats
   useEffect(() => {
     if (!reports) return;
 
@@ -252,18 +253,19 @@ const Dashboard = () => {
   }, [reports]);
 
   return (
-    <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative">
-      {/* ⭐ FIRST LOGIN POPUP OVERLAY */}
+    <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative p-4">
+
+      {/* FIRST LOGIN POPUP */}
       {showFirstPopup && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <FirstLoginPopup
             onClose={() => {
               setShowFirstPopup(false);
-              markFirstLoginShown(); // ⭐ Update DB
+              markFirstLoginShown();
             }}
             onAddReport={() => {
               setShowFirstPopup(false);
-              markFirstLoginShown(); // ⭐ Update DB
+              markFirstLoginShown();
               setDefaultReportType("");
               setStepperOpen(true);
             }}
@@ -323,8 +325,9 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* REPORTS + NOTIFICATIONS */}
+      {/* REPORTS + NOTIFICATIONS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left side: Reports */}
         <div className="lg:col-span-2">
           <UserReportsView
             reports={reports}
@@ -336,6 +339,7 @@ const Dashboard = () => {
           />
         </div>
 
+        {/* Right side: Quick actions + Notifications */}
         <div className="space-y-6">
           <QuickActions
             openStepper={() => setStepperOpen(true)}
@@ -348,56 +352,6 @@ const Dashboard = () => {
             deleteNotification={deleteNotification}
           />
         </div>
-      
-
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-1">
-          Welcome back, {currentUser?.firstName}!
-        </p>
-      </header>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        {[
-          {
-            title: "Resolved Reports",
-            value: stats.resolved,
-            icon: CheckCircle,
-            color: "green",
-          },
-          {
-            title: "Pending Reports",
-            value: stats.pending,
-            icon: Clock,
-            color: "gray",
-          },
-          {
-            title: "Under Investigation",
-            value: stats.underInvestigation,
-            icon: Search,
-            color: "yellow",
-          },
-          {
-            title: "Rejected Reports",
-            value: stats.rejected,
-            icon: XCircle,
-            color: "red",
-          },
-          {
-            title: "Red-Flag Reports",
-            value: stats.redFlags,
-            icon: Flag,
-            color: "red",
-          },
-          {
-            title: "Interventions",
-            value: stats.interventions,
-            icon: Zap,
-            color: "blue",
-          },
-        ].map((s, i) => (
-          <StatCard key={i} {...s} />
-        ))}
       </div>
 
       {/* REPORT STEPPER MODAL */}
@@ -410,6 +364,7 @@ const Dashboard = () => {
             >
               ×
             </button>
+
             <ReportStepper
               defaultType={defaultReportType}
               onClose={() => setStepperOpen(false)}
@@ -421,6 +376,6 @@ const Dashboard = () => {
       )}
     </div>
   );
-
+};
 
 export default Dashboard;
