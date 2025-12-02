@@ -12,7 +12,7 @@ const COLOR_PRIMARY_PURPLE = "#4D2C5E";
 const Reports = () => {
   const {
     currentUser,
-    userLoading,
+    loading,
     createReport,
     updateReport,
     deleteReport,
@@ -92,7 +92,7 @@ const Reports = () => {
     }
   };
 
-  if (userLoading || !currentUser)
+  if (loading || !currentUser)
     return <div className="p-6 text-gray-600">Loading your dashboard...</div>;
 
   if (!currentUser)
@@ -176,7 +176,7 @@ const Reports = () => {
       {/* KanbanView */}
       {activeView === "kanban" && (
         <KanbanView
-          reports={null}
+          reports={reports || []}
           statuses={statuses}
           role={role}
           onEdit={handleEdit}
