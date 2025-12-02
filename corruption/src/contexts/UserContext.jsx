@@ -51,7 +51,7 @@ export const UserProvider = ({ children }) => {
   const markFirstLoginSeen = useCallback(async () => {
     if (!currentUser?.id) return;
     try {
-      await apiService.markFirstLoginShown(currentUser.id); // ✅ use current user internally
+      await apiService.markFirstLoginShown();
       setCurrentUser((prev) => ({ ...prev, firstLoginShown: true }));
       setShowFirstLogin(false);
     } catch (err) {

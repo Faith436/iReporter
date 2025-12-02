@@ -55,7 +55,7 @@ const apiService = {
   // --- Users ---
   getUsers: () => apiService.get(USERS_URL),
   markFirstLoginShown: (userId) =>
-    apiService.put(`${USERS_URL}/${userId}/first-login-shown`, {
+    apiService.put(`${USERS_URL}/${userId}/first-login-seen`, {
       firstLoginShown: true,
     }),
 
@@ -78,7 +78,7 @@ const apiService = {
   // --- Onboarding ---
   getOnboardingStatus: () => apiService.get(`${AUTH_URL}/onboarding-status`),
   updateOnboardingStatus: () =>
-    apiService.patch(`${AUTH_URL}/onboarding-status`, {
+    apiService.patch(`${AUTH_URL}/first-login-seen`, {
       onboardingShown: true,
     }),
 };
