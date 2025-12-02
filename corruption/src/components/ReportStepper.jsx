@@ -26,7 +26,12 @@ const isStepComplete = (step, formData) => {
   }
 };
 
-const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
+const ReportStepper = ({
+  reportToEdit = null,
+  onClose,
+  defaultType = "",
+  onReportAdded,
+}) => {
   const { createReport, updateReport, reports, setReports } = useReports();
   const { token } = useAuth();
 
@@ -118,6 +123,9 @@ const ReportStepper = ({ reportToEdit = null, onClose, defaultType = "" }) => {
         lng: "",
         media: null,
       });
+
+      // ⭐ Trigger parent callback after successful submission
+      if (onReportAdded) onReportAdded(savedReport);
     } catch (err) {
       console.error("Submit report error:", err);
       toast.error(err.message || "Failed to submit report");

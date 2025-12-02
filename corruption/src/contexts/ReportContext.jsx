@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import apiService from "../services/api";
 import { useUsers } from "./UserContext";
 
@@ -16,24 +10,19 @@ export const ReportProvider = ({ children }) => {
 
   const [reports, setReports] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [editingReport, setEditingReport] = useState(null);
 
   const [notifications, setNotifications] = useState([]);
-  const [notifLoading, setNotifLoading] = useState(false);
-
   const [hasCreatedFirstReport, setHasCreatedFirstReport] = useState(false);
 
   /** Utility to normalize report type */
-  const normalizeType = (type) =>
-    type?.toLowerCase().replace(/\s+/g, "-") || "";
+  const normalizeType = (type) => type?.toLowerCase().replace(/\s+/g, "-") || "";
 
-  /** ---------------------------------------------------
-   * Helpers for Optimistic UI
-   * --------------------------------------------------- */
-
+  /** -----------------------------
+   * Optimistic UI helpers
+   * ----------------------------- */
   const addReportToDashboard = (tempReport) => {
-    setReports((prev) => [tempReport, ...(prev || [])]);
+    setReports((prev) => [tempReport, ...prev]);
     setLocations((prev) => [
       ...prev,
       {
@@ -48,12 +37,9 @@ export const ReportProvider = ({ children }) => {
   };
 
   const replaceTempReport = (tempId, finalReport) => {
-    setReports((prev) =>
-      (prev || []).map((r) => (r.id === tempId ? finalReport : r))
-    );
-
+    setReports((prev) => prev.map((r) => (r.id === tempId ? finalReport : r)));
     setLocations((prev) =>
-      (prev || []).map((loc) =>
+      prev.map((loc) =>
         loc.id === tempId
           ? {
               ...loc,
@@ -70,196 +56,154 @@ export const ReportProvider = ({ children }) => {
   };
 
   const removeTempReport = (tempId) => {
-    setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
-    setLocations((prev) => (prev || []).filter((loc) => loc.id !== tempId));
+    setReports((prev) => prev.filter((r) => r.id !== tempId));
+    setLocations((prev) => prev.filter((loc) => loc.id !== tempId));
   };
 
-  /** ---------------------------------------------------
-   * Fetch reports progressively (Fast UI → Full data)
-   * --------------------------------------------------- */
-  const fetchReports = useCallback(async () => {
+  /** -----------------------------
+   * Fetch reports & notifications instantly
+   * ----------------------------- */
+  const fetchDashboardData = useCallback(async () => {
     if (!currentUser) return;
 
-    setLoading(true);
     try {
-      const userId = currentUser.id;
-
-      /** STEP 1: Fetch MINIMAL reports immediately */
-      const minimalData =
+      // Minimal reports + notifications in parallel
+      const minimalReportsPromise =
         currentUser.role === "admin"
-          ? await apiService.getReports({ minimal: true })
-          : await apiService.getReports(userId, { minimal: true });
+          ? apiService.getReports({ minimal: true })
+          : apiService.getReports(currentUser.id, { minimal: true });
 
-      const minimalReports = (minimalData || []).map((report) => ({
-        id: report.id,
-        title: report.title || "",
-        type: normalizeType(report.type),
-        status: report.status || "Pending",
-        userName:
-          report.userName ||
-          `${report.first_name || ""} ${report.last_name || ""}`.trim(),
-        userEmail: report.userEmail || report.email,
-        lat: report.lat ? Number(report.lat) : null,
-        lng: report.lng ? Number(report.lng) : null,
+      const notificationsPromise = apiService.getNotifications();
+
+      const [minimalReportsData, notificationsData] = await Promise.all([
+        minimalReportsPromise,
+        notificationsPromise,
+      ]);
+
+      // Map minimal reports
+      const minimalReports = (minimalReportsData || []).map((r) => ({
+        id: r.id,
+        title: r.title || "",
+        type: normalizeType(r.type),
+        status: r.status || "Pending",
+        lat: r.lat ? Number(r.lat) : null,
+        lng: r.lng ? Number(r.lng) : null,
       }));
 
       setReports(minimalReports);
-
       setLocations(
         minimalReports
           .filter((r) => r.lat && r.lng)
           .map((r) => ({
             id: r.id,
-            lat: Number(r.lat),
-            lng: Number(r.lng),
+            lat: r.lat,
+            lng: r.lng,
             title: r.title,
             type: r.type,
             status: r.status,
           }))
       );
 
+      setNotifications(notificationsData || []);
+
       if (minimalReports.length > 0) setHasCreatedFirstReport(true);
 
-      /** STEP 2: Fetch FULL report data in background */
-      const fullData =
+      // Fetch full reports in background
+      const fullReportsData =
         currentUser.role === "admin"
           ? await apiService.getReports()
-          : await apiService.getReports(userId);
+          : await apiService.getReports(currentUser.id);
 
-      const fullReports = (fullData || []).map((report) => ({
-        ...report,
-        type: normalizeType(report.type),
-        userName:
-          report.userName ||
-          `${report.first_name || ""} ${report.last_name || ""}`.trim(),
-        userEmail: report.userEmail || report.email,
-        lat: report.lat ? Number(report.lat) : null,
-        lng: report.lng ? Number(report.lng) : null,
+      const fullReports = (fullReportsData || []).map((r) => ({
+        ...r,
+        type: normalizeType(r.type),
+        lat: r.lat ? Number(r.lat) : null,
+        lng: r.lng ? Number(r.lng) : null,
       }));
 
       setReports(fullReports);
-
       setLocations(
         fullReports
           .filter((r) => r.lat && r.lng)
           .map((r) => ({
             id: r.id,
-            lat: Number(r.lat),
-            lng: Number(r.lng),
+            lat: r.lat,
+            lng: r.lng,
             title: r.title,
             type: r.type,
             status: r.status,
           }))
       );
     } catch (err) {
-      console.error("Fetch reports error:", err);
+      console.error("Dashboard data fetch error:", err);
       setReports([]);
       setLocations([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser]);
-
-  /** ---------------------------------------------------
-   * Fetch Notifications
-   * --------------------------------------------------- */
-  const fetchNotifications = useCallback(async () => {
-    if (!currentUser) return;
-
-    setNotifLoading(true);
-    try {
-      const data = await apiService.getNotifications();
-      setNotifications(data || []);
-    } catch (err) {
-      console.error("Failed to get notifications:", err);
       setNotifications([]);
-    } finally {
-      setNotifLoading(false);
     }
   }, [currentUser]);
 
-  /** ---------------------------------------------------
-   * Create Report (Optimistic)
-   * --------------------------------------------------- */
+  /** -----------------------------
+   * Create report (Optimistic)
+   * ----------------------------- */
   const createReport = async (data) => {
-  if (!currentUser) throw new Error("User not logged in");
+    if (!currentUser) throw new Error("User not logged in");
 
-  const tempId = `temp-${Date.now()}`;
+    const tempId = `temp-${Date.now()}`;
+    const tempReport = {
+      id: tempId,
+      type: normalizeType(data.type),
+      title: data.title,
+      description: data.description,
+      location: data.location,
+      lat: data.lat,
+      lng: data.lng,
+      media: data.media || null,
+      status: "Pending",
+    };
 
-  const tempReport = {
-    id: tempId,
-    type: normalizeType(data.type),
-    title: data.title,
-    description: data.description,
-    location: data.location,
-    lat: data.lat,
-    lng: data.lng,
-    media: data.media || null,
-    status: "Pending",
+    addReportToDashboard(tempReport);
+
+    try {
+      const form = new FormData();
+      form.append("type", data.type);
+      form.append("title", data.title);
+      form.append("description", data.description);
+      form.append("location", data.location);
+      form.append("lat", data.lat);
+      form.append("lng", data.lng);
+      if (data.media) form.append("media", data.media);
+
+      const res = await apiService.createReport(form);
+      const savedReport = res?.report || res;
+      savedReport.type = normalizeType(savedReport.type);
+
+      replaceTempReport(tempId, savedReport);
+
+      if (!hasCreatedFirstReport) setHasCreatedFirstReport(true);
+
+      if (currentUser.role !== "admin") fetchDashboardData();
+
+      return savedReport;
+    } catch (err) {
+      removeTempReport(tempId);
+      throw err;
+    }
   };
 
-  // Optimistic: instant UI update
-  addReportToDashboard(tempReport);
-
-  try {
-    // Convert raw data into FormData for backend
-    const form = new FormData();
-    form.append("type", data.type);
-    form.append("title", data.title);
-    form.append("description", data.description);
-    form.append("location", data.location);
-    form.append("lat", data.lat);
-    form.append("lng", data.lng);
-    if (data.media) form.append("media", data.media);
-
-    // Send to backend
-    const res = await apiService.createReport(form);
-    const savedReport = res?.report || res;
-
-    savedReport.type = normalizeType(savedReport.type);
-
-    // Replace temporary report with real one
-    replaceTempReport(tempId, savedReport);
-
-    if (!hasCreatedFirstReport) setHasCreatedFirstReport(true);
-
-    if (currentUser.role !== "admin") {
-      fetchNotifications();
-    }
-
-    return savedReport;
-  } catch (err) {
-    removeTempReport(tempId);
-    throw err;
-  }
-};
-
-
-  /** ---------------------------------------------------
-   * Update Report
-   * --------------------------------------------------- */
+  /** -----------------------------
+   * Update, delete, status helpers
+   * ----------------------------- */
   const updateReport = async (reportId, reportData) => {
     try {
       const res = await apiService.updateReport(reportId, reportData);
       const updated = res?.report || res;
-
       updated.type = normalizeType(updated.type);
 
-      setReports((prev) =>
-        prev.map((r) => (r.id === reportId ? updated : r))
-      );
-
+      setReports((prev) => prev.map((r) => (r.id === reportId ? updated : r)));
       setLocations((prev) =>
         prev.map((loc) =>
           loc.id === reportId
-            ? {
-                ...loc,
-                lat: Number(updated.lat),
-                lng: Number(updated.lng),
-                title: updated.title,
-                type: updated.type,
-                status: updated.status,
-              }
+            ? { ...loc, lat: Number(updated.lat), lng: Number(updated.lng), title: updated.title, type: updated.type, status: updated.status }
             : loc
         )
       );
@@ -271,56 +215,36 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
-  /** ---------------------------------------------------
-   * Update Report Status (Admin)
-   * --------------------------------------------------- */
   const updateReportStatus = async (reportId, status) => {
     try {
       await apiService.updateReportStatus(reportId, status);
-
-      setReports((prev) =>
-        prev.map((r) => (r.id === reportId ? { ...r, status } : r))
-      );
-
-      setLocations((prev) =>
-        prev.map((loc) =>
-          loc.id === reportId ? { ...loc, status } : loc
-        )
-      );
-
-      fetchNotifications();
+      setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, status } : r)));
+      setLocations((prev) => prev.map((loc) => (loc.id === reportId ? { ...loc, status } : loc)));
+      fetchDashboardData();
     } catch (err) {
       console.error("Update status error:", err);
       throw err;
     }
   };
 
-  /** ---------------------------------------------------
-   * Delete Report
-   * --------------------------------------------------- */
   const deleteReport = async (reportId) => {
     try {
       await apiService.deleteReport(reportId);
-
       setReports((prev) => prev.filter((r) => r.id !== reportId));
       setLocations((prev) => prev.filter((loc) => loc.id !== reportId));
-
-      fetchNotifications();
+      fetchDashboardData();
     } catch (err) {
       console.error("Delete report error:", err);
       throw err;
     }
   };
 
-  /** ---------------------------------------------------
-   * When user logs in → Load data
-   * --------------------------------------------------- */
+  /** -----------------------------
+   * Load dashboard data on login
+   * ----------------------------- */
   useEffect(() => {
-    if (currentUser) {
-      fetchReports();
-      fetchNotifications();
-    }
-  }, [currentUser, fetchReports, fetchNotifications]);
+    if (currentUser) fetchDashboardData();
+  }, [currentUser, fetchDashboardData]);
 
   return (
     <ReportContext.Provider
@@ -328,25 +252,15 @@ export const ReportProvider = ({ children }) => {
         currentUser,
         reports,
         locations,
-        loading,
-
         notifications,
-        notifLoading,
-
         hasCreatedFirstReport,
-
-        // Functions
-        fetchReports,
-        fetchNotifications,
+        editingReport,
+        setEditingReport,
+        fetchDashboardData,
         createReport,
         updateReport,
         updateReportStatus,
         deleteReport,
-
-        editingReport,
-        setEditingReport,
-
-        // Optimistic helpers
         addReportToDashboard,
         replaceTempReport,
         removeTempReport,

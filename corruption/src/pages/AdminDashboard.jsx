@@ -1,5 +1,6 @@
-import React, { useMemo, useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import { useReports } from "../contexts/ReportContext";
+import { useNotifications } from "../contexts/NotificationContext";
 import {
   Flag,
   Zap,
@@ -11,7 +12,6 @@ import {
   ArrowDown,
   Bell,
 } from "lucide-react";
-import api from "../services/api";
 import toast, { Toaster } from "react-hot-toast";
 
 // --- Utility Functions ---
@@ -83,9 +83,7 @@ const KPICard = ({ title, count, icon: Icon, color, trend }) => (
     {trend && (
       <div className="flex items-center mt-3 text-xs">
         {trend.icon && <trend.icon className={`w-3 h-3 mr-1 ${trend.color}`} />}
-        <span className={`font-semibold ${trend.color} mr-1`}>
-          {trend.value}
-        </span>
+        <span className={`font-semibold ${trend.color} mr-1`}>{trend.value}</span>
         {title !== "Under Investigation" && (
           <span className="text-gray-400">from last month</span>
         )}
@@ -200,9 +198,7 @@ const RecentReports = ({ reports, onStatusUpdate }) => {
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">User:</span>
-                <span>
-                  {report.userName || report.user?.name || "Unknown User"}
-                </span>
+                <span>{report.userName || report.user?.name || "Unknown User"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Status:</span>
@@ -236,55 +232,43 @@ const RecentReports = ({ reports, onStatusUpdate }) => {
 };
 
 // --- Notifications Sidebar ---
-const RecentNotifications = ({ notifications }) => (
-  <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-md border border-gray-100">
-    <h2 className="text-xl font-semibold text-gray-800 mb-4">
-      Recent Notifications
-    </h2>
-    {notifications.length === 0 ? (
-      <p className="text-gray-500 text-sm">No notifications yet.</p>
-    ) : (
-      <div className="space-y-3 max-h-80 overflow-y-auto">
-        {notifications.slice(0, 5).map((n, i) => (
-          <div key={i} className="flex items-start p-3 rounded-lg bg-gray-50">
-            <Bell className="w-5 h-5 mt-1 mr-3 text-blue-600" />
-            <div>
-              <p className="font-semibold text-sm text-gray-700">
-                {n.title || "Notification"}
-              </p>
-              <p className="text-sm text-gray-600">{n.message}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(n.created_at).toLocaleString()}
-              </p>
+const RecentNotifications = () => {
+  const { notifications } = useNotifications();
+
+  return (
+    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-md border border-gray-100">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">
+        Recent Notifications
+      </h2>
+      {notifications.length === 0 ? (
+        <p className="text-gray-500 text-sm">No notifications yet.</p>
+      ) : (
+        <div className="space-y-3 max-h-80 overflow-y-auto">
+          {notifications.slice(0, 5).map((n, i) => (
+            <div key={i} className="flex items-start p-3 rounded-lg bg-gray-50">
+              <Bell className="w-5 h-5 mt-1 mr-3 text-blue-600" />
+              <div>
+                <p className="font-semibold text-sm text-gray-700">
+                  {n.title || "Notification"}
+                </p>
+                <p className="text-sm text-gray-600">{n.message}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(n.created_at).toLocaleString()}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-);
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // --- Admin Dashboard ---
-const AdminDashboard = ({ onDelete }) => {
-  const { reports, loading, currentUser, fetchReports } = useReports();
+const AdminDashboard = () => {
+  const { reports, fetchReports, currentUser } = useReports();
+  const { fetchNotifications } = useNotifications();
   const metrics = useMemo(() => calculateMetrics(reports), [reports]);
-  const [notifications, setNotifications] = useState([]);
-
-  useEffect(() => {
-    fetchReports();
-    fetchNotifications();
-  }, [fetchReports]);
-
-  const fetchNotifications = async () => {
-    try {
-      const data = await api.getNotifications();
-      setNotifications(
-        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      );
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
 
   const STATUS_API_MAP = {
     pending: "pending",
@@ -293,41 +277,35 @@ const AdminDashboard = ({ onDelete }) => {
     rejected: "rejected",
   };
 
+  const { addNotification } = useNotifications();
+
   const handleStatusUpdate = async (reportId, newStatus, userId) => {
     const formattedStatus = STATUS_API_MAP[newStatus];
     if (!formattedStatus) return console.error("Invalid status:", newStatus);
 
     try {
-      console.log("Sending status update:", formattedStatus);
-      await api.updateReportStatus(reportId, formattedStatus);
+      await fetchReports(); // re-fetch reports after status change
+
       if (userId) {
-        const newNotification = {
+        const newNotif = {
           user_id: userId,
           title: "Report Update",
           message: `Your report status has been updated to "${formattedStatus}"`,
           is_read: 0,
           created_at: new Date().toISOString(),
         };
-        await api.createNotification(newNotification);
-        setNotifications((prev) => [newNotification, ...prev]);
+        addNotification(newNotif);
       }
-      fetchReports();
+
+      fetchNotifications();
       toast.success(`Report status updated to "${formattedStatus}"`);
     } catch (err) {
-      console.error("Error updating status or sending notification:", err);
+      console.error(err);
       toast.error("Failed to update status.");
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-lg text-gray-600">Loading Dashboard Data...</p>
-      </div>
-    );
-
-  const userName = currentUser?.name || "Admin";
-  const displayName = userName.split(" ")[0] || "Admin";
+  const displayName = currentUser?.name?.split(" ")[0] || "Admin";
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8 overflow-x-hidden">
@@ -341,60 +319,21 @@ const AdminDashboard = ({ onDelete }) => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <KPICard
-          title="Pending"
-          count={metrics.pending}
-          icon={Clock}
-          color="bg-pink-500"
-          trend={metrics.pendingTrend}
-        />
-        <KPICard
-          title="Resolved"
-          count={metrics.resolved}
-          icon={CheckCircle}
-          color="bg-green-500"
-          trend={metrics.resolvedTrend}
-        />
-        <KPICard
-          title="Rejected"
-          count={metrics.rejected}
-          icon={XCircle}
-          color="bg-red-500"
-          trend={metrics.rejectedTrend}
-        />
-        <KPICard
-          title="Total Red-Flags"
-          count={metrics.totalRedFlags}
-          icon={Flag}
-          color="bg-red-500"
-          trend={metrics.totalRedFlagsTrend}
-        />
-        <KPICard
-          title="Interventions"
-          count={metrics.interventions}
-          icon={Zap}
-          color="bg-blue-500"
-          trend={metrics.interventionsTrend}
-        />
-        <KPICard
-          title="Under Investigation"
-          count={metrics.underInvestigation}
-          icon={Search}
-          color="bg-yellow-500"
-          trend={metrics.underInvestigationTrend}
-        />
+        <KPICard title="Pending" count={metrics.pending} icon={Clock} color="bg-pink-500" trend={metrics.pendingTrend} />
+        <KPICard title="Resolved" count={metrics.resolved} icon={CheckCircle} color="bg-green-500" trend={metrics.resolvedTrend} />
+        <KPICard title="Rejected" count={metrics.rejected} icon={XCircle} color="bg-red-500" trend={metrics.rejectedTrend} />
+        <KPICard title="Total Red-Flags" count={metrics.totalRedFlags} icon={Flag} color="bg-red-500" trend={metrics.totalRedFlagsTrend} />
+        <KPICard title="Interventions" count={metrics.interventions} icon={Zap} color="bg-blue-500" trend={metrics.interventionsTrend} />
+        <KPICard title="Under Investigation" count={metrics.underInvestigation} icon={Search} color="bg-yellow-500" trend={metrics.underInvestigationTrend} />
       </div>
 
       {/* Reports + Notifications */}
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1">
-          <RecentReports
-            reports={reports}
-            onStatusUpdate={handleStatusUpdate}
-          />
+          <RecentReports reports={reports} onStatusUpdate={handleStatusUpdate} />
         </div>
         <div className="w-full lg:w-80">
-          <RecentNotifications notifications={notifications} />
+          <RecentNotifications />
         </div>
       </div>
     </div>

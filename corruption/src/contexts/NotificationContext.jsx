@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import apiService from "../services/api";
 
 const NotificationContext = createContext();
@@ -12,11 +6,10 @@ export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
 
+  /** Fetch notifications immediately for fast UI */
   const fetchNotifications = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await apiService.getNotifications();
       setNotifications(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -26,15 +19,15 @@ export const NotificationProvider = ({ children }) => {
         err.response?.data || err.message
       );
       setNotifications([]);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
+  /** Add a new notification at the top */
   const addNotification = (notification) => {
     setNotifications((prev) => [notification, ...prev]);
   };
 
+  /** Mark a notification as read */
   const markAsRead = async (id) => {
     try {
       await apiService.markNotificationRead(id);
@@ -46,6 +39,7 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  /** Delete a notification */
   const deleteNotification = async (id) => {
     try {
       await apiService.deleteNotification(id);
@@ -55,19 +49,18 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  // ✅ Delete all notifications (frontend loop)
+  /** Delete all notifications in frontend */
   const deleteAllNotifications = async () => {
     try {
-      // Delete each notification individually
       await Promise.all(notifications.map((n) => deleteNotification(n.id)));
-      // Clear local state
       setNotifications([]);
     } catch (err) {
       console.error("Delete all notifications error:", err);
-      throw err; // rethrow so component can handle toast/error
+      throw err;
     }
   };
 
+  /** Load notifications on mount instantly */
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
@@ -76,11 +69,10 @@ export const NotificationProvider = ({ children }) => {
     <NotificationContext.Provider
       value={{
         notifications,
-        loading,
         fetchNotifications,
         markAsRead,
         deleteNotification,
-        deleteAllNotifications, // ✅ add here
+        deleteAllNotifications,
         addNotification,
       }}
     >
