@@ -42,86 +42,6 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   );
 };
 
-// ───── RECENT NOTIFICATIONS ─────
-const RecentNotifications = ({ currentUser }) => {
-  const { notifications, deleteNotification } = useNotifications();
-  const [removing, setRemoving] = useState(null);
-
-  const userNotifications = notifications
-    .filter((n) => Number(n.user_id) === Number(currentUser?.id))
-    .slice(0, 5); // show latest 5
-
-  const IconMap = {
-    Info: { Icon: Info, bg: "bg-blue-50", color: "text-blue-600" },
-    Resolved: { Icon: CheckCircle, bg: "bg-green-50", color: "text-green-600" },
-    Reminder: { Icon: Clock, bg: "bg-yellow-50", color: "text-yellow-600" },
-  };
-
-  const handleDelete = async (id) => {
-    setRemoving(id);
-    try {
-      await deleteNotification(id);
-      toast.success("Notification deleted", { position: "top-center" });
-    } catch {
-      toast.error("Failed to delete notification", { position: "top-center" });
-    } finally {
-      setRemoving(null);
-    }
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        Recent Notifications
-      </h2>
-      {userNotifications.length === 0 ? (
-        <p className="text-gray-500 text-sm text-center">
-          No notifications yet.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {userNotifications.map((n) => {
-            const typeKey =
-              n.type?.charAt(0).toUpperCase() + n.type?.slice(1).toLowerCase();
-            const { Icon, bg, color } = IconMap[typeKey] || {
-              Icon: Info,
-              bg: "bg-gray-50",
-              color: "text-gray-600",
-            };
-            return (
-              <div
-                key={n.id}
-                className={`p-4 rounded-lg border flex justify-between items-start transition-all duration-200 ${bg} ${color.replace(
-                  "text",
-                  "border"
-                )} ${removing === n.id ? "opacity-0 scale-95" : "opacity-100"}`}
-              >
-                <div className="flex items-start space-x-3">
-                  <Icon className={`w-5 h-5 mt-1 ${color}`} />
-                  <div>
-                    <p className={`text-sm font-semibold ${color}`}>
-                      {n.message}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(n.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDelete(n.id)}
-                  className="p-1 rounded hover:bg-red-100 transition"
-                >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
 // ───── QUICK ACTIONS ─────
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
@@ -172,22 +92,23 @@ const QuickActions = ({ openStepper, setType }) => {
   );
 };
 
-// ───── MAIN DASHBOARD ─────
+// ───── DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
-  const { reports } = useReports();
+  const { reports, createReport, updateReport, deleteReport } = useReports();
   const [stats, setStats] = useState({});
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
   const [showFirstPopup, setShowFirstPopup] = useState(false);
 
+  // First login popup
   useEffect(() => {
     if (!currentUser) return;
     if (Number(currentUser.firstLoginShown) === 0) {
       setTimeout(() => setShowFirstPopup(true), 300);
     }
-  }, [currentUser, reports]);
+  }, [currentUser]);
 
   const markFirstLoginShown = async () => {
     try {
@@ -200,7 +121,7 @@ const Dashboard = () => {
     }
   };
 
-  // Stats calculation
+  // Update stats whenever reports change
   useEffect(() => {
     if (!reports) return;
     setStats({
@@ -289,7 +210,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* REPORTS + NOTIFICATIONS GRID */}
+      {/* REPORTS + QUICK ACTIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <UserReportsView
@@ -297,7 +218,12 @@ const Dashboard = () => {
             role="user"
             setEditingReport={setEditingReport}
             setShowModal={setStepperOpen}
-            onDelete={(id) => console.log("Delete", id)}
+            onDelete={(id) => deleteReport(id)}
+            onEdit={(report) => {
+              setEditingReport(report);
+              setStepperOpen(true);
+            }}
+            onUpdate={(id, data) => updateReport(id, data)}
             loading={false}
           />
         </div>
@@ -306,7 +232,6 @@ const Dashboard = () => {
             openStepper={() => setStepperOpen(true)}
             setType={setDefaultReportType}
           />
-          <RecentNotifications currentUser={currentUser} />
         </div>
       </div>
 
@@ -322,9 +247,12 @@ const Dashboard = () => {
             </button>
             <ReportStepper
               defaultType={defaultReportType}
-              onClose={() => setStepperOpen(false)}
               editingReport={editingReport}
-              setEditingReport={setEditingReport}
+              onClose={() => {
+                setStepperOpen(false);
+                setEditingReport(null);
+              }}
+              onReportAdded={(savedReport) => toast.success("Report added!")}
             />
           </div>
         </div>
