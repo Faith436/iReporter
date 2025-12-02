@@ -1,4 +1,3 @@
-// src/pages/UserDashboard.jsx
 import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
@@ -20,9 +19,8 @@ import FirstLoginPopup from "../components/FirstLoginPopup";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
-// ─────────────────────────────────────────────
-// STAT CARD COMPONENT
-// ─────────────────────────────────────────────
+
+// ───── STAT CARD ─────
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
     green: "bg-green-100 text-green-600",
@@ -43,18 +41,15 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
     </div>
   );
 };
-// ─────────────────────────────────────────────
-// NOTIFICATIONS LIST
-// ─────────────────────────────────────────────
-const RecentNotifications = ({
-  notifications,
-  currentUser,
-  deleteNotification,
-}) => {
+
+// ───── RECENT NOTIFICATIONS ─────
+const RecentNotifications = ({ currentUser }) => {
+  const { notifications, deleteNotification } = useNotifications();
   const [removing, setRemoving] = useState(null);
-  const userNotifications = notifications.filter(
-    (n) => Number(n.user_id) === Number(currentUser?.id)
-  );
+
+  const userNotifications = notifications
+    .filter((n) => Number(n.user_id) === Number(currentUser?.id))
+    .slice(0, 5); // show latest 5
 
   const IconMap = {
     Info: { Icon: Info, bg: "bg-blue-50", color: "text-blue-600" },
@@ -67,9 +62,10 @@ const RecentNotifications = ({
     try {
       await deleteNotification(id);
       toast.success("Notification deleted", { position: "top-center" });
-      setRemoving(null);
     } catch {
       toast.error("Failed to delete notification", { position: "top-center" });
+    } finally {
+      setRemoving(null);
     }
   };
 
@@ -78,14 +74,13 @@ const RecentNotifications = ({
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Recent Notifications
       </h2>
-
       {userNotifications.length === 0 ? (
         <p className="text-gray-500 text-sm text-center">
           No notifications yet.
         </p>
       ) : (
         <div className="space-y-4">
-          {userNotifications.slice(0, 5).map((n) => {
+          {userNotifications.map((n) => {
             const typeKey =
               n.type?.charAt(0).toUpperCase() + n.type?.slice(1).toLowerCase();
             const { Icon, bg, color } = IconMap[typeKey] || {
@@ -93,7 +88,6 @@ const RecentNotifications = ({
               bg: "bg-gray-50",
               color: "text-gray-600",
             };
-
             return (
               <div
                 key={n.id}
@@ -128,9 +122,7 @@ const RecentNotifications = ({
   );
 };
 
-// ─────────────────────────────────────────────
-// QUICK ACTIONS
-// ─────────────────────────────────────────────
+// ───── QUICK ACTIONS ─────
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
   const actions = [
@@ -179,40 +171,36 @@ const QuickActions = ({ openStepper, setType }) => {
     </div>
   );
 };
-// ─────────────────────────────────────────────
-// MAIN DASHBOARD
-// ─────────────────────────────────────────────
+
+// ───── MAIN DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
   const { reports } = useReports();
-  const { notifications, deleteNotification } = useNotifications();
   const [stats, setStats] = useState({});
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
-  // First login popup
   const [showFirstPopup, setShowFirstPopup] = useState(false);
+
   useEffect(() => {
     if (!currentUser) return;
-    const shouldShow = Number(currentUser.firstLoginShown) === 0;
-    if (shouldShow) {
+    if (Number(currentUser.firstLoginShown) === 0) {
       setTimeout(() => setShowFirstPopup(true), 300);
     }
   }, [currentUser, reports]);
+
   const markFirstLoginShown = async () => {
     try {
       await apiService.put(`/users/${currentUser.id}/first-login-shown`, {
         firstLoginShown: 1,
       });
-      setCurrentUser({
-        ...currentUser,
-        firstLoginShown: 1,
-      });
+      setCurrentUser({ ...currentUser, firstLoginShown: 1 });
     } catch (err) {
       console.error("Failed to update firstLoginShown:", err);
     }
   };
-  // Calculate stats
+
+  // Stats calculation
   useEffect(() => {
     if (!reports) return;
     setStats({
@@ -228,6 +216,7 @@ const Dashboard = () => {
       interventions: reports.filter((r) => r.type === "intervention").length,
     });
   }, [reports]);
+
   return (
     <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative p-4">
       {/* FIRST LOGIN POPUP */}
@@ -247,6 +236,7 @@ const Dashboard = () => {
           />
         </div>
       )}
+
       {/* HEADER */}
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
@@ -254,6 +244,7 @@ const Dashboard = () => {
           Welcome back, {currentUser?.firstName}!
         </p>
       </header>
+
       {/* STATS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {[
@@ -297,9 +288,9 @@ const Dashboard = () => {
           <StatCard key={i} {...s} />
         ))}
       </div>
+
       {/* REPORTS + NOTIFICATIONS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side: Reports */}
         <div className="lg:col-span-2">
           <UserReportsView
             reports={reports}
@@ -310,19 +301,15 @@ const Dashboard = () => {
             loading={false}
           />
         </div>
-        {/* Right side: Quick actions + Notifications */}
         <div className="space-y-6">
           <QuickActions
             openStepper={() => setStepperOpen(true)}
             setType={setDefaultReportType}
           />
-          <RecentNotifications
-            notifications={notifications}
-            currentUser={currentUser}
-            deleteNotification={deleteNotification}
-          />
+          <RecentNotifications currentUser={currentUser} />
         </div>
       </div>
+
       {/* REPORT STEPPER MODAL */}
       {stepperOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-auto">
@@ -345,4 +332,5 @@ const Dashboard = () => {
     </div>
   );
 };
+
 export default Dashboard;

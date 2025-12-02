@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import apiService from "../services/api";
 
 const NotificationContext = createContext();
@@ -10,14 +16,10 @@ export const NotificationProvider = ({ children }) => {
   /** Fetch notifications immediately for fast UI */
   const fetchNotifications = useCallback(async () => {
     try {
-      const data = await apiService.getNotifications();
-      setNotifications(Array.isArray(data) ? data : []);
+      const data = await apiService.getNotifications(); // now returns array
+      setNotifications(data || []);
     } catch (err) {
-      console.error(
-        "Fetch notifications error:",
-        err.response?.status,
-        err.response?.data || err.message
-      );
+      console.error("Fetch notifications error:", err);
       setNotifications([]);
     }
   }, []);

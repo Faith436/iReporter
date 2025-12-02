@@ -57,7 +57,10 @@ const apiService = {
   getUsers: () => apiService.get(USERS_URL),
 
   // --- Notifications ---
-  getNotifications: () => apiService.get(NOTIFICATIONS_URL),
+  getNotifications: async () => {
+    const res = await api.get(NOTIFICATIONS_URL); // GET /notifications
+    return res.data.notifications; // return the array directly
+  },
   createNotification: (data) => apiService.post(NOTIFICATIONS_URL, data),
   markNotificationRead: (id) =>
     apiService.patch(`${NOTIFICATIONS_URL}/${id}/read`),
