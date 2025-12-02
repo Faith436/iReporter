@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
-import { useNotifications } from "../contexts/NotificationContext";
 import ReportStepper from "../components/ReportStepper";
 import UserReportsView from "../components/UserReportsView";
 import FirstLoginPopup from "../components/FirstLoginPopup";
@@ -95,12 +94,20 @@ const QuickActions = ({ openStepper, setType }) => {
 // ───── DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
-  const { reports, createReport, updateReport, deleteReport } = useReports();
+  const {
+    reports,
+    notifications,
+    createReport,
+    updateReport,
+    deleteReport,
+  } = useReports();
   const [stats, setStats] = useState({});
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
   const [showFirstPopup, setShowFirstPopup] = useState(false);
+
+  const navigate = useNavigate();
 
   // First login popup
   useEffect(() => {
@@ -210,7 +217,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* REPORTS + QUICK ACTIONS */}
+      {/* REPORTS + QUICK ACTIONS + NOTIFICATIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <UserReportsView
@@ -227,11 +234,40 @@ const Dashboard = () => {
             loading={false}
           />
         </div>
+
         <div className="space-y-6">
           <QuickActions
             openStepper={() => setStepperOpen(true)}
             setType={setDefaultReportType}
           />
+
+          {/* RECENT NOTIFICATIONS */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Recent Notifications
+            </h2>
+            {notifications && notifications.length > 0 ? (
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {notifications
+                  .slice(0, 5) // show latest 5
+                  .map((n) => (
+                    <li
+                      key={n.id}
+                      className="p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
+                    >
+                      <div className="flex justify-between items-start">
+                        <p className="text-gray-700 text-sm">{n.message}</p>
+                        <span className="text-gray-400 text-xs">
+                          {new Date(n.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400 text-sm">No recent notifications</p>
+            )}
+          </div>
         </div>
       </div>
 
