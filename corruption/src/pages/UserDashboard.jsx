@@ -53,75 +53,81 @@ const RecentNotifications = ({
 }) => {
   const [removing, setRemoving] = useState(null);
   const userNotifications = notifications.filter(
-    (n) => n.user_id === currentUser?.id
+    (n) => Number(n.user_id) === Number(currentUser?.id)
   );
+
   const IconMap = {
     Info: { Icon: Info, bg: "bg-blue-50", color: "text-blue-600" },
     Resolved: { Icon: CheckCircle, bg: "bg-green-50", color: "text-green-600" },
     Reminder: { Icon: Clock, bg: "bg-yellow-50", color: "text-yellow-600" },
   };
+
   const handleDelete = async (id) => {
     setRemoving(id);
-    setTimeout(() => {
-      deleteNotification(id);
-      setRemoving(null);
-    }, 200);
     try {
       await deleteNotification(id);
       toast.success("Notification deleted", { position: "top-center" });
+      setRemoving(null);
     } catch {
       toast.error("Failed to delete notification", { position: "top-center" });
     }
   };
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Recent Notifications
       </h2>
-      <div className="space-y-4">
-        {userNotifications.length === 0 && (
-          <p className="text-gray-500 text-sm text-center">
-            No notifications yet.
-          </p>
-        )}
-        {userNotifications.map((n) => {
-          const { Icon, bg, color } = IconMap[n.type] || {
-            Icon: Info,
-            bg: "bg-gray-50",
-            color: "text-gray-600",
-          };
-          return (
-            <div
-              key={n.id}
-              className={`p-4 rounded-lg border flex justify-between items-start transition-all duration-200 ${bg} ${color.replace(
-                "text",
-                "border"
-              )} ${removing === n.id ? "opacity-0 scale-95" : "opacity-100"}`}
-            >
-              <div className="flex items-start space-x-3">
-                <Icon className={`w-5 h-5 mt-1 ${color}`} />
-                <div>
-                  <p className={`text-sm font-semibold ${color}`}>
-                    {n.message}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(n.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleDelete(n.id)}
-                className="p-1 rounded hover:bg-red-100 transition"
+
+      {userNotifications.length === 0 ? (
+        <p className="text-gray-500 text-sm text-center">
+          No notifications yet.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {userNotifications.slice(0, 5).map((n) => {
+            const typeKey =
+              n.type?.charAt(0).toUpperCase() + n.type?.slice(1).toLowerCase();
+            const { Icon, bg, color } = IconMap[typeKey] || {
+              Icon: Info,
+              bg: "bg-gray-50",
+              color: "text-gray-600",
+            };
+
+            return (
+              <div
+                key={n.id}
+                className={`p-4 rounded-lg border flex justify-between items-start transition-all duration-200 ${bg} ${color.replace(
+                  "text",
+                  "border"
+                )} ${removing === n.id ? "opacity-0 scale-95" : "opacity-100"}`}
               >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+                <div className="flex items-start space-x-3">
+                  <Icon className={`w-5 h-5 mt-1 ${color}`} />
+                  <div>
+                    <p className={`text-sm font-semibold ${color}`}>
+                      {n.message}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(n.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDelete(n.id)}
+                  className="p-1 rounded hover:bg-red-100 transition"
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
+
 // ─────────────────────────────────────────────
 // QUICK ACTIONS
 // ─────────────────────────────────────────────
@@ -161,9 +167,9 @@ const QuickActions = ({ openStepper, setType }) => {
                 ? navigate("/dashboard/reports")
                 : (setType(a.type), openStepper())
             }
-            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${a.className} ${
-              a.className.includes("bg-gray") ? "" : "shadow-md"
-            }`}
+            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${
+              a.className
+            } ${a.className.includes("bg-gray") ? "" : "shadow-md"}`}
           >
             <a.icon className="w-5 h-5" />
             <span>{a.label}</span>
@@ -340,10 +346,3 @@ const Dashboard = () => {
   );
 };
 export default Dashboard;
-
-
-
-
-
-
-
