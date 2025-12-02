@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
 });
 
 const apiService = {
-  // Generic helpers
+  // --- Generic helpers ---
   get: async (url, params) => (await api.get(url, { params })).data,
   post: async (url, data) => (await api.post(url, data)).data,
   put: async (url, data) => (await api.put(url, data)).data,
@@ -38,6 +38,7 @@ const apiService = {
     localStorage.removeItem("token");
     return { message: "Logged out" };
   },
+  markFirstLoginShown: () => apiService.put(`${AUTH_URL}/first-login-seen`),
 
   // --- Reports ---
   getReports: (userId, options = {}) => {
@@ -54,10 +55,6 @@ const apiService = {
 
   // --- Users ---
   getUsers: () => apiService.get(USERS_URL),
-  markFirstLoginShown: (userId) =>
-    apiService.put(`${USERS_URL}/${userId}/first-login-seen`, {
-      firstLoginShown: true,
-    }),
 
   // --- Notifications ---
   getNotifications: () => apiService.get(NOTIFICATIONS_URL),
@@ -78,9 +75,7 @@ const apiService = {
   // --- Onboarding ---
   getOnboardingStatus: () => apiService.get(`${AUTH_URL}/onboarding-status`),
   updateOnboardingStatus: () =>
-    apiService.patch(`${AUTH_URL}/first-login-seen`, {
-      onboardingShown: true,
-    }),
+    apiService.patch(`${AUTH_URL}/first-login-seen`, { onboardingShown: true }),
 };
 
 export default apiService;
