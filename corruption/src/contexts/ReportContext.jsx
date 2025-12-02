@@ -109,8 +109,16 @@ export const ReportProvider = ({ children }) => {
   const createReport = async (data) => {
     try {
       const tempId = `temp-${Date.now()}`;
-      const tempReport = { ...data, id: tempId, status: "Pending" };
 
+      // Make tempReport exactly reflect stepper input
+      const tempReport = {
+        ...data,
+        id: tempId,
+        status: "Pending",
+        type: normalizeType(data.type), // normalize type
+      };
+
+      // Optimistically add to reports and locations
       setReports((prev) => [tempReport, ...(prev || [])]);
       if (tempReport.lat && tempReport.lng) {
         setLocations((prev) => [
@@ -126,6 +134,7 @@ export const ReportProvider = ({ children }) => {
         ]);
       }
 
+      // Send to backend
       const savedReport = await apiService.post("/reports", data);
 
       const formattedReport = {
@@ -136,6 +145,7 @@ export const ReportProvider = ({ children }) => {
         status: savedReport.status || "Pending",
       };
 
+      // Replace temp report with saved report
       setReports((prev) =>
         (prev || []).map((r) => (r.id === tempId ? formattedReport : r))
       );
@@ -161,6 +171,8 @@ export const ReportProvider = ({ children }) => {
       return formattedReport;
     } catch (err) {
       console.error("Error creating report:", err);
+
+      // Rollback temp report
       setReports((prev) =>
         (prev || []).filter((r) => !r.id.toString().startsWith("temp-"))
       );
@@ -195,7 +207,10 @@ export const ReportProvider = ({ children }) => {
         );
       }
 
-      const savedReport = await apiService.put(`/reports/${reportId}`, reportData);
+      const savedReport = await apiService.put(
+        `/reports/${reportId}`,
+        reportData
+      );
 
       const formattedReport = {
         ...savedReport,
@@ -266,7 +281,10 @@ export const ReportProvider = ({ children }) => {
         (prev || []).map((l) => (l.id === reportId ? { ...l, status } : l))
       );
 
-      const savedReport = await apiService.patch(`/reports/${reportId}/status`, { status });
+      const savedReport = await apiService.patch(
+        `/reports/${reportId}/status`,
+        { status }
+      );
 
       const formattedReport = {
         ...savedReport,

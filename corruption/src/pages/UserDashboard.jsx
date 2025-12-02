@@ -13,6 +13,7 @@ import {
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
 import ReportStepper from "../components/ReportStepper";
+import { useNotifications } from "../contexts/NotificationContext";
 import UserReportsView from "../components/UserReportsView";
 import FirstLoginPopup from "../components/FirstLoginPopup";
 import toast from "react-hot-toast";
@@ -94,13 +95,8 @@ const QuickActions = ({ openStepper, setType }) => {
 // ───── DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
-  const {
-    reports,
-    notifications,
-    createReport,
-    updateReport,
-    deleteReport,
-  } = useReports();
+  const { reports, notifications, createReport, updateReport, deleteReport } =
+    useReports();
   const [stats, setStats] = useState({});
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
@@ -255,12 +251,7 @@ const Dashboard = () => {
                       key={n.id}
                       className="p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
                     >
-                      <div className="flex justify-between items-start">
-                        <p className="text-gray-700 text-sm">{n.message}</p>
-                        <span className="text-gray-400 text-xs">
-                          {new Date(n.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
+                      <p className="text-gray-700 text-sm">{n.message}</p>
                     </li>
                   ))}
               </ul>

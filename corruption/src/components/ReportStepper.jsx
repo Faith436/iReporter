@@ -51,7 +51,7 @@ const ReportStepper = ({
     if (reportToEdit) {
       setFormData({
         reportType:
-          reportToEdit.type === "Red-Flag" ? "Red Flag" : "Intervention",
+          reportToEdit.type === "red-flag" ? "Red Flag" : "Intervention",
         title: reportToEdit.title,
         description: reportToEdit.description,
         location: reportToEdit.location || "",
