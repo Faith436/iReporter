@@ -1,155 +1,86 @@
 import axios from "axios";
-import API_BASE_URL from "../config/api"; // adjust path as needed
+import API_BASE_URL from "../config/api";
 
 const AUTH_URL = "/auth";
 const REPORTS_URL = "/reports";
 const USERS_URL = "/users";
 const NOTIFICATIONS_URL = "/notifications";
 
-// Create a single axios instance
+// Axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Interceptor to attach token to every request
+// Attach token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 const apiService = {
+  // Generic helpers
+  get: async (url, params) => (await api.get(url, { params })).data,
+  post: async (url, data) => (await api.post(url, data)).data,
+  put: async (url, data) => (await api.put(url, data)).data,
+  patch: async (url, data) => (await api.patch(url, data)).data,
+  delete: async (url) => (await api.delete(url)).data,
+
   // --- Auth ---
-  register: async (userData) => {
-    const res = await api.post(`${AUTH_URL}/register`, userData);
-    return res.data;
-  },
-
+  register: (userData) => apiService.post(`${AUTH_URL}/register`, userData),
   login: async (email, password) => {
-    const res = await api.post(`${AUTH_URL}/login`, { email, password });
-    console.log("LOGIN RESPONSE:", res.data);
-
-    if (res.data.token) {
-      localStorage.setItem("token", res.data.token); // store token
-    }
-
-    return res.data;
+    const res = await apiService.post(`${AUTH_URL}/login`, { email, password });
+    if (res.token) localStorage.setItem("token", res.token);
+    return res;
   },
-
-  getCurrentUser: async () => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token found");
-
-    const res = await api.get(`${AUTH_URL}/me`);
-    return res.data;
-  },
-
+  getCurrentUser: () => apiService.get(`${AUTH_URL}/me`),
   logout: async () => {
     localStorage.removeItem("token");
     return { message: "Logged out" };
   },
 
   // --- Reports ---
-  getReports: async (userId, options = {}) => {
-    // options.minimal = true to fetch minimal fields for fast dashboard render
-    const { minimal = false } = options;
-
+  getReports: (userId, options = {}) => {
     let url = `${REPORTS_URL}`;
     if (userId) url += `?userId=${userId}`;
-
-    if (minimal) url += userId ? "&minimal=true" : "?minimal=true";
-
-    const res = await api.get(url);
-    return res.data;
+    if (options.minimal) url += userId ? "&minimal=true" : "?minimal=true";
+    return apiService.get(url);
   },
-  createReport: async (data) => {
-    const res = await api.post(REPORTS_URL, data);
-    return res.data;
-  },
-
-  updateReport: async (reportId, data) => {
-    const res = await api.put(`${REPORTS_URL}/${reportId}`, data);
-    return res.data;
-  },
-
-  updateReportStatus: async (reportId, status) => {
-    try {
-      const res = await api.put(`${REPORTS_URL}/${reportId}/status`, {
-        status,
-      });
-      return res.data;
-    } catch (error) {
-      console.error(
-        "Error updating report status:",
-        error.response?.data || error.message
-      );
-      throw error;
-    }
-  },
-
-  deleteReport: async (reportId) => {
-    const res = await api.delete(`${REPORTS_URL}/${reportId}`);
-    return res.data;
-  },
+  createReport: (data) => apiService.post(REPORTS_URL, data),
+  updateReport: (id, data) => apiService.put(`${REPORTS_URL}/${id}`, data),
+  updateReportStatus: (id, status) =>
+    apiService.put(`${REPORTS_URL}/${id}/status`, { status }),
+  deleteReport: (id) => apiService.delete(`${REPORTS_URL}/${id}`),
 
   // --- Users ---
-  getUsers: async () => {
-    const res = await api.get(USERS_URL);
-    return res.data;
-  },
-
-  markFirstLoginShown: async (userId) => {
-    const res = await api.put(`${USERS_URL}/${userId}/first-login-shown`, {
-      firstloginshown: true,
-    });
-    return res.data;
-  },
+  getUsers: () => apiService.get(USERS_URL),
+  markFirstLoginShown: (userId) =>
+    apiService.put(`${USERS_URL}/${userId}/first-login-shown`, {
+      firstLoginShown: true,
+    }),
 
   // --- Notifications ---
-  getNotifications: async () => {
-    const res = await api.get(NOTIFICATIONS_URL);
-    return res.data.notifications;
-  },
-
-  createNotification: async (data) => {
-    const res = await api.post(NOTIFICATIONS_URL, data);
-    return res.data;
-  },
-
-  markNotificationRead: async (id) => {
-    const res = await api.patch(`${NOTIFICATIONS_URL}/${id}/read`);
-    return res.data;
-  },
-
-  deleteNotification: async (id) => {
-    const res = await api.delete(`${NOTIFICATIONS_URL}/${id}`);
-    return res.data;
-  },
-
+  getNotifications: () => apiService.get(NOTIFICATIONS_URL),
+  createNotification: (data) => apiService.post(NOTIFICATIONS_URL, data),
+  markNotificationRead: (id) =>
+    apiService.patch(`${NOTIFICATIONS_URL}/${id}/read`),
+  deleteNotification: (id) => apiService.delete(`${NOTIFICATIONS_URL}/${id}`),
   deleteAllNotifications: async () => {
-    const allNotifications = await api.get(NOTIFICATIONS_URL);
+    const all = await apiService.get(NOTIFICATIONS_URL);
     await Promise.all(
-      allNotifications.data.notifications.map((n) =>
-        api.delete(`${NOTIFICATIONS_URL}/${n.id}`)
+      all.notifications.map((n) =>
+        apiService.delete(`${NOTIFICATIONS_URL}/${n.id}`)
       )
     );
     return { success: true };
   },
 
   // --- Onboarding ---
-  getOnboardingStatus: async () => {
-    const res = await api.get(`${AUTH_URL}/onboarding-status`);
-    return res.data;
-  },
-
-  updateOnboardingStatus: async () => {
-    const res = await api.patch(`${AUTH_URL}/onboarding-status`, {
+  getOnboardingStatus: () => apiService.get(`${AUTH_URL}/onboarding-status`),
+  updateOnboardingStatus: () =>
+    apiService.patch(`${AUTH_URL}/onboarding-status`, {
       onboardingShown: true,
-    });
-    return res.data;
-  },
+    }),
 };
 
 export default apiService;

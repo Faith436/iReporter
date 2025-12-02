@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import apiService from "../services/api";
 
 const UserContext = createContext();
@@ -7,29 +13,22 @@ export const useUsers = () => useContext(UserContext);
 export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showFirstLogin, setShowFirstLogin] = useState(false); // for first-login modal
+  const [showFirstLogin, setShowFirstLogin] = useState(false);
 
-  // Helper: check if first-login modal should show
+  // Check first-login
   const checkFirstLogin = (user) => {
-    if (!user.firstLoginShown && (!user.reports || user.reports.length === 0)) {
-      setShowFirstLogin(true);
-    } else {
-      setShowFirstLogin(false);
-    }
+    setShowFirstLogin(!user.firstLoginShown);
   };
 
-  // Fetch current user on mount
+  // Fetch current user
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const data = await apiService.getCurrentUser();
         setCurrentUser(data.user);
-
-        // Check first-login logic
         checkFirstLogin(data.user);
       } catch (err) {
         console.error("Failed to fetch current user:", err);
-        setCurrentUser(null);
       } finally {
         setLoading(false);
       }
@@ -37,34 +36,30 @@ export const UserProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  // Refresh user (e.g., after profile update)
+  // Refresh user
   const refreshUser = useCallback(async () => {
     try {
       const data = await apiService.getCurrentUser();
       setCurrentUser(data.user);
-
-      // Re-check first-login logic
       checkFirstLogin(data.user);
     } catch (err) {
       console.error("Failed to refresh user:", err);
     }
   }, []);
 
-  // Mark first-login as seen
+  // Mark first login as seen
   const markFirstLoginSeen = async () => {
+    if (!currentUser?.id) return;
     try {
-      await apiService.markFirstLogin();
-      setCurrentUser((prev) => ({
-        ...prev,
-        firstLoginShown: true,
-      }));
+      await apiService.markFirstLoginShown(currentUser.id);
+      setCurrentUser((prev) => ({ ...prev, firstLoginShown: true }));
       setShowFirstLogin(false);
     } catch (err) {
       console.error("Failed to mark first login as seen:", err);
     }
   };
 
-  // Logout user
+  // Logout
   const logout = async () => {
     try {
       await apiService.logout();
