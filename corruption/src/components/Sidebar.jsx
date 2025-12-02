@@ -80,24 +80,32 @@ const Sidebar = () => {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed top-0 left-0 h-full">
+      <aside className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-gray-800 text-white">
         {SidebarContent}
       </aside>
-
-      {/* Mobile hamburger */}
-      <button
-        className="md:hidden fixed top-4 right-4 z-50 p-2 rounded-md bg-gray-800 text-white shadow-md"
-        onClick={toggleMobile}
-      >
-        {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
 
       {/* Mobile sidebar */}
       <div
         className={`fixed top-0 left-0 h-full w-64 bg-gray-800 text-white transform transition-transform duration-300 z-40
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:hidden`}
+      ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:hidden`}
       >
-        {SidebarContent}
+        {/* Hamburger inside sidebar, above content */}
+        <div className="flex items-center justify-between p-4">
+          <span className="text-xl font-bold">iReporter</span>
+          <button
+            className="p-2 rounded-md bg-gray-700 shadow-md"
+            onClick={toggleMobile}
+          >
+            {mobileOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </button>
+        </div>
+
+        {/* Sidebar links/content */}
+        <div className="mt-4">{SidebarContent}</div>
       </div>
 
       {/* Mobile overlay */}
