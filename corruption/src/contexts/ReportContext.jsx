@@ -9,7 +9,6 @@ import apiService from "../services/api";
 import { useUsers } from "./UserContext";
 import toast from "react-hot-toast";
 
-
 const ReportContext = createContext();
 export const useReports = () => useContext(ReportContext);
 
@@ -18,7 +17,7 @@ export const ReportProvider = ({ children }) => {
 
   const [reports, setReports] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true); // ✅ added
+  const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [hasCreatedFirstReport, setHasCreatedFirstReport] = useState(false);
 
@@ -27,8 +26,8 @@ export const ReportProvider = ({ children }) => {
 
   const fetchDashboardData = useCallback(async () => {
     if (!currentUser) return;
-
     setLoading(true);
+
     try {
       const minimalReportsPromise =
         currentUser.role === "admin"
@@ -67,7 +66,6 @@ export const ReportProvider = ({ children }) => {
       setNotifications(notificationsData || []);
       if (minimalReports.length > 0) setHasCreatedFirstReport(true);
 
-      // Fetch full reports
       const fullReportsData =
         currentUser.role === "admin"
           ? await apiService.getReports()
@@ -99,7 +97,7 @@ export const ReportProvider = ({ children }) => {
       setLocations([]);
       setNotifications([]);
     } finally {
-      setLoading(false); // ✅ stop loading
+      setLoading(false);
     }
   }, [currentUser]);
 
@@ -107,14 +105,12 @@ export const ReportProvider = ({ children }) => {
     if (currentUser) fetchDashboardData();
   }, [currentUser, fetchDashboardData]);
 
-  // Optimistic create/update/delete functions remain the same
+  // ─── CREATE REPORT ───
   const createReport = async (data) => {
     try {
-      // Generate temporary ID for optimistic update
       const tempId = `temp-${Date.now()}`;
       const tempReport = { ...data, id: tempId, status: "Pending" };
 
-      // Optimistically add to state
       setReports((prev) => [tempReport, ...(prev || [])]);
       if (tempReport.lat && tempReport.lng) {
         setLocations((prev) => [
@@ -130,10 +126,8 @@ export const ReportProvider = ({ children }) => {
         ]);
       }
 
-      // POST to backend
       const savedReport = await apiService.post("/reports", data);
 
-      // Normalize
       const formattedReport = {
         ...savedReport,
         type: normalizeType(savedReport.type),
@@ -142,13 +136,12 @@ export const ReportProvider = ({ children }) => {
         status: savedReport.status || "Pending",
       };
 
-      // Replace temp report with saved report
       setReports((prev) =>
         (prev || []).map((r) => (r.id === tempId ? formattedReport : r))
       );
       if (formattedReport.lat && formattedReport.lng) {
         setLocations((prev) =>
-          prev.map((l) =>
+          (prev || []).map((l) =>
             l.id === tempId
               ? {
                   ...l,
@@ -168,7 +161,6 @@ export const ReportProvider = ({ children }) => {
       return formattedReport;
     } catch (err) {
       console.error("Error creating report:", err);
-      // Remove temp report if backend fails
       setReports((prev) =>
         (prev || []).filter((r) => !r.id.toString().startsWith("temp-"))
       );
@@ -177,12 +169,10 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
+  // ─── UPDATE REPORT ───
   const updateReport = async (reportId, reportData) => {
+    const oldReport = reports.find((r) => r.id === reportId); // ✅ defined here
     try {
-      // Keep a copy of the old report for rollback
-      const oldReport = reports.find((r) => r.id === reportId);
-
-      // Optimistically update report in state
       const updatedTemp = { ...oldReport, ...reportData };
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? updatedTemp : r))
@@ -205,13 +195,8 @@ export const ReportProvider = ({ children }) => {
         );
       }
 
-      // Send update to backend
-      const savedReport = await apiService.put(
-        `/reports/${reportId}`,
-        reportData
-      );
+      const savedReport = await apiService.put(`/reports/${reportId}`, reportData);
 
-      // Normalize
       const formattedReport = {
         ...savedReport,
         type: normalizeType(savedReport.type),
@@ -220,7 +205,6 @@ export const ReportProvider = ({ children }) => {
         status: savedReport.status || "Pending",
       };
 
-      // Replace temp with backend result
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? formattedReport : r))
       );
@@ -245,7 +229,6 @@ export const ReportProvider = ({ children }) => {
     } catch (err) {
       console.error("Update report error:", err);
       toast.error("Failed to update report");
-      // Rollback on failure
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? oldReport : r))
       );
@@ -253,35 +236,29 @@ export const ReportProvider = ({ children }) => {
     }
   };
 
+  // ─── DELETE REPORT ───
   const deleteReport = async (reportId) => {
+    const oldReports = [...reports]; // ✅ defined here
+    const oldLocations = [...locations]; // ✅ defined here
     try {
-      // Keep a copy for rollback
-      const oldReports = [...reports];
-      const oldLocations = [...locations];
-
-      // Optimistically remove report
       setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
       setLocations((prev) => (prev || []).filter((l) => l.id !== reportId));
 
-      // Send delete to backend
       await apiService.delete(`/reports/${reportId}`);
       toast.success("Report deleted successfully");
     } catch (err) {
       console.error("Delete report error:", err);
       toast.error("Failed to delete report");
 
-      // Rollback on failure
       setReports(oldReports);
       setLocations(oldLocations);
     }
   };
 
+  // ─── UPDATE STATUS ───
   const updateReportStatus = async (reportId, status) => {
+    const oldReport = reports.find((r) => r.id === reportId); // ✅ defined here
     try {
-      // Keep a copy for rollback
-      const oldReport = reports.find((r) => r.id === reportId);
-
-      // Optimistically update status
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
       );
@@ -289,13 +266,8 @@ export const ReportProvider = ({ children }) => {
         (prev || []).map((l) => (l.id === reportId ? { ...l, status } : l))
       );
 
-      // Send status update to backend
-      const savedReport = await apiService.patch(
-        `/reports/${reportId}/status`,
-        { status }
-      );
+      const savedReport = await apiService.patch(`/reports/${reportId}/status`, { status });
 
-      // Normalize
       const formattedReport = {
         ...savedReport,
         type: normalizeType(savedReport.type),
@@ -304,7 +276,6 @@ export const ReportProvider = ({ children }) => {
         status: savedReport.status || "Pending",
       };
 
-      // Replace with backend response
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? formattedReport : r))
       );
@@ -318,7 +289,6 @@ export const ReportProvider = ({ children }) => {
     } catch (err) {
       console.error("Update status error:", err);
       toast.error("Failed to update status");
-      // Rollback
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? oldReport : r))
       );
@@ -333,7 +303,7 @@ export const ReportProvider = ({ children }) => {
         reports,
         locations,
         notifications,
-        loading, // ✅ added
+        loading,
         hasCreatedFirstReport,
         fetchDashboardData,
         createReport,
