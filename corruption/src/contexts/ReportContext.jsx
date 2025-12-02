@@ -106,61 +106,82 @@ export const ReportProvider = ({ children }) => {
   }, [currentUser, fetchDashboardData]);
 
   // ─── CREATE REPORT ───
+  // ─── CREATE REPORT ───
   const createReport = async (data) => {
+    if (!data.title || !data.description || !data.type) {
+      throw new Error("Title, description, and type are required");
+    }
+
+    const tempId = `temp-${Date.now()}`;
+
+    // Create temp report for optimistic UI
+    const tempReport = {
+      id: tempId,
+      title: data.title,
+      description: data.description,
+      location: data.location || "",
+      type: normalizeType(data.type),
+      status: "pending",
+      lat: data.lat ? Number(data.lat) : null,
+      lng: data.lng ? Number(data.lng) : null,
+      media: data.media || [],
+    };
+
+    // Optimistically add temp report
+    setReports((prev) => [tempReport, ...(prev || [])]);
+    if (tempReport.lat && tempReport.lng) {
+      setLocations((prev) => [
+        ...prev,
+        {
+          id: tempReport.id,
+          title: tempReport.title,
+          type: tempReport.type,
+          status: tempReport.status,
+          lat: tempReport.lat,
+          lng: tempReport.lng,
+        },
+      ]);
+    }
+
     try {
-      const tempId = `temp-${Date.now()}`;
+      // Send to backend
+      const response = await apiService.post("/reports", data);
+      const savedReport = response.report;
 
-      // Make tempReport exactly reflect stepper input
-      const tempReport = {
-        ...data,
-        id: tempId,
-        status: "Pending",
-        type: normalizeType(data.type), // normalize type
-      };
-
-      // Optimistically add to reports and locations
-      setReports((prev) => [tempReport, ...(prev || [])]);
-      if (tempReport.lat && tempReport.lng) {
-        setLocations((prev) => [
-          ...prev,
-          {
-            id: tempReport.id,
-            lat: tempReport.lat,
-            lng: tempReport.lng,
-            title: tempReport.title,
-            type: tempReport.type,
-            status: tempReport.status,
-          },
-        ]);
+      if (!savedReport || !savedReport.id) {
+        throw new Error("Invalid backend response");
       }
 
-      // Send to backend
-      const savedReport = await apiService.post("/reports", data);
-
+      // Normalize saved report
       const formattedReport = {
-        ...savedReport,
+        id: savedReport.id,
+        title: savedReport.title || "",
+        description: savedReport.description || "",
+        location: savedReport.location || "",
         type: normalizeType(savedReport.type),
+        status: savedReport.status?.toLowerCase() || "pending",
         lat: savedReport.lat ? Number(savedReport.lat) : null,
         lng: savedReport.lng ? Number(savedReport.lng) : null,
-        status: savedReport.status || "Pending",
+        media: savedReport.media || [],
       };
 
       // Replace temp report with saved report
       setReports((prev) =>
         (prev || []).map((r) => (r.id === tempId ? formattedReport : r))
       );
+
+      // Update location if coordinates exist
       if (formattedReport.lat && formattedReport.lng) {
         setLocations((prev) =>
           (prev || []).map((l) =>
             l.id === tempId
               ? {
-                  ...l,
                   id: formattedReport.id,
-                  lat: formattedReport.lat,
-                  lng: formattedReport.lng,
                   title: formattedReport.title,
                   type: formattedReport.type,
                   status: formattedReport.status,
+                  lat: formattedReport.lat,
+                  lng: formattedReport.lng,
                 }
               : l
           )
@@ -168,15 +189,19 @@ export const ReportProvider = ({ children }) => {
       }
 
       setHasCreatedFirstReport(true);
+
       return formattedReport;
     } catch (err) {
       console.error("Error creating report:", err);
 
-      // Rollback temp report
+      // Rollback temp report if backend fails
       setReports((prev) =>
         (prev || []).filter((r) => !r.id.toString().startsWith("temp-"))
       );
-      toast.error("Failed to submit report");
+      setLocations((prev) =>
+        (prev || []).filter((l) => !l.id.toString().startsWith("temp-"))
+      );
+
       throw err;
     }
   };
