@@ -15,12 +15,12 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [showFirstLogin, setShowFirstLogin] = useState(false);
 
-  // Check first-login
+  // Check if first login popup should show
   const checkFirstLogin = (user) => {
     setShowFirstLogin(!user.firstLoginShown);
   };
 
-  // Fetch current user
+  // Fetch current user on mount
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -36,7 +36,7 @@ export const UserProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  // Refresh user
+  // Refresh user data
   const refreshUser = useCallback(async () => {
     try {
       const data = await apiService.getCurrentUser();
@@ -48,16 +48,16 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   // Mark first login as seen
-  const markFirstLoginSeen = async () => {
+  const markFirstLoginSeen = useCallback(async () => {
     if (!currentUser?.id) return;
     try {
-      await apiService.markFirstLoginShown(currentUser.id);
+      await apiService.markFirstLoginShown(currentUser.id); // ✅ use current user internally
       setCurrentUser((prev) => ({ ...prev, firstLoginShown: true }));
       setShowFirstLogin(false);
     } catch (err) {
       console.error("Failed to mark first login as seen:", err);
     }
-  };
+  }, [currentUser]);
 
   // Logout
   const logout = async () => {
@@ -79,7 +79,7 @@ export const UserProvider = ({ children }) => {
         logout,
         loading,
         showFirstLogin,
-        markFirstLoginSeen,
+        markFirstLoginSeen, // ✅ now fully safe
       }}
     >
       {children}

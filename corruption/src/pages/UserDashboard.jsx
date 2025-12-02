@@ -6,7 +6,7 @@ import { useUsers } from "../contexts/UserContext";
 import UserReportsView from "../components/UserReportsView";
 import FirstLoginPopup from "../components/FirstLoginPopup";
 
-// Lazy load
+// Lazy load the report stepper
 const ReportStepper = React.lazy(() => import("../components/ReportStepper"));
 
 // StatCard component
@@ -42,11 +42,14 @@ const Dashboard = () => {
   const [editingReport, setEditingReport] = useState(null);
   const [showFirstPopup, setShowFirstPopup] = useState(false);
 
+  // Show first-login popup if user hasn't seen it
   useEffect(() => {
-    if (!currentUser) return;
-    if (!currentUser.firstLoginShown) setShowFirstPopup(true);
+    if (currentUser && !currentUser.firstLoginShown) {
+      setShowFirstPopup(true);
+    }
   }, [currentUser]);
 
+  // Compute stats
   const stats = {
     resolved: reports.filter((r) => r.status === "resolved").length,
     rejected: reports.filter((r) => r.status === "rejected").length,
@@ -68,7 +71,7 @@ const Dashboard = () => {
           <FirstLoginPopup
             onClose={() => {
               setShowFirstPopup(false);
-              markFirstLoginSeen();
+              markFirstLoginSeen(); // ✅ handled in UserContext
             }}
             onAddReport={() => {
               setDefaultReportType("");
@@ -159,7 +162,7 @@ const Dashboard = () => {
                 onReportAdded={() => {
                   setStepperOpen(false);
                   setShowFirstPopup(false);
-                  markFirstLoginSeen();
+                  markFirstLoginSeen(); // ✅ handled by context
                 }}
               />
             </Suspense>
