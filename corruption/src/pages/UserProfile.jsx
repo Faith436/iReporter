@@ -53,14 +53,22 @@ const UserProfile = () => {
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const formData = new FormData();
-      formData.append("firstName", profile.firstName);
-      formData.append("lastName", profile.lastName);
-      formData.append("bio", profile.bio);
-      formData.append("phone", profile.phone);
-      if (profile.avatar instanceof File)
+
+      // Only append fields if they have a value
+      if (profile.firstName?.trim())
+        formData.append("firstName", profile.firstName.trim());
+      if (profile.lastName?.trim())
+        formData.append("lastName", profile.lastName.trim());
+      if (profile.bio?.trim()) formData.append("bio", profile.bio.trim());
+      if (profile.phone?.trim()) formData.append("phone", profile.phone.trim());
+
+      // Append avatar only if it's a new File
+      if (profile.avatar instanceof File) {
         formData.append("avatar", profile.avatar);
+      }
 
       await updateUserProfile(formData);
       toast.success("Profile updated successfully!");
@@ -100,7 +108,6 @@ const UserProfile = () => {
         darkMode ? "bg-gray-900" : "bg-gray-50"
       }`}
     >
-
       <div
         className={`max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 sm:p-10`}
       >
