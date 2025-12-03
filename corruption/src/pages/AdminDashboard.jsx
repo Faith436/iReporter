@@ -393,7 +393,7 @@ const AdminDashboard = () => {
         <div className="flex-1">
           <RecentReports
             reports={reports}
-            onStatusUpdate={handleStatusUpdate}
+            handleStatusUpdate={handleStatusUpdate}
           />
         </div>
         <div className="w-full lg:w-80">
