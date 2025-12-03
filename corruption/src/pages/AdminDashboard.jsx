@@ -13,8 +13,7 @@ import {
   Bell,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
-import RecentReports from "../components/RecentReports"; 
-
+import RecentReports from "../components/RecentReports"; // ✅ imported component
 
 // --- Utility Functions ---
 const normalizeStatus = (status) =>
@@ -68,7 +67,7 @@ const calculateMetrics = (reports) => {
   };
 };
 
-// --- KPI Card ---
+// --- KPI Card Component ---
 const KPICard = ({ title, count, icon: Icon, color, trend }) => (
   <div className="bg-white p-5 rounded-2xl shadow-md border border-gray-100 flex flex-col justify-between transition hover:shadow-lg hover:scale-[1.01] duration-150">
     <div className="flex justify-between items-start">
@@ -85,9 +84,7 @@ const KPICard = ({ title, count, icon: Icon, color, trend }) => (
     {trend && (
       <div className="flex items-center mt-3 text-xs">
         {trend.icon && <trend.icon className={`w-3 h-3 mr-1 ${trend.color}`} />}
-        <span className={`font-semibold ${trend.color} mr-1`}>
-          {trend.value}
-        </span>
+        <span className={`font-semibold ${trend.color} mr-1`}>{trend.value}</span>
         {title !== "Under Investigation" && (
           <span className="text-gray-400">from last month</span>
         )}
@@ -96,156 +93,7 @@ const KPICard = ({ title, count, icon: Icon, color, trend }) => (
   </div>
 );
 
-// --- Recent Reports ---
-const RecentReports = ({ reports, onStatusUpdate }) => {
-  const statuses = ["pending", "under-investigation", "resolved", "rejected"];
-  const normalize = (status) =>
-    status?.toLowerCase().replace(/\s+/g, "-") || "pending";
-
-  const getStatusStyle = (status) => {
-    const normalized = normalize(status);
-    const base = "px-3 py-1 rounded-full text-xs font-medium capitalize";
-    switch (normalized) {
-      case "pending":
-        return `${base} bg-pink-100 text-pink-700`;
-      case "resolved":
-        return `${base} bg-green-100 text-green-700`;
-      case "rejected":
-        return `${base} bg-red-100 text-red-700`;
-      case "under-investigation":
-        return `${base} bg-yellow-100 text-yellow-700`;
-      default:
-        return `${base} bg-gray-100 text-gray-700`;
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  return (
-    <div>
-      {/* Desktop Table */}
-      <div className="hidden md:block bg-white p-4 sm:p-6 rounded-2xl shadow-md border border-gray-100 overflow-x-auto">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Recent Reports
-        </h2>
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {["Title", "User", "Status", "Date"].map((header) => (
-                <th
-                  key={header}
-                  className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
-            {reports.slice(0, 5).map((report) => (
-              <tr key={report.id} className="hover:bg-gray-50 transition">
-                <td className="px-4 sm:px-6 py-4 text-sm font-medium text-gray-900">
-                  {report.title}
-                </td>
-                <td className="px-4 sm:px-6 py-4 text-sm text-gray-700">
-                  {report.userName || report.user?.name || "Unknown User"}
-                </td>
-                <td className="px-4 sm:px-6 py-4">
-                  <select
-                    value={normalize(report.status)}
-                    onChange={(e) =>
-                      onStatusUpdate(
-                        report.id,
-                        e.target.value,
-                        report.user?.id || report.user_id
-                      )
-                    }
-                    className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(
-                      report.status
-                    )}`}
-                  >
-                    {statuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status.charAt(0).toUpperCase() +
-                          status.slice(1).replace("-", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">
-                  {formatDate(report.created_at)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Cards */}
-      <div className="md:hidden">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Recent Reports
-        </h2>
-        <div className="space-y-4">
-          {reports.slice(0, 5).map((report) => (
-            <div
-              key={report.id}
-              className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 space-y-2"
-            >
-              <div className="flex justify-between">
-                <span className="font-medium">Title:</span>
-                <span>{report.title}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">User:</span>
-                <span>
-                  {report.userName || report.user?.name || "Unknown User"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Status:</span>
-                <select
-                  value={normalize(report.status)}
-                  onChange={(e) =>
-                    onStatusUpdate(
-                      report.id,
-                      e.target.value,
-                      report.user?.id || report.user_id
-                    )
-                  }
-                  className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(
-                    report.status
-                  )}`}
-                >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() +
-                        status.slice(1).replace("-", " ")}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Date:</span>
-                <span>{formatDate(report.created_at)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Notifications Sidebar ---
+// --- Recent Notifications Component ---
 const RecentNotifications = () => {
   const { notifications } = useNotifications();
 
@@ -282,7 +130,7 @@ const RecentNotifications = () => {
 const AdminDashboard = () => {
   const { reports, fetchReports, currentUser, updateReportStatus } =
     useReports();
-  const { fetchNotifications } = useNotifications();
+  const { fetchNotifications, addNotification } = useNotifications();
   const metrics = useMemo(() => calculateMetrics(reports), [reports]);
 
   const STATUS_API_MAP = {
@@ -292,8 +140,6 @@ const AdminDashboard = () => {
     rejected: "rejected",
   };
 
-  const { addNotification } = useNotifications();
-
   const handleStatusUpdate = async (reportId, newStatus, userId) => {
     const formattedStatus = STATUS_API_MAP[newStatus];
     if (!formattedStatus) return console.error("Invalid status:", newStatus);
@@ -301,7 +147,6 @@ const AdminDashboard = () => {
     console.log("Updating report:", reportId, newStatus, userId);
 
     try {
-      // 1. Update report status in backend
       const updated = await updateReportStatus(reportId, formattedStatus);
 
       if (!updated) {
@@ -309,10 +154,8 @@ const AdminDashboard = () => {
         return;
       }
 
-      // 2. Refresh reports so UI updates
       await fetchReports();
 
-      // 3. Send notification to the report owner
       if (userId) {
         const newNotif = {
           user_id: userId,
@@ -324,7 +167,6 @@ const AdminDashboard = () => {
         addNotification(newNotif);
       }
 
-      // 4. Refresh notifications
       fetchNotifications();
 
       toast.success(`Status updated to "${formattedStatus}"`);
