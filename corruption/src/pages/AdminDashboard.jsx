@@ -160,7 +160,11 @@ const RecentReports = ({ reports, onStatusUpdate }) => {
                   <select
                     value={normalize(report.status)}
                     onChange={(e) =>
-                      onStatusUpdate(report.id, e.target.value, report.user_id)
+                      onStatusUpdate(
+                        report.id,
+                        e.target.value,
+                        report.user?.id || report.user_id
+                      )
                     }
                     className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(
                       report.status
@@ -209,7 +213,11 @@ const RecentReports = ({ reports, onStatusUpdate }) => {
                 <select
                   value={normalize(report.status)}
                   onChange={(e) =>
-                    onStatusUpdate(report.id, e.target.value, report.user_id)
+                    onStatusUpdate(
+                      report.id,
+                      e.target.value,
+                      report.user?.id || report.user_id
+                    )
                   }
                   className={`text-xs font-medium rounded-full px-2 py-1 border focus:outline-none focus:ring-2 ${getStatusStyle(
                     report.status
@@ -287,6 +295,8 @@ const AdminDashboard = () => {
   const handleStatusUpdate = async (reportId, newStatus, userId) => {
     const formattedStatus = STATUS_API_MAP[newStatus];
     if (!formattedStatus) return console.error("Invalid status:", newStatus);
+
+    console.log("Updating report:", reportId, newStatus, userId);
 
     try {
       // 1. Update report status in backend
