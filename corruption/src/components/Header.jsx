@@ -184,11 +184,24 @@ const Header = () => {
             onClick={() => setShowUserMenu((prev) => !prev)}
             className="flex items-center gap-2 focus:outline-none"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-teal-700 flex items-center justify-center text-white font-semibold">
-              {user.firstName ? user.firstName[0].toUpperCase() : "U"}
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="User Avatar"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-red-500 to-teal-700 flex items-center justify-center">
+                  {user.firstName ? user.firstName[0].toUpperCase() : "U"}
+                </div>
+              )}
             </div>
+
             <div className="px-1 py-3 text-left">
-              <p className="font-semibold text-white">{user.firstName}</p>
+              <p className="font-semibold text-white">
+                {user.firstName || "User"}
+              </p>
             </div>
             <ChevronDown className="w-4 h-4 text-white" />
           </button>
