@@ -270,7 +270,8 @@ const RecentNotifications = () => {
 
 // --- Admin Dashboard ---
 const AdminDashboard = () => {
-  const { reports, fetchReports, currentUser } = useReports();
+  const { reports, fetchReports, currentUser, updateReportStatus } =
+    useReports();
   const { fetchNotifications } = useNotifications();
   const metrics = useMemo(() => calculateMetrics(reports), [reports]);
 
