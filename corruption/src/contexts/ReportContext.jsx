@@ -297,8 +297,10 @@ export const ReportProvider = ({ children }) => {
 
   // ─── UPDATE STATUS ───
   const updateReportStatus = async (reportId, status) => {
-    const oldReport = reports.find((r) => r.id === reportId); // ✅ defined here
+    const oldReport = reports.find((r) => r.id === reportId);
+
     try {
+      // 1. Optimistic update
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? { ...r, status } : r))
       );
@@ -306,20 +308,31 @@ export const ReportProvider = ({ children }) => {
         (prev || []).map((l) => (l.id === reportId ? { ...l, status } : l))
       );
 
-      // Backend update
+      // 2. Backend update
       const response = await apiService.put(`/reports/${reportId}/status`, {
         status,
       });
-      const savedReport = response.report || response;
+
+      // If backend returns { report: {...} }, use that. Otherwise, use response directly
+      const savedReport = response.report ?? response;
+
+      if (!savedReport || !savedReport.id) {
+        // backend returned unexpected response, rollback
+        setReports((prev) =>
+          (prev || []).map((r) => (r.id === reportId ? oldReport : r))
+        );
+        throw new Error("Invalid response from server");
+      }
 
       const formattedReport = {
         ...savedReport,
         type: normalizeType(savedReport.type),
         lat: savedReport.lat ? Number(savedReport.lat) : null,
         lng: savedReport.lng ? Number(savedReport.lng) : null,
-        status: savedReport.status || "Pending",
+        status: savedReport.status ?? "Pending",
       };
 
+      // 3. Update state with backend-confirmed report
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? formattedReport : r))
       );
@@ -333,9 +346,12 @@ export const ReportProvider = ({ children }) => {
     } catch (err) {
       console.error("Update status error:", err);
       toast.error("Failed to update status");
+
+      // rollback
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? oldReport : r))
       );
+
       return null;
     }
   };
