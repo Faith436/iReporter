@@ -306,10 +306,11 @@ export const ReportProvider = ({ children }) => {
         (prev || []).map((l) => (l.id === reportId ? { ...l, status } : l))
       );
 
-      const savedReport = await apiService.put(
-        `/reports/${reportId}/status`,
-        { status }
-      );
+      // Backend update
+      const response = await apiService.put(`/reports/${reportId}/status`, {
+        status,
+      });
+      const savedReport = response.report || response;
 
       const formattedReport = {
         ...savedReport,
