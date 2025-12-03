@@ -82,23 +82,15 @@ export const UserProvider = ({ children }) => {
       throw err;
     }
   };
-
+  
   // Update profile (name, bio, phone, avatar)
-  const updateUserProfile = async (profileData) => {
+  const updateUserProfile = async (formData) => {
     try {
-      const formData = new FormData();
-      formData.append("firstName", profileData.firstName);
-      formData.append("lastName", profileData.lastName);
-      formData.append("bio", profileData.bio || "");
-      formData.append("phone", profileData.phone || "");
-      if (profileData.avatar instanceof File) {
-        formData.append("avatar", profileData.avatar);
-      }
-
       const response = await apiService.put("/users/profile", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // Merge updated fields into currentUser
       setCurrentUser((prev) => ({ ...prev, ...response.data }));
       return response.data;
     } catch (err) {

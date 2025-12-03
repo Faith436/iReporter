@@ -73,18 +73,22 @@ const UserProfile = () => {
   };
 
   // --- Submit profile, only sending valid values ---
+  // --- Submit profile: ALWAYS send what user typed ---
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
       const formData = new FormData();
 
-      if (profile.firstName?.trim())
-        formData.append("firstName", profile.firstName.trim());
-      if (profile.lastName?.trim())
-        formData.append("lastName", profile.lastName.trim());
-      if (profile.bio?.trim()) formData.append("bio", profile.bio.trim());
-      if (profile.phone?.trim()) formData.append("phone", profile.phone.trim());
-      if (profile.avatar instanceof File) formData.append("avatar", profile.avatar);
+      // ALWAYS send the input values (even empty strings)
+      formData.append("firstName", profile.firstName || "");
+      formData.append("lastName", profile.lastName || "");
+      formData.append("bio", profile.bio || "");
+      formData.append("phone", profile.phone || "");
+
+      // Only add avatar if a real File was selected
+      if (profile.avatar instanceof File) {
+        formData.append("avatar", profile.avatar);
+      }
 
       await updateUserProfile(formData);
       toast.success("Profile updated successfully!");
@@ -103,7 +107,11 @@ const UserProfile = () => {
     try {
       await changePassword(passwords.currentPassword, passwords.newPassword);
       toast.success("Password changed successfully!");
-      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswords({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } catch (err) {
       console.error("Password change error:", err);
       toast.error("Failed to change password");
