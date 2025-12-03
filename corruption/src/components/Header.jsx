@@ -201,11 +201,18 @@ const Header = () => {
               </div>
               <ul className="py-2">
                 <li
-                  onClick={() => navigate("/profile")}
+                  onClick={() => {
+                    if (user.role === "admin") {
+                      navigate("/admin/profile");
+                    } else {
+                      navigate("/dashboard/profile");
+                    }
+                  }}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   <User className="w-4 h-4" /> Profile
                 </li>
+
                 <li
                   onClick={logout}
                   className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
