@@ -306,7 +306,7 @@ export const ReportProvider = ({ children }) => {
         (prev || []).map((l) => (l.id === reportId ? { ...l, status } : l))
       );
 
-      const savedReport = await apiService.patch(
+      const savedReport = await apiService.put(
         `/reports/${reportId}/status`,
         { status }
       );
