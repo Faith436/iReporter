@@ -48,41 +48,33 @@ router.put(
   async (req, res) => {
     try {
       const { firstName, lastName, bio, phone } = req.body;
-      let avatar = req.file ? `/uploads/avatars/${req.file.filename}` : null;
 
-      // Fetch current user data
-      const [currentUser] = await db.query(
-        "SELECT first_name, last_name, bio, phone, avatar FROM users WHERE id = ?",
-        [req.user.id]
-      );
+      // avatar path (only filename returned, folder stored separately)
+      let avatar = req.file ? `avatars/${req.file.filename}` : null;
 
       console.log("Incoming profile update:", req.body);
 
+      const [currentUserRows] = await db.query(
+        "SELECT * FROM users WHERE id = ?",
+        [req.user.id]
+      );
+      const currentUser = currentUserRows[0];
 
       if (!currentUser)
         return res.status(404).json({ message: "User not found" });
 
       const updates = {};
 
-      // Only update fields that are NULL/empty in the DB
-      if (
-        (currentUser.first_name === null || currentUser.first_name === "") &&
-        firstName
-      )
-        updates.first_name = firstName;
-      if (
-        (currentUser.last_name === null || currentUser.last_name === "") &&
-        lastName
-      )
-        updates.last_name = lastName;
-      if ((currentUser.bio === null || currentUser.bio === "") && bio)
-        updates.bio = bio;
-      if ((currentUser.phone === null || currentUser.phone === "") && phone)
-        updates.phone = phone;
-      if ((currentUser.avatar === null || currentUser.avatar === "") && avatar)
-        updates.avatar = avatar;
+      if (!currentUser.first_name && firstName) updates.first_name = firstName;
 
-      // Only run update if there’s something to update
+      if (!currentUser.last_name && lastName) updates.last_name = lastName;
+
+      if (!currentUser.bio && bio) updates.bio = bio;
+
+      if (!currentUser.phone && phone) updates.phone = phone;
+
+      if (!currentUser.avatar && avatar) updates.avatar = avatar;
+
       if (Object.keys(updates).length > 0) {
         await db.query("UPDATE users SET ? WHERE id = ?", [
           updates,
@@ -90,11 +82,12 @@ router.put(
         ]);
       }
 
-      // Fetch updated user
-      const [updatedUser] = await db.query(
+      const [updatedRows] = await db.query(
         "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
         [req.user.id]
       );
+
+      const updatedUser = updatedRows[0];
 
       res.json({
         id: updatedUser.id,

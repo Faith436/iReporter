@@ -7,7 +7,9 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadPath = "uploads/";
 
-    if (file.mimetype.startsWith("image/")) {
+    if (req.route.path === "/profile" && file.fieldname === "avatar") {
+      uploadPath += "avatars/";
+    } else if (file.mimetype.startsWith("image/")) {
       uploadPath += "images/";
     } else if (file.mimetype.startsWith("video/")) {
       uploadPath += "videos/";
@@ -25,13 +27,19 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
+    );
   },
 });
 
 // --- File filter ---
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("video/")
+  ) {
     cb(null, true);
   } else {
     console.warn(`⚠️ Skipped file (invalid type): ${file.originalname}`);
