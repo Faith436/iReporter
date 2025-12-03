@@ -72,7 +72,7 @@ const UserProfile = () => {
     }
   };
 
-  // --- Submit profile, only sending valid values ---
+  
   // --- Submit profile: ALWAYS send what user typed ---
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
