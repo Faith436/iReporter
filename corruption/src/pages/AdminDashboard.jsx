@@ -303,8 +303,6 @@ const AdminDashboard = () => {
         await addNotification(notification);
         await fetchNotifications();
       }
-
-      toast.success(`Status updated to "${newStatus}"`);
     } catch (err) {
       console.error("Status update error:", err);
       toast.error("Something went wrong updating status");
