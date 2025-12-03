@@ -56,6 +56,9 @@ router.put(
         [req.user.id]
       );
 
+      console.log("Incoming profile update:", req.body);
+
+
       if (!currentUser)
         return res.status(404).json({ message: "User not found" });
 
