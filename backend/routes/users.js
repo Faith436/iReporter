@@ -65,15 +65,12 @@ router.put(
 
       const updates = {};
 
-      if (!currentUser.first_name && firstName) updates.first_name = firstName;
-
-      if (!currentUser.last_name && lastName) updates.last_name = lastName;
-
-      if (!currentUser.bio && bio) updates.bio = bio;
-
-      if (!currentUser.phone && phone) updates.phone = phone;
-
-      if (!currentUser.avatar && avatar) updates.avatar = avatar;
+      // Update whenever user provided a value
+      if (firstName !== undefined) updates.first_name = firstName;
+      if (lastName !== undefined) updates.last_name = lastName;
+      if (bio !== undefined) updates.bio = bio;
+      if (phone !== undefined) updates.phone = phone;
+      if (avatar) updates.avatar = avatar;
 
       if (Object.keys(updates).length > 0) {
         await db.query("UPDATE users SET ? WHERE id = ?", [
