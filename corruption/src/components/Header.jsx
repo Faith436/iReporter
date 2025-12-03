@@ -44,9 +44,7 @@ const Header = () => {
     try {
       await apiService.markNotificationRead(notificationId);
       setUserNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notificationId ? { ...n, read: true } : n
-        )
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(prev - 1, 0));
       setShowNotifications(false);
@@ -203,7 +201,7 @@ const Header = () => {
               </div>
               <ul className="py-2">
                 <li
-                  onClick={() => navigate("/UserProfile")}
+                  onClick={() => navigate("/profile")}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   <User className="w-4 h-4" /> Profile

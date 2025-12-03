@@ -18,6 +18,8 @@ import { useUsers } from "./contexts/UserContext";
 import { Toaster } from "react-hot-toast";
 import API_BASE_URL from "./config/api";
 import FirstLoginModal from "./components/FirstLoginPopup";
+import UserProfile from "./pages/UserProfile";
+
 
 function App() {
   const { currentUser, loading, showFirstLogin, markFirstLoginSeen } =
@@ -132,6 +134,7 @@ function App() {
             <Route index element={<UserDashboard />} />
             <Route path="reports" element={<Reports />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="profile" element={<UserProfile />} />
           </Route>
 
           {/* Admin dashboard */}
@@ -146,6 +149,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="profile" element={<UserProfile />} />
           </Route>
 
           {/* Catch-all route */}
