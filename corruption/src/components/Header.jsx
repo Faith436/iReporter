@@ -203,7 +203,7 @@ const Header = () => {
               </div>
               <ul className="py-2">
                 <li
-                  onClick={() => navigate("/profile")}
+                  onClick={() => navigate("/UserProfile")}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   <User className="w-4 h-4" /> Profile

@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import DashboardLayout from "./pages/DashboardLayout";
 import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -11,11 +16,12 @@ import Registration from "./pages/Registration";
 import Notifications from "./pages/Notifications";
 import { useUsers } from "./contexts/UserContext";
 import { Toaster } from "react-hot-toast";
-import API_BASE_URL from './config/api';
+import API_BASE_URL from "./config/api";
 import FirstLoginModal from "./components/FirstLoginPopup";
 
 function App() {
-  const { currentUser, loading, showFirstLogin, markFirstLoginSeen } = useUsers();
+  const { currentUser, loading, showFirstLogin, markFirstLoginSeen } =
+    useUsers();
 
   if (loading) {
     return (
@@ -54,40 +60,107 @@ function App() {
 
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            minHeight: "60px",
+            width: "320px",
+            marginRight: "20px",
+            borderRadius: "12px",
+            padding: "16px 20px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+            fontSize: "14px",
+          },
+          success: {
+            duration: 3000,
+            style: {
+              background: "#E6FFFA",
+              color: "#2F855A",
+            },
+          },
+          error: {
+            duration: 5000,
+            style: {
+              background: "#FFF5F5",
+              color: "#C53030",
+            },
+          },
+        }}
+      />
 
       {/* First-login modal */}
-      {showFirstLogin && (
-        <FirstLoginModal onClose={markFirstLoginSeen} />
-      )}
+      {showFirstLogin && <FirstLoginModal onClose={markFirstLoginSeen} />}
 
       <Router>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/registration" element={<PublicRoute><Registration /></PublicRoute>} />
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/registration"
+            element={
+              <PublicRoute>
+                <Registration />
+              </PublicRoute>
+            }
+          />
 
           {/* User dashboard */}
-          <Route path="/dashboard" element={<ProtectedRoute allowedRoles={["user"]}><DashboardLayout /></ProtectedRoute>}>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<UserDashboard />} />
             <Route path="reports" element={<Reports />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>
 
           {/* Admin dashboard */}
-          <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><DashboardLayout /></ProtectedRoute>}>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="notifications" element={<Notifications />} />
           </Route>
 
           {/* Catch-all route */}
-          <Route path="*" element={
-            !currentUser ? <Navigate to="/" replace /> :
-            currentUser.role === "admin" ? <Navigate to="/admin" replace /> :
-            <Navigate to="/dashboard" replace />
-          } />
+          <Route
+            path="*"
+            element={
+              !currentUser ? (
+                <Navigate to="/" replace />
+              ) : currentUser.role === "admin" ? (
+                <Navigate to="/admin" replace />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
         </Routes>
       </Router>
     </>

@@ -138,7 +138,6 @@ const ReportStepper = ({
 
   return (
     <div className="p-4 bg-gray-50 rounded-lg shadow-md max-h-[90vh] overflow-y-auto">
-      <Toaster />
       {/* Step indicators */}
       <div className="flex justify-between mb-6">
         {steps.map((label, i) => {

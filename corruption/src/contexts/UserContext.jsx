@@ -70,6 +70,57 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // --- New Profile Methods ---
+
+  // Get full profile
+  const getProfile = async () => {
+    try {
+      const response = await apiService.get("/users/profile");
+      return response.data;
+    } catch (err) {
+      console.error("Failed to fetch profile:", err);
+      throw err;
+    }
+  };
+
+  // Update profile (name, bio, phone, avatar)
+  const updateUserProfile = async (profileData) => {
+    try {
+      const formData = new FormData();
+      formData.append("firstName", profileData.firstName);
+      formData.append("lastName", profileData.lastName);
+      formData.append("bio", profileData.bio || "");
+      formData.append("phone", profileData.phone || "");
+      if (profileData.avatar instanceof File) {
+        formData.append("avatar", profileData.avatar);
+      }
+
+      const response = await apiService.put("/users/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setCurrentUser((prev) => ({ ...prev, ...response.data }));
+      return response.data;
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      throw err;
+    }
+  };
+
+  // Change password
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const response = await apiService.put("/users/password", {
+        currentPassword,
+        newPassword,
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Failed to change password:", err);
+      throw err;
+    }
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -79,7 +130,10 @@ export const UserProvider = ({ children }) => {
         logout,
         loading,
         showFirstLogin,
-        markFirstLoginSeen, // ✅ now fully safe
+        markFirstLoginSeen,
+        getProfile,
+        updateUserProfile,
+        changePassword,
       }}
     >
       {children}

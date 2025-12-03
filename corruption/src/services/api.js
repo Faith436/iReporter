@@ -56,6 +56,15 @@ const apiService = {
   // --- Users ---
   getUsers: () => apiService.get(USERS_URL),
 
+  // --- Profile (new endpoints) ---
+  getProfile: () => apiService.get(`${USERS_URL}/profile`),
+  updateProfile: (formData) =>
+    apiService.put(`${USERS_URL}/profile`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  changePassword: (currentPassword, newPassword) =>
+    apiService.put(`${USERS_URL}/password`, { currentPassword, newPassword }),
+
   // --- Notifications ---
   getNotifications: async () => {
     const res = await api.get(NOTIFICATIONS_URL); // GET /notifications
