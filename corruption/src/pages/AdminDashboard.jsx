@@ -278,37 +278,20 @@ const RecentNotifications = () => {
 
 // --- Admin Dashboard ---
 const AdminDashboard = () => {
-  const { reports, fetchReports, currentUser, updateReportStatus } =
+  const { reports, fetchDashboardData, currentUser, updateReportStatus } =
     useReports();
-  const { fetchNotifications } = useNotifications();
+  const { notifications, fetchNotifications, addNotification } =
+    useNotifications();
+
   const metrics = useMemo(() => calculateMetrics(reports), [reports]);
 
-  const STATUS_API_MAP = {
-    pending: "pending",
-    "under-investigation": "under-investigation",
-    resolved: "resolved",
-    rejected: "rejected",
-  };
-
-  const { addNotification } = useNotifications();
-
   const handleStatusUpdate = async (reportId, newStatus, userId) => {
-    console.log("Updating report:", reportId, newStatus, userId);
-
     try {
-      // --- 1. Update report status in backend ---
-      // Make sure `updateReportStatus` returns true/false or updated report
       const updated = await updateReportStatus(reportId, newStatus);
+      if (!updated) return toast.error("Failed to update report status");
 
-      if (!updated) {
-        toast.error("Failed to update report status");
-        return;
-      }
+      await fetchDashboardData();
 
-      // --- 2. Refresh reports ---
-      await fetchReports();
-
-      // --- 3. Notify the report owner ---
       if (userId) {
         const notification = {
           user_id: userId,
@@ -317,11 +300,9 @@ const AdminDashboard = () => {
           is_read: 0,
           created_at: new Date().toISOString(),
         };
-        addNotification(notification);
+        await addNotification(notification);
+        await fetchNotifications();
       }
-
-      // --- 4. Refresh notifications ---
-      await fetchNotifications();
 
       toast.success(`Status updated to "${newStatus}"`);
     } catch (err) {
@@ -397,7 +378,7 @@ const AdminDashboard = () => {
           />
         </div>
         <div className="w-full lg:w-80">
-          <RecentNotifications />
+          <RecentNotifications notifications={notifications} />
         </div>
       </div>
     </div>
