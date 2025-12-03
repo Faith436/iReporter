@@ -13,6 +13,8 @@ import {
   Bell,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import RecentReports from "../components/RecentReports"; 
+
 
 // --- Utility Functions ---
 const normalizeStatus = (status) =>
