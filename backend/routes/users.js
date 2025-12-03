@@ -1,14 +1,23 @@
 const express = require("express");
-const { authMiddleware, adminAuth } = require("../middleware/authMiddleware");
-const db = require("../db"); // ensure consistent db import
+const { authMiddleware } = require("../middleware/authMiddleware");
+const db = require("../db");
 const multer = require("multer");
 const bcrypt = require("bcrypt");
+const fs = require("fs");
+const path = require("path");
 
 const router = express.Router();
 
-// --- Multer configuration for avatar uploads ---
+// --- Ensure avatars folder exists ---
+const avatarsDir = path.join(__dirname, "..", "uploads", "avatars");
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
+  console.log(`🟢 Created directory: ${avatarsDir}`);
+}
+
+// --- Multer config ---
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/avatars/"),
+  destination: (req, file, cb) => cb(null, avatarsDir),
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + "-" + file.originalname);
@@ -16,7 +25,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- GET user profile ---
+// --- GET profile ---
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const [user] = await db.query(
@@ -25,6 +34,8 @@ router.get("/profile", authMiddleware, async (req, res) => {
     );
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     res.json({
       id: user.id,
       firstName: user.first_name,
@@ -32,7 +43,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
       email: user.email,
       phone: user.phone,
       bio: user.bio || "",
-      avatar: user.avatar || "",
+      avatar: user.avatar ? `${baseUrl}/uploads/${user.avatar}` : "",
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -40,7 +51,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
   }
 });
 
-// --- PUT update profile (name, bio, avatar) ---
+// --- PUT update profile ---
 router.put(
   "/profile",
   authMiddleware,
@@ -48,24 +59,17 @@ router.put(
   async (req, res) => {
     try {
       const { firstName, lastName, bio, phone } = req.body;
-
-      // avatar path (only filename returned, folder stored separately)
       let avatar = req.file ? `avatars/${req.file.filename}` : null;
-
-      console.log("Incoming profile update:", req.body);
 
       const [currentUserRows] = await db.query(
         "SELECT * FROM users WHERE id = ?",
         [req.user.id]
       );
       const currentUser = currentUserRows[0];
-
       if (!currentUser)
         return res.status(404).json({ message: "User not found" });
 
       const updates = {};
-
-      // Update whenever user provided a value
       if (firstName !== undefined) updates.first_name = firstName;
       if (lastName !== undefined) updates.last_name = lastName;
       if (bio !== undefined) updates.bio = bio;
@@ -83,8 +87,9 @@ router.put(
         "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
         [req.user.id]
       );
-
       const updatedUser = updatedRows[0];
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
 
       res.json({
         id: updatedUser.id,
@@ -93,7 +98,9 @@ router.put(
         email: updatedUser.email,
         phone: updatedUser.phone,
         bio: updatedUser.bio || "",
-        avatar: updatedUser.avatar || "",
+        avatar: updatedUser.avatar
+          ? `${baseUrl}/uploads/${updatedUser.avatar}`
+          : "",
       });
     } catch (err) {
       console.error("Update profile error:", err);
