@@ -44,8 +44,7 @@ const RecentReports = ({ reports = [], onEditReport, onStatusUpdate }) => {
                 onChange={(e) =>
                   onStatusUpdate?.(
                     report.id,
-                    e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                    report.user_id
+                    e.target.value.toLowerCase().replace(/\s+/g, "-")
                   )
                 }
                 className="text-xs rounded px-2 py-1 border"
