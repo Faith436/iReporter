@@ -309,40 +309,10 @@ export const ReportProvider = ({ children }) => {
       );
 
       // 2. Backend update
-      const response = await apiService.put(`/reports/${reportId}/status`, {
-        status,
-      });
+      await apiService.put(`/reports/${reportId}/status`, { status });
 
-      // If backend returns { report: {...} }, use that. Otherwise, use response directly
-      const savedReport = response.report ?? response;
-
-      if (!savedReport || !savedReport.id) {
-        // backend returned unexpected response, rollback
-        setReports((prev) =>
-          (prev || []).map((r) => (r.id === reportId ? oldReport : r))
-        );
-        throw new Error("Invalid response from server");
-      }
-
-      const formattedReport = {
-        ...savedReport,
-        type: normalizeType(savedReport.type),
-        lat: savedReport.lat ? Number(savedReport.lat) : null,
-        lng: savedReport.lng ? Number(savedReport.lng) : null,
-        status: savedReport.status ?? "Pending",
-      };
-
-      // 3. Update state with backend-confirmed report
-      setReports((prev) =>
-        (prev || []).map((r) => (r.id === reportId ? formattedReport : r))
-      );
-      setLocations((prev) =>
-        (prev || []).map((l) =>
-          l.id === reportId ? { ...l, status: formattedReport.status } : l
-        )
-      );
-
-      return formattedReport;
+      // 3. Return updated report using optimistic state
+      return { ...oldReport, status };
     } catch (err) {
       console.error("Update status error:", err);
       toast.error("Failed to update status");
