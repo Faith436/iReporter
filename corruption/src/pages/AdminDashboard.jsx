@@ -83,7 +83,9 @@ const KPICard = ({ title, count, icon: Icon, color, trend }) => (
     {trend && (
       <div className="flex items-center mt-3 text-xs">
         {trend.icon && <trend.icon className={`w-3 h-3 mr-1 ${trend.color}`} />}
-        <span className={`font-semibold ${trend.color} mr-1`}>{trend.value}</span>
+        <span className={`font-semibold ${trend.color} mr-1`}>
+          {trend.value}
+        </span>
         {title !== "Under Investigation" && (
           <span className="text-gray-400">from last month</span>
         )}
@@ -198,7 +200,9 @@ const RecentReports = ({ reports, onStatusUpdate }) => {
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">User:</span>
-                <span>{report.userName || report.user?.name || "Unknown User"}</span>
+                <span>
+                  {report.userName || report.user?.name || "Unknown User"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">Status:</span>
@@ -284,24 +288,36 @@ const AdminDashboard = () => {
     if (!formattedStatus) return console.error("Invalid status:", newStatus);
 
     try {
-      await fetchReports(); // re-fetch reports after status change
+      // 1. Update report status in backend
+      const updated = await updateReportStatus(reportId, formattedStatus);
 
+      if (!updated) {
+        toast.error("Failed to update report status");
+        return;
+      }
+
+      // 2. Refresh reports so UI updates
+      await fetchReports();
+
+      // 3. Send notification to the report owner
       if (userId) {
         const newNotif = {
           user_id: userId,
-          title: "Report Update",
-          message: `Your report status has been updated to "${formattedStatus}"`,
+          title: "Report Updated",
+          message: `Your report status is now "${formattedStatus}"`,
           is_read: 0,
           created_at: new Date().toISOString(),
         };
         addNotification(newNotif);
       }
 
+      // 4. Refresh notifications
       fetchNotifications();
-      toast.success(`Report status updated to "${formattedStatus}"`);
+
+      toast.success(`Status updated to "${formattedStatus}"`);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to update status.");
+      console.error("Status update error:", err);
+      toast.error("Something went wrong updating status");
     }
   };
 
@@ -319,18 +335,57 @@ const AdminDashboard = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <KPICard title="Pending" count={metrics.pending} icon={Clock} color="bg-pink-500" trend={metrics.pendingTrend} />
-        <KPICard title="Resolved" count={metrics.resolved} icon={CheckCircle} color="bg-green-500" trend={metrics.resolvedTrend} />
-        <KPICard title="Rejected" count={metrics.rejected} icon={XCircle} color="bg-red-500" trend={metrics.rejectedTrend} />
-        <KPICard title="Total Red-Flags" count={metrics.totalRedFlags} icon={Flag} color="bg-red-500" trend={metrics.totalRedFlagsTrend} />
-        <KPICard title="Interventions" count={metrics.interventions} icon={Zap} color="bg-blue-500" trend={metrics.interventionsTrend} />
-        <KPICard title="Under Investigation" count={metrics.underInvestigation} icon={Search} color="bg-yellow-500" trend={metrics.underInvestigationTrend} />
+        <KPICard
+          title="Pending"
+          count={metrics.pending}
+          icon={Clock}
+          color="bg-pink-500"
+          trend={metrics.pendingTrend}
+        />
+        <KPICard
+          title="Resolved"
+          count={metrics.resolved}
+          icon={CheckCircle}
+          color="bg-green-500"
+          trend={metrics.resolvedTrend}
+        />
+        <KPICard
+          title="Rejected"
+          count={metrics.rejected}
+          icon={XCircle}
+          color="bg-red-500"
+          trend={metrics.rejectedTrend}
+        />
+        <KPICard
+          title="Total Red-Flags"
+          count={metrics.totalRedFlags}
+          icon={Flag}
+          color="bg-red-500"
+          trend={metrics.totalRedFlagsTrend}
+        />
+        <KPICard
+          title="Interventions"
+          count={metrics.interventions}
+          icon={Zap}
+          color="bg-blue-500"
+          trend={metrics.interventionsTrend}
+        />
+        <KPICard
+          title="Under Investigation"
+          count={metrics.underInvestigation}
+          icon={Search}
+          color="bg-yellow-500"
+          trend={metrics.underInvestigationTrend}
+        />
       </div>
 
       {/* Reports + Notifications */}
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1">
-          <RecentReports reports={reports} onStatusUpdate={handleStatusUpdate} />
+          <RecentReports
+            reports={reports}
+            onStatusUpdate={handleStatusUpdate}
+          />
         </div>
         <div className="w-full lg:w-80">
           <RecentNotifications />
