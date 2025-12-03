@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUsers } from "../contexts/UserContext";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 const UserProfile = () => {
   const { currentUser, updateUserProfile, changePassword } = useUsers();
@@ -21,21 +21,42 @@ const UserProfile = () => {
   });
   const [darkMode, setDarkMode] = useState(false);
 
+  // --- Populate profile safely, converting "undefined" strings to empty ---
   useEffect(() => {
     if (currentUser) {
       setProfile({
-        firstName: currentUser.firstName || "",
-        lastName: currentUser.lastName || "",
+        firstName:
+          currentUser.firstName && currentUser.firstName !== "undefined"
+            ? currentUser.firstName
+            : "",
+        lastName:
+          currentUser.lastName && currentUser.lastName !== "undefined"
+            ? currentUser.lastName
+            : "",
         email: currentUser.email || "",
-        bio: currentUser.bio || "",
-        phone: currentUser.phone || "",
-        avatar: currentUser.avatar || "",
+        bio:
+          currentUser.bio && currentUser.bio !== "undefined"
+            ? currentUser.bio
+            : "",
+        phone:
+          currentUser.phone && currentUser.phone !== "undefined"
+            ? currentUser.phone
+            : "",
+        avatar:
+          currentUser.avatar && currentUser.avatar !== "undefined"
+            ? currentUser.avatar
+            : "",
       });
-      setAvatarPreview(currentUser.avatar || "");
+      setAvatarPreview(
+        currentUser.avatar && currentUser.avatar !== "undefined"
+          ? currentUser.avatar
+          : ""
+      );
       setDarkMode(currentUser.prefersDark || false);
     }
   }, [currentUser]);
 
+  // --- Handle input changes ---
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
@@ -51,24 +72,19 @@ const UserProfile = () => {
     }
   };
 
+  // --- Submit profile, only sending valid values ---
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const formData = new FormData();
 
-      // Only append fields if they have a value
       if (profile.firstName?.trim())
         formData.append("firstName", profile.firstName.trim());
       if (profile.lastName?.trim())
         formData.append("lastName", profile.lastName.trim());
       if (profile.bio?.trim()) formData.append("bio", profile.bio.trim());
       if (profile.phone?.trim()) formData.append("phone", profile.phone.trim());
-
-      // Append avatar only if it's a new File
-      if (profile.avatar instanceof File) {
-        formData.append("avatar", profile.avatar);
-      }
+      if (profile.avatar instanceof File) formData.append("avatar", profile.avatar);
 
       await updateUserProfile(formData);
       toast.success("Profile updated successfully!");
@@ -78,6 +94,7 @@ const UserProfile = () => {
     }
   };
 
+  // --- Handle password changes ---
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -86,11 +103,7 @@ const UserProfile = () => {
     try {
       await changePassword(passwords.currentPassword, passwords.newPassword);
       toast.success("Password changed successfully!");
-      setPasswords({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err) {
       console.error("Password change error:", err);
       toast.error("Failed to change password");
@@ -108,9 +121,7 @@ const UserProfile = () => {
         darkMode ? "bg-gray-900" : "bg-gray-50"
       }`}
     >
-      <div
-        className={`max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 sm:p-10`}
-      >
+      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 sm:p-10">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
           My Profile
         </h1>
@@ -217,7 +228,7 @@ const UserProfile = () => {
               rows={3}
               className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
               placeholder="Tell us a little about yourself..."
-            ></textarea>
+            />
           </div>
 
           <button
@@ -228,7 +239,7 @@ const UserProfile = () => {
           </button>
         </form>
 
-        {/* Password Change */}
+        {/* Password Change Form */}
         <form onSubmit={handlePasswordChange} className="space-y-5">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Change Password
