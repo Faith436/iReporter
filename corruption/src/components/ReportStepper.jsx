@@ -32,7 +32,7 @@ const ReportStepper = ({
   defaultType = "",
   onReportAdded,
 }) => {
-  const { createReport, updateReport, reports, setReports } = useReports();
+  const { createReport, setReports } = useReports();
   const { token } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
