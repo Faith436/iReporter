@@ -123,7 +123,7 @@ const UserProfile = () => {
 
   return (
     <div
-      className={`min-h-screen sm:p-10 ${
+      className={`min-h-screen ${
         darkMode ? "bg-gray-950" : "bg-gray-500"
       }`}
     >
