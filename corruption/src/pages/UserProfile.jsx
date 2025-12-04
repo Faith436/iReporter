@@ -22,9 +22,8 @@ const UserProfile = () => {
     newPassword: "",
     confirmPassword: "",
   });
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(false); // --- Populate profile safely ---
 
-  // --- Populate profile safely ---
   useEffect(() => {
     if (currentUser) {
       setProfile({
@@ -38,15 +37,13 @@ const UserProfile = () => {
       setAvatarPreview(currentUser.avatar || ""); // display existing avatar
       setDarkMode(currentUser.prefersDark || false);
     }
-  }, [currentUser]);
+  }, [currentUser]); // --- Handle text input changes ---
 
-  // --- Handle text input changes ---
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
-  };
+  }; // --- Handle avatar file selection ---
 
-  // --- Handle avatar file selection ---
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -55,9 +52,8 @@ const UserProfile = () => {
       reader.onloadend = () => setAvatarPreview(reader.result);
       reader.readAsDataURL(file);
     }
-  };
+  }; // --- Submit profile updates ---
 
-  // --- Submit profile updates ---
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -79,9 +75,8 @@ const UserProfile = () => {
       console.error("Profile update error:", err);
       toast.error("Failed to update profile");
     }
-  };
+  }; // --- Handle password changes ---
 
-  // --- Handle password changes ---
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -99,15 +94,13 @@ const UserProfile = () => {
       console.error("Password change error:", err);
       toast.error("Failed to change password");
     }
-  };
+  }; // --- Toggle dark mode ---
 
-  // --- Toggle dark mode ---
   const handleDarkModeToggle = () => {
     setDarkMode((prev) => !prev);
     document.documentElement.classList.toggle("dark");
-  };
+  }; // Tailwind Class Updates
 
-  // Tailwind Class Updates
   const inputClass =
     "mt-1 block w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 transition duration-150 ease-in-out";
   const disabledInputClass =
@@ -122,41 +115,50 @@ const UserProfile = () => {
     "px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition";
 
   return (
-    <div
-      className={`min-h-screen ${
-        darkMode ? "bg-gray-950" : "bg-gray-500"
-      }`}
-    >
-      <div className="w-full">
-        {/* Header and Settings */}
+    // FIX 2: Changed light mode background from bg-gray-500 to bg-gray-50
+    <div className={`min-h-screen ${darkMode ? "bg-gray-950" : "bg-gray-50"}`}>
+           {" "}
+      {/* FIX 1: Added max-w-6xl mx-auto p-6 sm:p-10 for centering, max-width, and padding */}
+           {" "}
+      <div className="max-w-6xl mx-auto p-6 sm:p-10">
+                        {/* Header and Settings */}       {" "}
         <div className="flex justify-between items-center mb-10">
+                    {/* FIX 3: Ensure heading is dark grey in light mode */}   
+               {" "}
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-            My Profile
+                My Profile          {" "}
           </h1>
+                   {" "}
           <button
             onClick={handleDarkModeToggle}
             className={secondaryButtonClass}
           >
+                       {" "}
             {darkMode ? (
-              <FiMoon className="w-5 h-5" />
+              <FiSun className="w-5 h-5 mr-1" /> // Changed icon to FiSun for Light Mode
             ) : (
-              <FiSun className="w-5 h-5" />
+              <FiMoon className="w-5 h-5 mr-1" /> // Changed icon to FiMoon for Dark Mode
             )}
-            {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+                        {darkMode ? "Light Mode" : "Dark Mode"}         {" "}
           </button>
+                 {" "}
         </div>
-
-        {/* Profile Card & Avatar */}
+                {/* Profile Card & Avatar */}       {" "}
         <div className={`${cardClass} mb-8`}>
-          <h2 className="text-2xl font-semibold text-gray-400 dark:text-white mb-6 flex items-center">
-            <FiUser className="w-6 h-6 mr-2 text-indigo-600" />
-            Personal Information
+                   {" "}
+          {/* FIX 3: Ensure card heading contrasts with the card background (white/dark grey) */}
+                   {" "}
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <FiUser className="w-6 h-6 mr-2 text-indigo-600" />     
+                  Personal Information          {" "}
           </h2>
-
+                   {" "}
           <div className="flex flex-col md:flex-row md:space-x-8">
-            {/* Avatar Section */}
+                        {/* Avatar Section */}           {" "}
             <div className="flex flex-col items-center mb-6 md:mb-0">
+                           {" "}
               <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-indigo-500 dark:border-indigo-400 shadow-xl">
+                               {" "}
                 {avatarPreview ? (
                   <img
                     src={avatarPreview}
@@ -165,30 +167,37 @@ const UserProfile = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-sm">
-                    No Image
+                                        No Image                  {" "}
                   </div>
                 )}
+                             {" "}
               </div>
+                           {" "}
               <label className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl cursor-pointer hover:bg-indigo-700 transition font-medium text-sm shadow-md">
-                <FiUpload className="inline w-4 h-4 mr-1" />
-                Change Avatar
+                                <FiUpload className="inline w-4 h-4 mr-1" />   
+                            Change Avatar                {" "}
                 <input
                   type="file"
                   accept="image/*"
                   className="hidden"
                   onChange={handleAvatarChange}
                 />
+                             {" "}
               </label>
+                         {" "}
             </div>
-
-            {/* Profile Form */}
+                        {/* Profile Form */}           {" "}
             <form
               onSubmit={handleProfileSubmit}
               className="flex-grow space-y-5"
             >
+                           {" "}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               {" "}
                 <div>
-                  <label className={labelClass}>First Name</label>
+                                   {" "}
+                  <label className={labelClass}>First Name</label>             
+                     {" "}
                   <input
                     type="text"
                     name="firstName"
@@ -196,9 +205,13 @@ const UserProfile = () => {
                     onChange={handleProfileChange}
                     className={inputClass}
                   />
+                                 {" "}
                 </div>
+                               {" "}
                 <div>
-                  <label className={labelClass}>Last Name</label>
+                                   {" "}
+                  <label className={labelClass}>Last Name</label>               
+                   {" "}
                   <input
                     type="text"
                     name="lastName"
@@ -206,12 +219,17 @@ const UserProfile = () => {
                     onChange={handleProfileChange}
                     className={inputClass}
                   />
+                                 {" "}
                 </div>
+                             {" "}
               </div>
-
+                           {" "}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               {" "}
                 <div>
-                  <label className={labelClass}>Email (Read-Only)</label>
+                                   {" "}
+                  <label className={labelClass}>Email (Read-Only)</label>       
+                           {" "}
                   <input
                     type="email"
                     name="email"
@@ -219,9 +237,12 @@ const UserProfile = () => {
                     disabled
                     className={disabledInputClass}
                   />
+                                 {" "}
                 </div>
+                               {" "}
                 <div>
-                  <label className={labelClass}>Phone</label>
+                                    <label className={labelClass}>Phone</label> 
+                                 {" "}
                   <input
                     type="text"
                     name="phone"
@@ -229,11 +250,14 @@ const UserProfile = () => {
                     onChange={handleProfileChange}
                     className={inputClass}
                   />
+                                 {" "}
                 </div>
+                             {" "}
               </div>
-
+                           {" "}
               <div>
-                <label className={labelClass}>Bio</label>
+                                <label className={labelClass}>Bio</label>       
+                       {" "}
                 <textarea
                   name="bio"
                   value={profile.bio}
@@ -242,34 +266,44 @@ const UserProfile = () => {
                   className={inputClass}
                   placeholder="Tell us a little about yourself..."
                 />
+                             {" "}
               </div>
-
+                           {" "}
               <button type="submit" className={primaryButtonClass}>
-                Save Profile Updates
+                                Save Profile Updates              {" "}
               </button>
+                         {" "}
             </form>
+                     {" "}
           </div>
+                 {" "}
         </div>
-
-        {/* Change Password Card */}
+                {/* Change Password Card */}       {" "}
         <div className={cardClass}>
+                   {" "}
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <FiLock className="w-6 h-6 mr-2 text-green-600" />
-            Security Settings
+                        <FiLock className="w-6 h-6 mr-2 text-green-600" />     
+                  Security Settings          {" "}
           </h2>
-
+                   {" "}
           <form onSubmit={handlePasswordChange} className="space-y-5">
+                       {" "}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                           {" "}
               {["currentPassword", "newPassword", "confirmPassword"].map(
                 (field) => (
                   <div key={field}>
+                                       {" "}
                     <label className={labelClass}>
+                                           {" "}
                       {field === "currentPassword"
                         ? "Current Password"
                         : field === "newPassword"
                         ? "New Password"
                         : "Confirm New Password"}
+                                         {" "}
                     </label>
+                                       {" "}
                     <input
                       type="password"
                       name={field}
@@ -282,21 +316,26 @@ const UserProfile = () => {
                       }
                       className={inputClass}
                     />
+                                     {" "}
                   </div>
                 )
               )}
+                         {" "}
             </div>
-
+                       {" "}
             <button
-              type="submit"
-              // Updated to a success/security color (green) and full width
+              type="submit" // Updated to a success/security color (green) and full width
               className="w-full bg-green-600 text-white py-3 px-4 rounded-xl hover:bg-green-700 transition font-bold shadow-md hover:shadow-lg"
             >
-              Change Password
+                            Change Password            {" "}
             </button>
+                     {" "}
           </form>
+                 {" "}
         </div>
+             {" "}
       </div>
+         {" "}
     </div>
   );
 };
