@@ -88,6 +88,7 @@ export const UserProvider = ({ children }) => {
 
   // Update profile (name, bio, phone, avatar)
   const updateUserProfile = async (formData) => {
+    const token = localStorage.getItem("token");
     if (!token) throw new Error("User is not authenticated");
 
     console.log("Sending FormData to backend:");
