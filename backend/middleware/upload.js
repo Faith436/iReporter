@@ -8,7 +8,7 @@ const storage = multer.diskStorage({
     let uploadPath = "uploads/";
 
     // Special case: avatar upload
-    if (req.route.path === "/profile" && file.fieldname === "avatar") {
+    if (req.route.path === "/users/profile" && file.fieldname === "avatar") {
       uploadPath += "avatars/";
     } else if (file.mimetype.startsWith("image/")) {
       uploadPath += "images/";
