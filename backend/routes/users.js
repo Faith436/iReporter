@@ -36,7 +36,7 @@ const upload = multer({ storage });
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
+      "SELECT id, first_name, last_name, email, phone, bio, avatar, role FROM users WHERE id = ?",
       [req.user.id]
     );
 
@@ -44,7 +44,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
 
     const user = rows[0];
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const BASE_URL = "https://ireporter-xafr.onrender.com"; // force HTTPS
 
     res.json({
       id: user.id,
@@ -53,7 +53,8 @@ router.get("/profile", authMiddleware, async (req, res) => {
       email: user.email,
       phone: user.phone,
       bio: user.bio || "",
-      avatar: user.avatar ? `${baseUrl}/uploads/avatars/${user.avatar}` : "",
+      avatar: user.avatar ? `${BASE_URL}/uploads/${user.avatar}` : "",
+      role: user.role,
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -62,7 +63,6 @@ router.get("/profile", authMiddleware, async (req, res) => {
 });
 
 // --- PUT update profile ---
-// users.js (PUT /profile)
 router.put(
   "/profile",
   authMiddleware,
@@ -71,8 +71,8 @@ router.put(
     try {
       const { firstName, lastName, bio, phone } = req.body;
 
-      // If avatar uploaded, save relative path
-      const avatar = req.file ? req.file.filename : null;
+      // If avatar uploaded, store relative path only
+      const avatar = req.file ? `avatars/${req.file.filename}` : null;
 
       // Update user in DB using COALESCE to keep existing values if not provided
       const updateQuery = `
@@ -102,7 +102,7 @@ router.put(
       );
 
       const updatedUser = rows[0];
-      const BASE_URL = "https://ireporter-xafr.onrender.com"; // force HTTPS
+      const BASE_URL = "https://ireporter-xafr.onrender.com";
 
       res.json({
         id: updatedUser.id,
@@ -112,7 +112,7 @@ router.put(
         phone: updatedUser.phone,
         bio: updatedUser.bio || "",
         avatar: updatedUser.avatar
-          ? `${BASE_URL}/uploads/${updatedUser.avatar}`
+          ? `${BASE_URL}/uploads/${updatedUser.avatar}` // ✅ correct URL
           : "",
         role: updatedUser.role,
       });
