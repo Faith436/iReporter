@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useUsers } from "../contexts/UserContext";
 import toast from "react-hot-toast";
 
+// Icons for a modern look (assuming you have a library like react-icons)
+ import { FiUser, FiLock, FiMoon, FiSun, FiUpload } from "react-icons/fi";
+
 const UserProfile = () => {
   const { currentUser, updateUserProfile, changePassword } = useUsers();
 
@@ -104,169 +107,184 @@ const UserProfile = () => {
     document.documentElement.classList.toggle("dark");
   };
 
+  // Tailwind Class Updates
+  const inputClass =
+    "mt-1 block w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 transition duration-150 ease-in-out";
+  const disabledInputClass =
+    "mt-1 block w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed";
+  const labelClass = "block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1";
+  const cardClass = "bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100 dark:border-gray-800";
+  const primaryButtonClass = "w-full bg-indigo-600 text-white py-3 px-4 rounded-xl hover:bg-indigo-700 transition font-bold shadow-md hover:shadow-lg";
+  const secondaryButtonClass = "px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition";
+
   return (
     <div
       className={`min-h-screen p-6 sm:p-10 ${
-        darkMode ? "bg-gray-900" : "bg-gray-50"
+        darkMode ? "bg-gray-950" : "bg-gray-50"
       }`}
     >
-      <div className="w-full h-full flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 sm:p-10">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
-          My Profile
-        </h1>
-
-        {/* Dark/Light Mode */}
-        <div className="flex justify-end mb-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header and Settings */}
+        <div className="flex justify-between items-center mb-10">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+            My Profile
+          </h1>
           <button
             onClick={handleDarkModeToggle}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg"
+            className={secondaryButtonClass}
           >
-            {darkMode ? "Light Mode" : "Dark Mode"}
+            {darkMode ? <FiMoon className="w-5 h-5" /> : <FiSun className="w-5 h-5" />}
+            {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
           </button>
         </div>
 
-        {/* Avatar */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700">
-            {avatarPreview ? (
-              <img
-                src={avatarPreview}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400">
-                No Image
-              </div>
-            )}
-          </div>
-          <label className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition">
-            Change Avatar
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </label>
-        </div>
-
-        {/* Profile Form */}
-        <form onSubmit={handleProfileSubmit} className="space-y-5 mb-8">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                First Name
-              </label>
-              <input
-                type="text"
-                name="firstName"
-                value={profile.firstName}
-                onChange={handleProfileChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Last Name
-              </label>
-              <input
-                type="text"
-                name="lastName"
-                value={profile.lastName}
-                onChange={handleProfileChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={profile.email}
-              disabled
-              className="mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 dark:text-gray-200 cursor-not-allowed"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              Phone
-            </label>
-            <input
-              type="text"
-              name="phone"
-              value={profile.phone}
-              onChange={handleProfileChange}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-              Bio
-            </label>
-            <textarea
-              name="bio"
-              value={profile.bio}
-              onChange={handleProfileChange}
-              rows={3}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-              placeholder="Tell us a little about yourself..."
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition font-semibold"
-          >
-            Save Profile
-          </button>
-        </form>
-
-        {/* Password Form */}
-        <form onSubmit={handlePasswordChange} className="space-y-5">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
-            Change Password
+        {/* Profile Card & Avatar */}
+        <div className={`${cardClass} mb-8`}>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+            <FiUser className="w-6 h-6 mr-2 text-indigo-600" />
+            Personal Information
           </h2>
 
-          {["currentPassword", "newPassword", "confirmPassword"].map(
-            (field) => (
-              <div key={field}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {field === "currentPassword"
-                    ? "Current Password"
-                    : field === "newPassword"
-                    ? "New Password"
-                    : "Confirm New Password"}
-                </label>
+          <div className="flex flex-col md:flex-row md:space-x-8">
+            {/* Avatar Section */}
+            <div className="flex flex-col items-center mb-6 md:mb-0">
+              <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-indigo-500 dark:border-indigo-400 shadow-xl">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400 text-sm">
+                    No Image
+                  </div>
+                )}
+              </div>
+              <label className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl cursor-pointer hover:bg-indigo-700 transition font-medium text-sm shadow-md">
+                <FiUpload className="inline w-4 h-4 mr-1" />
+                Change Avatar
                 <input
-                  type="password"
-                  name={field}
-                  value={passwords[field]}
-                  onChange={(e) =>
-                    setPasswords((prev) => ({
-                      ...prev,
-                      [field]: e.target.value,
-                    }))
-                  }
-                  className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </label>
+            </div>
+
+            {/* Profile Form */}
+            <form onSubmit={handleProfileSubmit} className="flex-grow space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={profile.firstName}
+                    onChange={handleProfileChange}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={profile.lastName}
+                    onChange={handleProfileChange}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Email (Read-Only)</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={profile.email}
+                    disabled
+                    className={disabledInputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Phone</label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={profile.phone}
+                    onChange={handleProfileChange}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Bio</label>
+                <textarea
+                  name="bio"
+                  value={profile.bio}
+                  onChange={handleProfileChange}
+                  rows={3}
+                  className={inputClass}
+                  placeholder="Tell us a little about yourself..."
                 />
               </div>
-            )
-          )}
 
-          <button
-            type="submit"
-            className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition font-semibold"
-          >
-            Change Password
-          </button>
-        </form>
+              <button type="submit" className={primaryButtonClass}>
+                Save Profile Updates
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Change Password Card */}
+        <div className={cardClass}>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+            <FiLock className="w-6 h-6 mr-2 text-green-600" />
+            Security Settings
+          </h2>
+
+          <form onSubmit={handlePasswordChange} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {["currentPassword", "newPassword", "confirmPassword"].map(
+                (field) => (
+                  <div key={field}>
+                    <label className={labelClass}>
+                      {field === "currentPassword"
+                        ? "Current Password"
+                        : field === "newPassword"
+                        ? "New Password"
+                        : "Confirm New Password"}
+                    </label>
+                    <input
+                      type="password"
+                      name={field}
+                      value={passwords[field]}
+                      onChange={(e) =>
+                        setPasswords((prev) => ({
+                          ...prev,
+                          [field]: e.target.value,
+                        }))
+                      }
+                      className={inputClass}
+                    />
+                  </div>
+                )
+              )}
+            </div>
+
+            <button
+              type="submit"
+              // Updated to a success/security color (green) and full width
+              className="w-full bg-green-600 text-white py-3 px-4 rounded-xl hover:bg-green-700 transition font-bold shadow-md hover:shadow-lg"
+            >
+              Change Password
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
