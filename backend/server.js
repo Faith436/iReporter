@@ -3,6 +3,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const db = require("./db");
+const path = require("path"); 
 
 const fs = require("fs");
 dotenv.config();
