@@ -1,15 +1,16 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { LayoutDashboard, FileText, Bell, LogOut, Menu, X } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { LayoutDashboard, FileText, Bell, LogOut, Menu, X, User } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 
 const Sidebar = () => {
   const { currentUser, logout } = useUsers();
+  const navigate = useNavigate();
+
   const isAdmin = currentUser?.role === "admin";
   const baseLink = isAdmin ? "/admin" : "/dashboard";
 
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
   const SidebarContent = (
@@ -34,18 +35,17 @@ const Sidebar = () => {
           {isAdmin ? "Admin Dashboard" : "Dashboard"}
         </NavLink>
 
-        <li
+        {/* FIXED PROFILE LINK */}
+        <button
           onClick={() => {
-            if (user.role === "admin") {
-              navigate("/admin/profile");
-            } else {
-              navigate("/dashboard/profile");
-            }
+            navigate(`${baseLink}/profile`);
+            setMobileOpen(false);
           }}
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+          className="flex items-center gap-3 p-3 w-full text-left rounded-lg transition text-white/80 hover:bg-white/10"
         >
-          <User className="w-4 h-4" /> Profile
-        </li>
+          <User className="w-5 h-5" />
+          Profile
+        </button>
 
         <NavLink
           to={`${baseLink}/reports`}
@@ -97,7 +97,7 @@ const Sidebar = () => {
         {SidebarContent}
       </aside>
 
-      {/* Mobile hamburger button - always visible */}
+      {/* Mobile hamburger button */}
       <button
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white shadow-md"
         onClick={toggleMobile}
