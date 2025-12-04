@@ -42,10 +42,7 @@ const Header = () => {
   // --- Handle outside clicks ---
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target)
-      ) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
       }
       if (
@@ -77,7 +74,9 @@ const Header = () => {
   const handleRemoveNotification = async (notificationId) => {
     try {
       await apiService.deleteNotification(notificationId);
-      setUserNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      setUserNotifications((prev) =>
+        prev.filter((n) => n.id !== notificationId)
+      );
       setUnreadCount((prev) => Math.max(prev - 1, 0));
     } catch (err) {
       console.error("Failed to remove notification:", err);
@@ -86,12 +85,18 @@ const Header = () => {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case "new-report": return "📋";
-      case "status-update": return "🔄";
-      case "report-edited": return "✏️";
-      case "report-deleted": return "🗑️";
-      case "submission-confirmation": return "✅";
-      default: return "🔔";
+      case "new-report":
+        return "📋";
+      case "status-update":
+        return "🔄";
+      case "report-edited":
+        return "✏️";
+      case "report-deleted":
+        return "🗑️";
+      case "submission-confirmation":
+        return "✅";
+      default:
+        return "🔔";
     }
   };
 
@@ -121,13 +126,72 @@ const Header = () => {
           {/* Notifications Dropdown */}
           <div
             className={`absolute left-1/2 mt-2 w-80 sm:w-96 md:w-[28rem] lg:w-[32rem] bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto transform -translate-x-1/2 transition-all duration-300 ease-in-out
-              ${showNotifications
-                ? "opacity-100 translate-y-0 scale-100"
-                : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+              ${
+                showNotifications
+                  ? "opacity-100 translate-y-0 scale-100"
+                  : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
               }
             `}
           >
             {/* ...notifications content stays the same... */}
+            <div className="flex justify-between items-center p-3 border-b bg-gray-50">
+              <h3 className="font-semibold text-gray-700 text-sm">
+                Notifications
+              </h3>
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="text-gray-400 hover:text-red-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Notification Items */}
+            {userNotifications.length === 0 ? (
+              <p className="p-4 text-sm text-gray-500 text-center">
+                No notifications
+              </p>
+            ) : (
+              <div className="divide-y">
+                {userNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification.id)}
+                    className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
+                      !notification.read ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">
+                            {getNotificationIcon(notification.type)}
+                          </span>
+                          <p className="font-semibold text-gray-800 text-sm">
+                            {notification.title || "Notification"}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveNotification(notification.id);
+                        }}
+                        className="text-gray-400 hover:text-red-500 ml-2"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -152,7 +216,9 @@ const Header = () => {
             </div>
 
             <div className="px-1 py-3 text-left">
-              <p className="font-semibold text-white">{user.firstName || "User"}</p>
+              <p className="font-semibold text-white">
+                {user.firstName || "User"}
+              </p>
             </div>
             <ChevronDown className="w-4 h-4 text-white" />
           </button>

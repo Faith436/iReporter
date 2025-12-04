@@ -34,6 +34,19 @@ const Sidebar = () => {
           {isAdmin ? "Admin Dashboard" : "Dashboard"}
         </NavLink>
 
+        <li
+          onClick={() => {
+            if (user.role === "admin") {
+              navigate("/admin/profile");
+            } else {
+              navigate("/dashboard/profile");
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+        >
+          <User className="w-4 h-4" /> Profile
+        </li>
+
         <NavLink
           to={`${baseLink}/reports`}
           className={({ isActive }) =>
