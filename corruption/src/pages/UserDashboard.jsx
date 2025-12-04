@@ -1,5 +1,3 @@
-// src/pages/UserDashboard.jsx
-
 import React, { useState, useEffect } from "react";
 import {
   CheckCircle,
@@ -12,20 +10,17 @@ import {
   Info,
   FileText,
 } from "lucide-react";
-
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
-import { useNotifications } from "../contexts/NotificationContext";
 import ReportStepper from "../components/ReportStepper";
+import { useNotifications } from "../contexts/NotificationContext";
 import UserReportsView from "../components/UserReportsView";
 import FirstLoginPopup from "../components/FirstLoginPopup";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 
-// ─────────────────────────────────────────────
-// STAT CARD COMPONENT
-// ─────────────────────────────────────────────
+// ───── STAT CARD ─────
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
     green: "bg-green-100 text-green-600",
@@ -34,7 +29,6 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
     blue: "bg-blue-100 text-blue-600",
     gray: "bg-gray-100 text-gray-600",
   };
-
   return (
     <div className="relative bg-white border border-gray-100 rounded-xl p-8 shadow-md hover:shadow-lg transition-all">
       <div
@@ -42,109 +36,15 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
       >
         <Icon className="w-6 h-6" />
       </div>
-
       <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
       <p className="text-3xl font-bold text-gray-800 mt-2">{value}</p>
     </div>
   );
 };
 
-// ─────────────────────────────────────────────
-// NOTIFICATIONS LIST
-// ─────────────────────────────────────────────
-const RecentNotifications = ({
-  notifications,
-  currentUser,
-  deleteNotification,
-}) => {
-  const [removing, setRemoving] = useState(null);
-
-  const userNotifications = notifications.filter(
-    (n) => n.user_id === currentUser?.id
-  );
-
-  const IconMap = {
-    Info: { Icon: Info, bg: "bg-blue-50", color: "text-blue-600" },
-    Resolved: { Icon: CheckCircle, bg: "bg-green-50", color: "text-green-600" },
-    Reminder: { Icon: Clock, bg: "bg-yellow-50", color: "text-yellow-600" },
-  };
-
-  const handleDelete = async (id) => {
-    setRemoving(id);
-
-    setTimeout(() => {
-      deleteNotification(id);
-      setRemoving(null);
-    }, 200);
-
-    try {
-      await deleteNotification(id);
-      toast.success("Notification deleted", { position: "top-center" });
-    } catch {
-      toast.error("Failed to delete notification", { position: "top-center" });
-    }
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        Recent Notifications
-      </h2>
-
-      <div className="space-y-4">
-        {userNotifications.length === 0 && (
-          <p className="text-gray-500 text-sm text-center">
-            No notifications yet.
-          </p>
-        )}
-
-        {userNotifications.map((n) => {
-          const { Icon, bg, color } = IconMap[n.type] || {
-            Icon: Info,
-            bg: "bg-gray-50",
-            color: "text-gray-600",
-          };
-
-          return (
-            <div
-              key={n.id}
-              className={`p-4 rounded-lg border flex justify-between items-start transition-all duration-200 ${bg} ${color.replace(
-                "text",
-                "border"
-              )} ${removing === n.id ? "opacity-0 scale-95" : "opacity-100"}`}
-            >
-              <div className="flex items-start space-x-3">
-                <Icon className={`w-5 h-5 mt-1 ${color}`} />
-                <div>
-                  <p className={`text-sm font-semibold ${color}`}>
-                    {n.message}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(n.created_at).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => handleDelete(n.id)}
-                className="p-1 rounded hover:bg-red-100 transition"
-              >
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────
-// QUICK ACTIONS
-// ─────────────────────────────────────────────
+// ───── QUICK ACTIONS ─────
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
-
   const actions = [
     {
       label: "Add Red-Flag Record",
@@ -165,13 +65,11 @@ const QuickActions = ({ openStepper, setType }) => {
       type: "view",
     },
   ];
-
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
         Quick Actions
       </h2>
-
       <div className="space-y-3">
         {actions.map((a, i) => (
           <button
@@ -194,50 +92,41 @@ const QuickActions = ({ openStepper, setType }) => {
   );
 };
 
-// ─────────────────────────────────────────────
-// MAIN DASHBOARD
-// ─────────────────────────────────────────────
+// ───── DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
-  const { reports } = useReports();
-  const { notifications, deleteNotification } = useNotifications();
-
+  const { reports, notifications, createReport, updateReport, deleteReport } =
+    useReports();
   const [stats, setStats] = useState({});
   const [stepperOpen, setStepperOpen] = useState(false);
   const [defaultReportType, setDefaultReportType] = useState("");
   const [editingReport, setEditingReport] = useState(null);
-
-  // First login popup
   const [showFirstPopup, setShowFirstPopup] = useState(false);
 
+  const navigate = useNavigate();
+
+  // First login popup
   useEffect(() => {
     if (!currentUser) return;
-
-    const shouldShow = Number(currentUser.firstLoginShown) === 0;
-    if (shouldShow) {
+    if (Number(currentUser.firstLoginShown) === 0) {
       setTimeout(() => setShowFirstPopup(true), 300);
     }
-  }, [currentUser, reports]);
+  }, [currentUser]);
 
   const markFirstLoginShown = async () => {
     try {
       await apiService.put(`/users/${currentUser.id}/first-login-shown`, {
         firstLoginShown: 1,
       });
-
-      setCurrentUser({
-        ...currentUser,
-        firstLoginShown: 1,
-      });
+      setCurrentUser({ ...currentUser, firstLoginShown: 1 });
     } catch (err) {
       console.error("Failed to update firstLoginShown:", err);
     }
   };
 
-  // Calculate stats
+  // Update stats whenever reports change
   useEffect(() => {
     if (!reports) return;
-
     setStats({
       resolved: reports.filter((r) => r.status === "resolved").length,
       rejected: reports.filter((r) => r.status === "rejected").length,
@@ -254,7 +143,6 @@ const Dashboard = () => {
 
   return (
     <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative p-4">
-
       {/* FIRST LOGIN POPUP */}
       {showFirstPopup && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -325,7 +213,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* REPORTS + NOTIFICATIONS GRID */}
+      {/* REPORTS + QUICK ACTIONS + NOTIFICATIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left side: Reports */}
         <div className="lg:col-span-2">
@@ -334,7 +222,12 @@ const Dashboard = () => {
             role="user"
             setEditingReport={setEditingReport}
             setShowModal={setStepperOpen}
-            onDelete={(id) => console.log("Delete", id)}
+            onDelete={(id) => deleteReport(id)}
+            onEdit={(report) => {
+              setEditingReport(report);
+              setStepperOpen(true);
+            }}
+            onUpdate={(id, data) => updateReport(id, data)}
             loading={false}
           />
         </div>
@@ -346,11 +239,28 @@ const Dashboard = () => {
             setType={setDefaultReportType}
           />
 
-          <RecentNotifications
-            notifications={notifications}
-            currentUser={currentUser}
-            deleteNotification={deleteNotification}
-          />
+          {/* RECENT NOTIFICATIONS */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Recent Notifications
+            </h2>
+            {notifications && notifications.length > 0 ? (
+              <ul className="space-y-2 max-h-64 overflow-y-auto">
+                {notifications
+                  .slice(0, 5) // show latest 5
+                  .map((n) => (
+                    <li
+                      key={n.id}
+                      className="p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
+                    >
+                      <p className="text-gray-700 text-sm">{n.message}</p>
+                    </li>
+                  ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400 text-sm">No recent notifications</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -364,12 +274,14 @@ const Dashboard = () => {
             >
               ×
             </button>
-
             <ReportStepper
               defaultType={defaultReportType}
-              onClose={() => setStepperOpen(false)}
               editingReport={editingReport}
-              setEditingReport={setEditingReport}
+              onClose={() => {
+                setStepperOpen(false);
+                setEditingReport(null);
+              }}
+              onReportAdded={(savedReport) => toast.success("Report added!")}
             />
           </div>
         </div>

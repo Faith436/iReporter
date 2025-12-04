@@ -80,11 +80,11 @@ const Sidebar = () => {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed top-0 left-0 h-full">
+      <aside className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-gray-800 text-white">
         {SidebarContent}
       </aside>
 
-      {/* Mobile hamburger */}
+      {/* Mobile hamburger button - always visible */}
       <button
         className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white shadow-md"
         onClick={toggleMobile}
@@ -95,7 +95,7 @@ const Sidebar = () => {
       {/* Mobile sidebar */}
       <div
         className={`fixed top-0 left-0 h-full w-64 bg-gray-800 text-white transform transition-transform duration-300 z-40
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:hidden`}
+      ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:hidden`}
       >
         {SidebarContent}
       </div>

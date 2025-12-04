@@ -1,38 +1,27 @@
-// src/pages/AdminReports.jsx
 import React, { useEffect, useState } from "react";
 import { useReports } from "../contexts/ReportContext";
 import ListView from "../components/ListView";
 import KanbanView from "../components/KanbanView";
 
 const AdminReports = () => {
-  const { reports, fetchReports, deleteReport } = useReports();
-  const [loading, setLoading] = useState(true);
+  const { reports, fetchDashboardData, deleteReport } = useReports();
   const [activeView, setActiveView] = useState("list");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      await fetchReports();
-      setLoading(false);
-    };
-    load();
-  }, [fetchReports, refreshKey]);
+    fetchDashboardData(); // just fetch in background
+  }, [fetchDashboardData, refreshKey]);
 
   const handleDelete = async (id) => {
     await deleteReport(id);
     setRefreshKey((prev) => prev + 1);
   };
 
-  if (loading)
-    return <div className="p-6 text-gray-500">Loading reports...</div>;
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex flex-wrap justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">All Reports (Admin)</h1>
 
-        {/* View toggle buttons */}
         <div className="flex gap-2">
           <button
             className={`px-4 py-2 rounded ${
@@ -57,13 +46,17 @@ const AdminReports = () => {
         </div>
       </div>
 
-      {activeView === "list" ? (
+      {reports.length === 0 ? (
+        <p className="text-gray-500 text-center mt-10">
+          No reports available.
+        </p>
+      ) : activeView === "list" ? (
         <ListView role="admin" refreshKey={refreshKey} />
       ) : (
         <KanbanView
           role="admin"
-          loggedInUserId={null} // Admin sees all reports
-          onEdit={() => {}} // Optional: define edit if needed
+          loggedInUserId={null}
+          onEdit={() => {}}
           onDelete={handleDelete}
           refreshKey={refreshKey}
         />

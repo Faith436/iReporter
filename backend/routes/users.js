@@ -1,80 +1,99 @@
-// routes/users.js
 const express = require("express");
 const { authMiddleware, adminAuth } = require("../middleware/authMiddleware");
 const db = require("../db"); // ensure consistent db import
+const multer = require("multer");
+const bcrypt = require("bcrypt");
 
 const router = express.Router();
 
-// --- Get all users (Admin only) ---
-router.get("/", authMiddleware, adminAuth, async (req, res) => {
-  try {
-    const [users] = await db.query(
-      "SELECT id, first_name, last_name, email, phone, role, firstloginshown FROM users"
-    );
+// --- Multer configuration for avatar uploads ---
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "uploads/avatars/"),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+const upload = multer({ storage });
 
-    res.json(
-      users.map((u) => ({
-        id: u.id,
-        firstName: u.first_name,
-        lastName: u.last_name,
-        email: u.email,
-        phone: u.phone,
-        role: u.role,
-        firstLoginShown: u.firstloginshown, // include this for frontend check
-      }))
+// --- GET user profile ---
+router.get("/profile", authMiddleware, async (req, res) => {
+  try {
+    const [user] = await db.query(
+      "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
+      [req.user.id]
     );
-  } catch (error) {
-    console.error("Get users error:", error);
-    res.status(500).json({ message: "Server error fetching users" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      phone: user.phone,
+      bio: user.bio || "",
+      avatar: user.avatar || "",
+    });
+  } catch (err) {
+    console.error("Get profile error:", err);
+    res.status(500).json({ message: "Server error fetching profile" });
   }
 });
 
-// --- Update user role (Admin only) ---
-router.patch("/:id/role", authMiddleware, adminAuth, async (req, res) => {
+// --- PUT update profile (name, bio, avatar) ---
+router.put("/profile", authMiddleware, upload.single("avatar"), async (req, res) => {
   try {
-    const { id } = req.params;
-    const { role } = req.body;
+    const { firstName, lastName, bio, phone } = req.body;
+    let avatar = req.file ? `/uploads/avatars/${req.file.filename}` : null;
 
-    if (!["user", "admin"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
-    }
+    const updates = {
+      first_name: firstName,
+      last_name: lastName,
+      bio,
+      phone,
+    };
+    if (avatar) updates.avatar = avatar;
 
-    const [result] = await db.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
+    await db.query("UPDATE users SET ? WHERE id = ?", [updates, req.user.id]);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const [updatedUser] = await db.query(
+      "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
+      [req.user.id]
+    );
 
-    res.json({ message: "User role updated successfully" });
-  } catch (error) {
-    console.error("Update role error:", error);
-    res.status(500).json({ message: "Server error updating role" });
+    res.json({
+      id: updatedUser.id,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      bio: updatedUser.bio || "",
+      avatar: updatedUser.avatar || "",
+    });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ message: "Failed to update profile" });
   }
 });
 
-// --- Update first login shown flag (User only) ---
-router.put("/:id/first-login-shown", authMiddleware, async (req, res) => {
+// --- PUT change password ---
+router.put("/password", authMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { firstloginshown } = req.body;
+    const { currentPassword, newPassword } = req.body;
 
-    if (firstloginshown === undefined) {
-      return res.status(400).json({ message: "firstloginshown is required" });
-    }
+    const [user] = await db.query("SELECT password FROM users WHERE id = ?", [req.user.id]);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const [result] = await db.query(
-      "UPDATE users SET firstloginshown = ? WHERE id = ?",
-      [firstloginshown, id]
-    );
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ message: "Current password is incorrect" });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, req.user.id]);
 
-    res.json({ message: "First login flag updated successfully" });
-  } catch (error) {
-    console.error("Update first login error:", error);
-    res.status(500).json({ message: "Server error updating first login flag" });
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ message: "Failed to change password" });
   }
 });
 

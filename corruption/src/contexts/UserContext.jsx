@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import apiService from "../services/api";
 
 const UserContext = createContext();
@@ -8,15 +14,11 @@ export const useUsers = () => useContext(UserContext);
 export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showFirstLogin, setShowFirstLogin] = useState(false); // for first-login modal
+  const [showFirstLogin, setShowFirstLogin] = useState(false);
 
-  // Helper: check if first-login modal should show
+  // Check if first login popup should show
   const checkFirstLogin = (user) => {
-    if (!user.firstLoginShown && (!user.reports || user.reports.length === 0)) {
-      setShowFirstLogin(true);
-    } else {
-      setShowFirstLogin(false);
-    }
+    setShowFirstLogin(!user.firstLoginShown);
   };
 
   // Fetch current user on mount
@@ -25,12 +27,9 @@ export const UserProvider = ({ children }) => {
       try {
         const data = await apiService.getCurrentUser();
         setCurrentUser(data.user);
-
-        // Check first-login logic
         checkFirstLogin(data.user);
       } catch (err) {
         console.error("Failed to fetch current user:", err);
-        setCurrentUser(null);
       } finally {
         setLoading(false);
       }
@@ -38,34 +37,30 @@ export const UserProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  // Refresh user (e.g., after profile update)
+  // Refresh user data
   const refreshUser = useCallback(async () => {
     try {
       const data = await apiService.getCurrentUser();
       setCurrentUser(data.user);
-
-      // Re-check first-login logic
       checkFirstLogin(data.user);
     } catch (err) {
       console.error("Failed to refresh user:", err);
     }
   }, []);
 
-  // Mark first-login as seen
-  const markFirstLoginSeen = async () => {
+  // Mark first login as seen
+  const markFirstLoginSeen = useCallback(async () => {
+    if (!currentUser?.id) return;
     try {
-      await apiService.markFirstLogin();
-      setCurrentUser((prev) => ({
-        ...prev,
-        firstLoginShown: true,
-      }));
+      await apiService.markFirstLoginShown();
+      setCurrentUser((prev) => ({ ...prev, firstLoginShown: true }));
       setShowFirstLogin(false);
     } catch (err) {
       console.error("Failed to mark first login as seen:", err);
     }
-  };
+  }, [currentUser]);
 
-  // Logout user
+  // Logout
   const logout = async () => {
     try {
       await apiService.logout();
@@ -73,6 +68,57 @@ export const UserProvider = ({ children }) => {
       setShowFirstLogin(false);
     } catch (err) {
       console.error("Logout error:", err);
+    }
+  };
+
+  // --- New Profile Methods ---
+
+  // Get full profile
+  const getProfile = async () => {
+    try {
+      const response = await apiService.get("/users/profile");
+      return response.data;
+    } catch (err) {
+      console.error("Failed to fetch profile:", err);
+      throw err;
+    }
+  };
+
+  // Update profile (name, bio, phone, avatar)
+  const updateUserProfile = async (profileData) => {
+    try {
+      const formData = new FormData();
+      formData.append("firstName", profileData.firstName);
+      formData.append("lastName", profileData.lastName);
+      formData.append("bio", profileData.bio || "");
+      formData.append("phone", profileData.phone || "");
+      if (profileData.avatar instanceof File) {
+        formData.append("avatar", profileData.avatar);
+      }
+
+      const response = await apiService.put("/users/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setCurrentUser((prev) => ({ ...prev, ...response.data }));
+      return response.data;
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      throw err;
+    }
+  };
+
+  // Change password
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const response = await apiService.put("/users/password", {
+        currentPassword,
+        newPassword,
+      });
+      return response.data;
+    } catch (err) {
+      console.error("Failed to change password:", err);
+      throw err;
     }
   };
 
@@ -86,6 +132,9 @@ export const UserProvider = ({ children }) => {
         loading,
         showFirstLogin,
         markFirstLoginSeen,
+        getProfile,
+        updateUserProfile,
+        changePassword,
       }}
     >
       {children}
