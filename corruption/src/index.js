@@ -13,15 +13,15 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <UserProvider>
-      <ReportProvider>
-        <NotificationProvider>
-          <AuthProvider>
+    <AuthProvider>
+      <UserProvider>
+        <ReportProvider>
+          <NotificationProvider>
             <App />
-          </AuthProvider>
-        </NotificationProvider>
-      </ReportProvider>
-    </UserProvider>
+          </NotificationProvider>
+        </ReportProvider>
+      </UserProvider>
+    </AuthProvider>
   </React.StrictMode>
 );
 

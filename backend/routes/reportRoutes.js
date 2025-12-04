@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { authMiddleware } = require("../middleware/authMiddleware");
-const upload = require("../middleware/upload"); // ✅ your custom multer wrapper
+const upload = require("../middleware/upload"); // multer wrapper
 
 const {
   createReport,
@@ -11,12 +11,11 @@ const {
   deleteReport,
 } = require("../controllers/reportController");
 
-// 🟢 CREATE REPORT (with media upload + notify admin)
+// 🟢 CREATE REPORT
+// multer handles multiple files in 'media'
+// controller handles validation, DB insert, notifications, and email
 router.post("/", authMiddleware, upload, async (req, res) => {
   try {
-    if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({ error: "Request body cannot be empty" });
-    }
     await createReport(req, res);
   } catch (err) {
     console.error("Error in POST /reports:", err);
@@ -27,7 +26,9 @@ router.post("/", authMiddleware, upload, async (req, res) => {
 // 🟣 GET REPORTS — Admin gets all, user gets their own
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    if (req.user.role === "admin") return getAllReports(req, res);
+    if (req.user.role === "admin") {
+      return getAllReports(req, res);
+    }
     return getUserReports(req, res);
   } catch (err) {
     console.error("Error in GET /reports:", err);
@@ -35,12 +36,9 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// 🟡 UPDATE REPORT STATUS (with notifications)
+// 🟡 UPDATE REPORT STATUS
 router.put("/:id/status", authMiddleware, async (req, res) => {
   try {
-    if (!req.body || !req.body.status) {
-      return res.status(400).json({ error: "Status is required" });
-    }
     await updateReportStatus(req, res);
   } catch (err) {
     console.error("Error in PUT /reports/:id/status:", err);

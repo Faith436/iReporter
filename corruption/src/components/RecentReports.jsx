@@ -41,13 +41,15 @@ const RecentReports = ({ reports = [], onEditReport, onStatusUpdate }) => {
                 value={
                   STATUS_OPTIONS[report?.status] ? report.status : "pending"
                 }
-                onChange={(e) =>
-                  onStatusUpdate?.(
-                    report.id,
-                    e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                    report.user_id
-                  )
-                }
+                onChange={(e) => {
+                  if (onStatusUpdate) {
+                    onStatusUpdate(
+                      report.id,
+                      e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                      report.user_id || null // safe fallback
+                    );
+                  }
+                }}
                 className="text-xs rounded px-2 py-1 border"
               >
                 {Object.entries(STATUS_OPTIONS).map(([key, label]) => (

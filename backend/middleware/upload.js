@@ -1,18 +1,18 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
-// Storage configuration
+// --- Storage configuration ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    let uploadPath = 'uploads/';
+    let uploadPath = "uploads/";
 
-    if (file.mimetype.startsWith('image/')) {
-      uploadPath += 'images/';
-    } else if (file.mimetype.startsWith('video/')) {
-      uploadPath += 'videos/';
+    if (file.mimetype.startsWith("image/")) {
+      uploadPath += "images/";
+    } else if (file.mimetype.startsWith("video/")) {
+      uploadPath += "videos/";
     } else {
-      uploadPath += 'others/';
+      uploadPath += "others/";
     }
 
     // Ensure folder exists
@@ -24,14 +24,14 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
-// File filter
+// --- File filter ---
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+  if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
     cb(null, true);
   } else {
     console.warn(`⚠️ Skipped file (invalid type): ${file.originalname}`);
@@ -39,20 +39,26 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer instance
+// --- Multer instance ---
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
-// Middleware to catch multer errors
+// --- Middleware wrapper ---
 const uploadMiddleware = (req, res, next) => {
-  upload.array('media', 5)(req, res, (err) => {
+  // Use array to accept multiple files from field 'media'
+  upload.array("media", 5)(req, res, (err) => {
     if (err) {
       console.error("Upload error:", err.message);
       return res.status(400).json({ error: err.message });
     }
+
+    // Ensure req.body exists even if no text fields sent
+    req.body = req.body || {};
+    req.files = req.files || [];
+
     next();
   });
 };

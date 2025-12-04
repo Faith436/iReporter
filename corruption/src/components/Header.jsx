@@ -1,11 +1,9 @@
 // src/components/Header.jsx
 import React, { useState, useEffect } from "react";
-import { Menu, Bell, X, ChevronDown, LogOut, User, Search } from "lucide-react";
+import { Menu, Bell, X, ChevronDown, LogOut, User } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
-
-const COLOR_PRIMARY_TEAL = "#116E75";
 
 const Header = () => {
   const { currentUser, logout } = useUsers();
@@ -13,29 +11,35 @@ const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [userNotifications, setUserNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   const user = currentUser || { email: "", role: "user", firstName: "User" };
 
-  // --- Load notifications ---
+  // --- Load notifications safely ---
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!currentUser) return;
       try {
-        // Fetch array directly from backend
-        const notifications = await apiService.getNotifications();
-        setUserNotifications(notifications);
-        setUnreadCount(notifications.filter((n) => !n.read).length);
+        const data = await apiService.getNotifications();
+
+        // Ensure we have an array
+        const notificationsArray = Array.isArray(data)
+          ? data
+          : data?.notifications || [];
+
+        setUserNotifications(notificationsArray);
+        setUnreadCount(notificationsArray.filter((n) => !n.read).length);
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
+        setUserNotifications([]);
+        setUnreadCount(0);
       }
     };
 
     fetchNotifications();
   }, [currentUser]);
 
-  // --- Mark as read ---
+  // --- Mark notification as read ---
   const handleNotificationClick = async (notificationId) => {
     try {
       await apiService.markNotificationRead(notificationId);
@@ -81,7 +85,7 @@ const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 md:left-64 right-0 h-20 bg-gray-800 shadow-md flex items-center justify-between px-6 md:px-10 z-10 border-b border-gray-100">
-      {/* Left: Menu + Search */}
+      {/* Left: Menu */}
       <div className="flex items-center gap-4 flex-1">
         <Menu className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" />
       </div>
@@ -90,7 +94,6 @@ const Header = () => {
       <div className="flex items-center gap-5 relative">
         {/* Notifications */}
         <div className="relative">
-          {/* Notification Bell */}
           <button
             onClick={() => setShowNotifications(prev => !prev)}
             className="relative p-2 rounded-full hover:bg-gray-100 transition"
@@ -106,12 +109,12 @@ const Header = () => {
           {/* Notifications Dropdown */}
           <div
             className={`absolute left-1/2 mt-2 w-80 sm:w-96 md:w-[28rem] lg:w-[32rem] bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto transform -translate-x-1/2 transition-all duration-300 ease-in-out
-    ${
-      showNotifications
-        ? "opacity-100 translate-y-0 scale-100"
-        : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-    }
-  `}
+              ${
+                showNotifications
+                  ? "opacity-100 translate-y-0 scale-100"
+                  : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+              }
+            `}
           >
             {/* Header */}
             <div className="flex justify-between items-center p-3 border-b bg-gray-50">
@@ -125,6 +128,7 @@ const Header = () => {
                 <X className="w-4 h-4" />
               </button>
             </div>
+
             {/* Notification Items */}
             {userNotifications.length === 0 ? (
               <p className="p-4 text-sm text-gray-500 text-center">
@@ -196,9 +200,19 @@ const Header = () => {
                 <p className="text-sm text-gray-500">{user.email}</p>
               </div>
               <ul className="py-2">
-                <li onClick={() => navigate("/profile")} className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer">
+                <li
+                  onClick={() => {
+                    if (user.role === "admin") {
+                      navigate("/admin/profile");
+                    } else {
+                      navigate("/dashboard/profile");
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
                   <User className="w-4 h-4" /> Profile
                 </li>
+
                 <li
                   onClick={logout}
                   className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
