@@ -72,25 +72,35 @@ const UserProfile = () => {
     }
   };
 
-  
   // --- Submit profile: ALWAYS send what user typed ---
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
       const formData = new FormData();
 
-      // ALWAYS send the input values (even empty strings)
+      // Append all fields
       formData.append("firstName", profile.firstName || "");
       formData.append("lastName", profile.lastName || "");
       formData.append("bio", profile.bio || "");
       formData.append("phone", profile.phone || "");
 
-      // Only add avatar if a real File was selected
+      // Append avatar only if a real File
       if (profile.avatar instanceof File) {
         formData.append("avatar", profile.avatar);
+        console.log("Avatar file to send:", profile.avatar);
       }
 
-      await updateUserProfile(formData);
+      // Log all FormData entries
+      console.log("FormData being sent:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      // Call backend
+      const res = await updateUserProfile(formData);
+
+      console.log("Response from backend:", res);
+
       toast.success("Profile updated successfully!");
     } catch (err) {
       console.error("Profile update error:", err);
