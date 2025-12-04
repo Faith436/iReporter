@@ -62,6 +62,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
 });
 
 // --- PUT update profile ---
+// users.js (PUT /profile)
 router.put(
   "/profile",
   authMiddleware,
@@ -69,40 +70,39 @@ router.put(
   async (req, res) => {
     try {
       const { firstName, lastName, bio, phone } = req.body;
-      let avatar = req.file ? `avatars/${req.file.filename}` : null;
 
-      const [currentUserRows] = await db.query(
-        "SELECT * FROM users WHERE id = ?",
+      // If avatar uploaded, save relative path
+      const avatar = req.file ? `avatars/${req.file.filename}` : null;
+
+      // Update user in DB using COALESCE to keep existing values if not provided
+      const updateQuery = `
+        UPDATE users
+        SET 
+          first_name = COALESCE(?, first_name),
+          last_name = COALESCE(?, last_name),
+          phone = COALESCE(?, phone),
+          bio = COALESCE(?, bio),
+          avatar = COALESCE(?, avatar)
+        WHERE id = ?
+      `;
+
+      await db.query(updateQuery, [
+        firstName,
+        lastName,
+        phone,
+        bio,
+        avatar,
+        req.user.id,
+      ]);
+
+      // Fetch updated user
+      const [rows] = await db.query(
+        "SELECT id, first_name, last_name, email, phone, bio, avatar, role FROM users WHERE id = ?",
         [req.user.id]
       );
-      const currentUser = currentUserRows[0];
-      if (!currentUser)
-        return res.status(404).json({ message: "User not found" });
 
-      const updates = {};
-      if (firstName !== undefined) updates.first_name = firstName;
-      if (lastName !== undefined) updates.last_name = lastName;
-      if (bio !== undefined) updates.bio = bio;
-      if (phone !== undefined) updates.phone = phone;
-      if (avatar) updates.avatar = avatar;
-
-      if (Object.keys(updates).length > 0) {
-        await db.query("UPDATE users SET ? WHERE id = ?", [
-          updates,
-          req.user.id,
-        ]);
-      }
-
-      console.log("Received body:", req.body);
-      console.log("Received file:", req.file);
-
-      const [updatedRows] = await db.query(
-        "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
-        [req.user.id]
-      );
-      const updatedUser = updatedRows[0];
-
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const updatedUser = rows[0];
+      const BASE_URL = "https://ireporter-xafr.onrender.com"; // force HTTPS
 
       res.json({
         id: updatedUser.id,
@@ -112,8 +112,9 @@ router.put(
         phone: updatedUser.phone,
         bio: updatedUser.bio || "",
         avatar: updatedUser.avatar
-          ? `${baseUrl}/uploads/${updatedUser.avatar}`
+          ? `${BASE_URL}/uploads/${updatedUser.avatar}`
           : "",
+        role: updatedUser.role,
       });
     } catch (err) {
       console.error("Update profile error:", err);

@@ -1,6 +1,8 @@
 // controllers/userController.js
 const db = require("../db");
 
+const BASE_URL = "https://ireporter-xafr.onrender.com"; // make sure it's HTTPS
+
 // --- GET LOGGED-IN USER PROFILE ---
 const getProfile = async (req, res) => {
   try {
@@ -23,7 +25,11 @@ const getProfile = async (req, res) => {
       email: user.email,
       phone: user.phone,
       bio: user.bio,
-      avatar: user.avatar, // 👈 SENT TO FRONTEND
+      avatar: user.avatar
+        ? user.avatar.startsWith("http")
+          ? user.avatar
+          : `${BASE_URL}${user.avatar}` // ✅ prepend HTTPS
+        : "", // 👈 SENT TO FRONTEND
       role: user.role,
     });
   } catch (err) {
@@ -47,7 +53,12 @@ const getAllUsers = async (req, res) => {
         email: u.email,
         phone: u.phone,
         bio: u.bio,
-        avatar: u.avatar,
+        avatar: u.avatar
+          ? u.avatar.startsWith("http")
+            ? u.avatar
+            : `${BASE_URL}${u.avatar}`
+          : "",
+
         role: u.role,
       }))
     );
@@ -66,7 +77,7 @@ const updateProfile = async (req, res) => {
     // If avatar uploaded
     let avatarPath = null;
     if (req.file) {
-      avatarPath = `/uploads/avatars/${req.file.filename}`;
+      avatarPath = `${BASE_URL}/uploads/avatars/${req.file.filename}`;
     }
 
     const query = `
