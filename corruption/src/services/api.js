@@ -70,7 +70,9 @@ const apiService = {
   },
   createNotification: (data) => apiService.post(NOTIFICATIONS_URL, data),
   markNotificationRead: (id) =>
-    apiService.patch(`${NOTIFICATIONS_URL}/${id}/read`),
+    apiService.put(`${NOTIFICATIONS_URL}/${id}/read`), // use PUT for marking single
+  markAllNotificationsRead: () =>
+    apiService.put(`${NOTIFICATIONS_URL}/mark-all-read`), // new endpoint
   deleteNotification: (id) => apiService.delete(`${NOTIFICATIONS_URL}/${id}`),
   deleteAllNotifications: async () => {
     const all = await apiService.get(NOTIFICATIONS_URL);
