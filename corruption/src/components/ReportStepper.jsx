@@ -72,8 +72,6 @@ const ReportStepper = ({
     if (isStepComplete(currentStep, formData)) nextStep();
     else alert("Please complete all fields in this step before proceeding.");
   };
-
-  /** --- Optimistic UI helpers --- */
  
 
   const handleSubmit = async () => {
