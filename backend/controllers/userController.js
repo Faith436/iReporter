@@ -74,10 +74,10 @@ const updateProfile = async (req, res) => {
     const userId = req.user.id;
     const { firstName, lastName, phone, bio } = req.body;
 
-    // If avatar uploaded
-    let avatarPath = null;
+    // Save only the filename (NOT the full URL)
+    let avatarFilename = null;
     if (req.file) {
-      avatarPath = `${BASE_URL}/uploads/avatars/${req.file.filename}`;
+      avatarFilename = req.file.filename;
     }
 
     const query = `
@@ -96,17 +96,19 @@ const updateProfile = async (req, res) => {
       lastName,
       phone,
       bio,
-      avatarPath,
+      avatarFilename,
       userId,
     ]);
 
     // Fetch updated user
     const [rows] = await db.query(
-      `SELECT id, first_name, last_name, email, phone, bio, avatar, role FROM users WHERE id = ?`,
+      `SELECT id, first_name, last_name, email, phone, bio, avatar, role 
+       FROM users WHERE id = ?`,
       [userId]
     );
 
     const updatedUser = rows[0];
+    const BASE_URL = "https://ireporter-xafr.onrender.com";
 
     res.json({
       id: updatedUser.id,
@@ -115,7 +117,9 @@ const updateProfile = async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       bio: updatedUser.bio || "",
-      avatar: updatedUser.avatar ? updatedUser.avatar : "",
+      avatar: updatedUser.avatar
+        ? `${BASE_URL}/uploads/avatars/${updatedUser.avatar}`
+        : "",
       role: updatedUser.role,
     });
   } catch (err) {

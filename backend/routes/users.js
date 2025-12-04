@@ -53,7 +53,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
       email: user.email,
       phone: user.phone,
       bio: user.bio || "",
-      avatar: user.avatar ? `${baseUrl}/uploads/${user.avatar}` : "",
+      avatar: user.avatar ? `${baseUrl}/uploads/avatars/${user.avatar}` : "",
     });
   } catch (err) {
     console.error("Get profile error:", err);
@@ -72,7 +72,7 @@ router.put(
       const { firstName, lastName, bio, phone } = req.body;
 
       // If avatar uploaded, save relative path
-      const avatar = req.file ? `avatars/${req.file.filename}` : null;
+      const avatar = req.file ? req.file.filename : null;
 
       // Update user in DB using COALESCE to keep existing values if not provided
       const updateQuery = `
