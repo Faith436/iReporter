@@ -26,7 +26,7 @@ const getProfile = async (req, res) => {
       phone: user.phone,
       bio: user.bio,
       avatar: user.avatar
-        ? user.avatar.startsWith("http")
+        ? user.avatar.startsWith("https")
           ? user.avatar
           : `${BASE_URL}${user.avatar}` // ✅ prepend HTTPS
         : "", // 👈 SENT TO FRONTEND
@@ -54,7 +54,7 @@ const getAllUsers = async (req, res) => {
         phone: u.phone,
         bio: u.bio,
         avatar: u.avatar
-          ? u.avatar.startsWith("http")
+          ? u.avatar.startsWith("https")
             ? u.avatar
             : `${BASE_URL}${u.avatar}`
           : "",
