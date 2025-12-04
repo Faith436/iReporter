@@ -61,7 +61,6 @@ const getAllUsers = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const { firstName, lastName, phone, bio } = req.body;
 
     // If avatar uploaded
@@ -90,7 +89,24 @@ const updateProfile = async (req, res) => {
       userId,
     ]);
 
-    res.json({ message: "Profile updated successfully" });
+    // Fetch updated user
+    const [rows] = await db.query(
+      `SELECT id, first_name, last_name, email, phone, bio, avatar, role FROM users WHERE id = ?`,
+      [userId]
+    );
+
+    const updatedUser = rows[0];
+
+    res.json({
+      id: updatedUser.id,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      bio: updatedUser.bio || "",
+      avatar: updatedUser.avatar ? updatedUser.avatar : "",
+      role: updatedUser.role,
+    });
   } catch (err) {
     console.error("UPDATE PROFILE ERROR", err);
     res.status(500).json({ error: "Internal server error" });

@@ -93,6 +93,9 @@ router.put(
         ]);
       }
 
+      console.log("Received body:", req.body);
+      console.log("Received file:", req.file);
+
       const [updatedRows] = await db.query(
         "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
         [req.user.id]

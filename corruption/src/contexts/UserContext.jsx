@@ -82,19 +82,40 @@ export const UserProvider = ({ children }) => {
       throw err;
     }
   };
-  
+
   // Update profile (name, bio, phone, avatar)
   const updateUserProfile = async (formData) => {
     try {
-      const response = await apiService.put("/users/profile", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      console.log("Sending FormData to backend:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      const res = await fetch("/api/users/profile", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`, // your token
+          // Do NOT set Content-Type here — FormData handles it
+        },
+        body: formData,
       });
 
-      // Merge updated fields into currentUser
-      setCurrentUser((prev) => ({ ...prev, ...response.data }));
-      return response.data;
+      if (!res.ok) {
+        console.error("Backend returned error:", res.status, res.statusText);
+        const text = await res.text();
+        console.error("Response body:", text);
+        throw new Error("Failed to update profile");
+      }
+
+      const data = await res.json();
+      console.log("Backend returned:", data);
+
+      // Update currentUser immediately so avatarPreview and fields refresh
+      setCurrentUser((prev) => ({ ...prev, ...data }));
+
+      return data;
     } catch (err) {
-      console.error("Failed to update profile:", err);
+      console.error("updateUserProfile error:", err);
       throw err;
     }
   };
