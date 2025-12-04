@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import apiService from "../services/api";
+import { useAuth } from "./AuthContext";
 
 const UserContext = createContext();
 export const useUsers = () => useContext(UserContext);
@@ -14,6 +15,8 @@ export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFirstLogin, setShowFirstLogin] = useState(false);
+  const { user } = useAuth(); // ✅ get current token from AuthContext
+  const token = user?.token;
 
   // Check if first login popup should show
   const checkFirstLogin = (user) => {
@@ -85,39 +88,31 @@ export const UserProvider = ({ children }) => {
 
   // Update profile (name, bio, phone, avatar)
   const updateUserProfile = async (formData) => {
-    try {
-      console.log("Sending FormData to backend:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+    if (!token) throw new Error("User is not authenticated");
 
-      const res = await fetch("/api/users/profile", {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`, // your token
-          // Do NOT set Content-Type here — FormData handles it
-        },
-        body: formData,
-      });
-
-      if (!res.ok) {
-        console.error("Backend returned error:", res.status, res.statusText);
-        const text = await res.text();
-        console.error("Response body:", text);
-        throw new Error("Failed to update profile");
-      }
-
-      const data = await res.json();
-      console.log("Backend returned:", data);
-
-      // Update currentUser immediately so avatarPreview and fields refresh
-      setCurrentUser((prev) => ({ ...prev, ...data }));
-
-      return data;
-    } catch (err) {
-      console.error("updateUserProfile error:", err);
-      throw err;
+    console.log("Sending FormData to backend:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
     }
+
+    const res = await fetch("/api/users/profile", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ token from AuthContext
+      },
+      body: formData, // FormData handles Content-Type
+    });
+
+    if (!res.ok) {
+      console.error("Backend returned error:", res.status, res.statusText);
+      const text = await res.text();
+      console.error("Response body:", text);
+      throw new Error("Failed to update profile");
+    }
+
+    const data = await res.json();
+    console.log("Backend returned:", data);
+    return data;
   };
 
   // Change password
