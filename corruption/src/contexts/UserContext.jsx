@@ -87,33 +87,27 @@ export const UserProvider = ({ children }) => {
   };
 
   // Update profile (name, bio, phone, avatar)
+  // Update profile (name, bio, phone, avatar)
   const updateUserProfile = async (formData) => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("User is not authenticated");
+    try {
+      console.log("Sending FormData to backend:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
-    console.log("Sending FormData to backend:");
-    for (let pair of formData.entries()) {
-      console.log(pair[0], pair[1]);
+      // Use apiService.put, let Axios handle Content-Type
+      const data = await apiService.updateProfile(formData);
+
+      console.log("Backend returned:", data);
+
+      // Update currentUser state
+      setCurrentUser((prev) => ({ ...prev, ...data }));
+
+      return data;
+    } catch (err) {
+      console.error("Profile update error:", err);
+      throw err;
     }
-
-    const res = await fetch("/api/users/profile", {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`, // ✅ token from AuthContext
-      },
-      body: formData, // FormData handles Content-Type
-    });
-
-    if (!res.ok) {
-      console.error("Backend returned error:", res.status, res.statusText);
-      const text = await res.text();
-      console.error("Response body:", text);
-      throw new Error("Failed to update profile");
-    }
-
-    const data = await res.json();
-    console.log("Backend returned:", data);
-    return data;
   };
 
   // Change password
