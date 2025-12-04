@@ -58,7 +58,13 @@ const apiService = {
 
   // --- Profile (new endpoints) ---
   getProfile: () => apiService.get(`${USERS_URL}/profile`),
-  updateProfile: (formData) => apiService.put(`${USERS_URL}/profile`, formData),
+  updateProfile: (formData) =>
+    api.put(`${USERS_URL}/profile`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    }),
 
   changePassword: (currentPassword, newPassword) =>
     apiService.put(`${USERS_URL}/password`, { currentPassword, newPassword }),
