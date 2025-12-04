@@ -187,7 +187,7 @@ const Header = () => {
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
               {user.avatar ? (
                 <img
-                  src={user.avatar}
+                  src={user.avatar} // full URL from context
                   alt="User Avatar"
                   className="w-full h-full object-cover rounded-full"
                 />

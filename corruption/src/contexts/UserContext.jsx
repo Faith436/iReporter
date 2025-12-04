@@ -101,7 +101,7 @@ export const UserProvider = ({ children }) => {
       console.log("Backend returned:", data);
 
       // Update currentUser state
-      setCurrentUser((prev) => ({ ...prev, ...data }));
+      setCurrentUser(data);
 
       return data;
     } catch (err) {
