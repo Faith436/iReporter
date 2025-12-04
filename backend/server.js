@@ -53,7 +53,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Static and cookies ---
 app.use(cookieParser());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // --- Routes that need multer (multipart/form-data) ---
 app.use("/api/reports", reportRoutes);

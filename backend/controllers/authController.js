@@ -121,12 +121,7 @@ const getCurrentUser = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
 
     const user = rows[0];
-
-    // Build full image URL
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const avatarUrl = user.avatar
-      ? `${baseUrl}/uploads/avatars/${user.avatar}`
-      : "";
+    const BASE_URL = `${req.protocol}://${req.get("host")}`;
 
     res.json({
       user: {
@@ -137,7 +132,7 @@ const getCurrentUser = async (req, res) => {
         phone: user.phone,
         role: user.role,
         firstLoginShown: user.firstLoginShown === 1,
-        avatar: avatarUrl,
+        avatar: user.avatar ? `${BASE_URL}/uploads/${user.avatar}` : "",
       },
     });
   } catch (err) {
@@ -146,6 +141,7 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// --- MARK FIRST LOGIN SEEN ---
 const markFirstLoginSeen = async (req, res) => {
   try {
     const userId = req.user.id;

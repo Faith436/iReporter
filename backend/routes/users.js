@@ -44,7 +44,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
 
     const user = rows[0];
-    const BASE_URL = "https://ireporter-xafr.onrender.com"; // force HTTPS
+    const BASE_URL = "https://ireporter-xafr.onrender.com";
 
     res.json({
       id: user.id,
