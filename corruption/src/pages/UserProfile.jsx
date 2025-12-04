@@ -3,7 +3,7 @@ import { useUsers } from "../contexts/UserContext";
 import toast from "react-hot-toast";
 
 // Icons for a modern look (assuming you have a library like react-icons)
- import { FiUser, FiLock, FiMoon, FiSun, FiUpload } from "react-icons/fi";
+import { FiUser, FiLock, FiMoon, FiSun, FiUpload } from "react-icons/fi";
 
 const UserProfile = () => {
   const { currentUser, updateUserProfile, changePassword } = useUsers();
@@ -112,10 +112,14 @@ const UserProfile = () => {
     "mt-1 block w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 transition duration-150 ease-in-out";
   const disabledInputClass =
     "mt-1 block w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed";
-  const labelClass = "block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1";
-  const cardClass = "bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100 dark:border-gray-800";
-  const primaryButtonClass = "w-full bg-indigo-600 text-white py-3 px-4 rounded-xl hover:bg-indigo-700 transition font-bold shadow-md hover:shadow-lg";
-  const secondaryButtonClass = "px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition";
+  const labelClass =
+    "block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1";
+  const cardClass =
+    "bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100 dark:border-gray-800";
+  const primaryButtonClass =
+    "w-full bg-indigo-600 text-white py-3 px-4 rounded-xl hover:bg-indigo-700 transition font-bold shadow-md hover:shadow-lg";
+  const secondaryButtonClass =
+    "px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-800 transition";
 
   return (
     <div
@@ -123,7 +127,7 @@ const UserProfile = () => {
         darkMode ? "bg-gray-950" : "bg-gray-50"
       }`}
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         {/* Header and Settings */}
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
@@ -133,14 +137,18 @@ const UserProfile = () => {
             onClick={handleDarkModeToggle}
             className={secondaryButtonClass}
           >
-            {darkMode ? <FiMoon className="w-5 h-5" /> : <FiSun className="w-5 h-5" />}
+            {darkMode ? (
+              <FiMoon className="w-5 h-5" />
+            ) : (
+              <FiSun className="w-5 h-5" />
+            )}
             {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
           </button>
         </div>
 
         {/* Profile Card & Avatar */}
         <div className={`${cardClass} mb-8`}>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+          <h2 className="text-2xl font-semibold text-gray-400 dark:text-white mb-6 flex items-center">
             <FiUser className="w-6 h-6 mr-2 text-indigo-600" />
             Personal Information
           </h2>
@@ -174,7 +182,10 @@ const UserProfile = () => {
             </div>
 
             {/* Profile Form */}
-            <form onSubmit={handleProfileSubmit} className="flex-grow space-y-5">
+            <form
+              onSubmit={handleProfileSubmit}
+              className="flex-grow space-y-5"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>First Name</label>
