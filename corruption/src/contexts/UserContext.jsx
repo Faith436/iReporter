@@ -87,7 +87,6 @@ export const UserProvider = ({ children }) => {
   };
 
   // Update profile (name, bio, phone, avatar)
-  // Update profile (name, bio, phone, avatar)
   const updateUserProfile = async (formData) => {
     try {
       console.log("Sending FormData to backend:");
@@ -95,15 +94,18 @@ export const UserProvider = ({ children }) => {
         console.log(pair[0], pair[1]);
       }
 
-      // Use apiService.put, let Axios handle Content-Type
-      const data = await apiService.updateProfile(formData);
+      // ✅ Call backend
+      const response = await apiService.updateProfile(formData);
 
-      console.log("Backend returned:", data);
+      console.log("Backend returned:", response);
 
-      // Update currentUser state
-      setCurrentUser(data);
+      // ✅ Extract user data from response
+      const updatedUser = response.data;
 
-      return data;
+      // ✅ Update context state
+      setCurrentUser(updatedUser);
+
+      return updatedUser;
     } catch (err) {
       console.error("Profile update error:", err);
       throw err;
