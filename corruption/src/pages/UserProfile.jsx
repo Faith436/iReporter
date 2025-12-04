@@ -87,7 +87,11 @@ const UserProfile = () => {
     try {
       await changePassword(passwords.currentPassword, passwords.newPassword);
       toast.success("Password changed successfully!");
-      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswords({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } catch (err) {
       console.error("Password change error:", err);
       toast.error("Failed to change password");
@@ -101,9 +105,15 @@ const UserProfile = () => {
   };
 
   return (
-    <div className={`min-h-screen p-6 sm:p-10 ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 sm:p-10">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">My Profile</h1>
+    <div
+      className={`min-h-screen p-6 sm:p-10 ${
+        darkMode ? "bg-gray-900" : "bg-gray-50"
+      }`}
+    >
+      <div className="w-full h-full flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 sm:p-10">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
+          My Profile
+        </h1>
 
         {/* Dark/Light Mode */}
         <div className="flex justify-end mb-4">
@@ -119,7 +129,11 @@ const UserProfile = () => {
         <div className="flex flex-col items-center mb-6">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700">
             {avatarPreview ? (
-              <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+              <img
+                src={avatarPreview}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-400">
                 No Image
@@ -128,7 +142,12 @@ const UserProfile = () => {
           </div>
           <label className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition">
             Change Avatar
-            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </label>
         </div>
 
@@ -136,7 +155,9 @@ const UserProfile = () => {
         <form onSubmit={handleProfileSubmit} className="space-y-5 mb-8">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">First Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                First Name
+              </label>
               <input
                 type="text"
                 name="firstName"
@@ -146,7 +167,9 @@ const UserProfile = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Last Name
+              </label>
               <input
                 type="text"
                 name="lastName"
@@ -158,7 +181,9 @@ const UserProfile = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Email
+            </label>
             <input
               type="email"
               name="email"
@@ -169,7 +194,9 @@ const UserProfile = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Phone
+            </label>
             <input
               type="text"
               name="phone"
@@ -180,7 +207,9 @@ const UserProfile = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Bio</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Bio
+            </label>
             <textarea
               name="bio"
               value={profile.bio}
@@ -201,28 +230,35 @@ const UserProfile = () => {
 
         {/* Password Form */}
         <form onSubmit={handlePasswordChange} className="space-y-5">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Change Password</h2>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
+            Change Password
+          </h2>
 
-          {["currentPassword", "newPassword", "confirmPassword"].map((field) => (
-            <div key={field}>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                {field === "currentPassword"
-                  ? "Current Password"
-                  : field === "newPassword"
-                  ? "New Password"
-                  : "Confirm New Password"}
-              </label>
-              <input
-                type="password"
-                name={field}
-                value={passwords[field]}
-                onChange={(e) =>
-                  setPasswords((prev) => ({ ...prev, [field]: e.target.value }))
-                }
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
-              />
-            </div>
-          ))}
+          {["currentPassword", "newPassword", "confirmPassword"].map(
+            (field) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {field === "currentPassword"
+                    ? "Current Password"
+                    : field === "newPassword"
+                    ? "New Password"
+                    : "Confirm New Password"}
+                </label>
+                <input
+                  type="password"
+                  name={field}
+                  value={passwords[field]}
+                  onChange={(e) =>
+                    setPasswords((prev) => ({
+                      ...prev,
+                      [field]: e.target.value,
+                    }))
+                  }
+                  className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                />
+              </div>
+            )
+          )}
 
           <button
             type="submit"
