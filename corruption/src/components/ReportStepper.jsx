@@ -74,19 +74,7 @@ const ReportStepper = ({
   };
 
   /** --- Optimistic UI helpers --- */
-  const { } = (tempReport) => {
-    setReports((prev) => [tempReport, ...(prev || [])]);
-  };
-
-  const { } = (tempId, savedReport) => {
-    setReports((prev) =>
-      (prev || []).map((r) => (r.id === tempId ? savedReport : r))
-    );
-  };
-
-  const { } = (tempId) => {
-    setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
-  };
+ 
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
