@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { useReports } from "../contexts/ReportContext";
 import { useAuth } from "../contexts/AuthContext";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 // Leaflet marker icon
 const markerIcon = new L.Icon({
@@ -33,7 +33,7 @@ const ReportStepper = ({
   onReportAdded,
 }) => {
   const { createReport, setReports } = useReports();
-  const { token } = useAuth();
+  const { } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,17 +74,17 @@ const ReportStepper = ({
   };
 
   /** --- Optimistic UI helpers --- */
-  const addReportToDashboard = (tempReport) => {
+  const { } = (tempReport) => {
     setReports((prev) => [tempReport, ...(prev || [])]);
   };
 
-  const replaceTempReport = (tempId, savedReport) => {
+  const { } = (tempId, savedReport) => {
     setReports((prev) =>
       (prev || []).map((r) => (r.id === tempId ? savedReport : r))
     );
   };
 
-  const removeTempReport = (tempId) => {
+  const { } = (tempId) => {
     setReports((prev) => (prev || []).filter((r) => r.id !== tempId));
   };
 
@@ -336,7 +336,6 @@ const ReportStepper = ({
           </div>
         )}
       </div>
-
       {/* Navigation */}
       <div className="flex justify-between mt-4">
         {currentStep > 1 && (
