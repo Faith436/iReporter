@@ -28,12 +28,15 @@ const upload = multer({ storage });
 // --- GET profile ---
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
-    const [user] = await db.query(
+    const [rows] = await db.query(
       "SELECT id, first_name, last_name, email, phone, bio, avatar FROM users WHERE id = ?",
       [req.user.id]
     );
-    if (!user) return res.status(404).json({ message: "User not found" });
 
+    if (rows.length === 0)
+      return res.status(404).json({ message: "User not found" });
+
+    const user = rows[0];
     const baseUrl = `${req.protocol}://${req.get("host")}`;
 
     res.json({

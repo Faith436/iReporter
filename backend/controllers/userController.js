@@ -67,7 +67,7 @@ const updateProfile = async (req, res) => {
     // If avatar uploaded
     let avatarPath = null;
     if (req.file) {
-      avatarPath = "avatars/" + req.file.filename;
+      avatarPath = `/uploads/avatars/${req.file.filename}`;
     }
 
     const query = `
