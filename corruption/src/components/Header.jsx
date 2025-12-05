@@ -101,7 +101,7 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 md:left-64 right-0 h-20 bg-gray-800 shadow-md flex items-center justify-between px-6 md:px-10 z-10 border-b border-gray-100">
+    <header className="fixed top-0 left-0 md:left-64 right-0 h-20 shadow-md flex items-center justify-between px-6 md:px-10 z-10 border-b border-gray-100">
       {/* Left: Menu */}
       <div className="flex items-center gap-4 flex-1">
         <Menu className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" />
@@ -216,11 +216,11 @@ const Header = () => {
             </div>
 
             <div className="px-1 py-3 text-left">
-              <p className="font-semibold text-white">
+              <p className="font-semibold text-gray-800">
                 {user.firstName || "User"}
               </p>
             </div>
-            <ChevronDown className="w-4 h-4 text-white" />
+            <ChevronDown className="w-4 h-4 text-gray-800" />
           </button>
 
           {showUserMenu && (
