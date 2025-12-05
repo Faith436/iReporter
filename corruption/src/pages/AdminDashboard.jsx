@@ -282,7 +282,15 @@ const RecentReports = ({ reports, handleStatusUpdate }) => {
 
 // --- Notifications Sidebar ---
 const RecentNotifications = () => {
-  const { notifications } = useNotifications();
+  const { notifications, markAsRead } = useNotifications();
+
+  const handleClick = async (id) => {
+    try {
+      await markAsRead(id);
+    } catch (err) {
+      console.error("Failed to mark notification as read", err);
+    }
+  };
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-md border border-gray-100">
@@ -294,10 +302,26 @@ const RecentNotifications = () => {
       ) : (
         <div className="space-y-3 max-h-80 overflow-y-auto">
           {notifications.slice(0, 5).map((n, i) => (
-            <div key={i} className="flex items-start p-3 rounded-lg bg-gray-50">
-              <Bell className="w-5 h-5 mt-1 mr-3 text-blue-600" />
+            <div
+              key={i}
+              onClick={() => handleClick(n.id)}
+              className={`flex items-start p-3 rounded-lg cursor-pointer transition ${
+                n.is_read === 0
+                  ? "bg-blue-50 border-l-4 border-blue-500"
+                  : "bg-gray-50"
+              }`}
+            >
+              <Bell
+                className={`w-5 h-5 mt-1 mr-3 ${
+                  n.is_read === 0 ? "text-blue-600" : "text-gray-400"
+                }`}
+              />
               <div>
-                <p className="font-semibold text-sm text-gray-700">
+                <p
+                  className={`font-semibold text-sm ${
+                    n.is_read === 0 ? "text-gray-800" : "text-gray-700"
+                  }`}
+                >
                   {n.title || "Notification"}
                 </p>
                 <p className="text-sm text-gray-600">{n.message}</p>
@@ -338,8 +362,10 @@ const AdminDashboard = () => {
           created_at: new Date().toISOString(),
         };
         await addNotification(notification);
-        await fetchNotifications();
       }
+
+      // Refresh notifications for this admin as well
+      await fetchNotifications();
 
       toast.success(`Status updated to "${newStatus}"`);
     } catch (err) {

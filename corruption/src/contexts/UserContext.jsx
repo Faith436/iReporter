@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import apiService from "../services/api";
+import { useAuth } from "./AuthContext";
 
 const UserContext = createContext();
 
@@ -15,6 +16,8 @@ export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFirstLogin, setShowFirstLogin] = useState(false);
+  const { user } = useAuth(); // ✅ get current token from AuthContext
+  const token = user?.token;
 
   // Check if first login popup should show
   const checkFirstLogin = (user) => {
@@ -85,25 +88,27 @@ export const UserProvider = ({ children }) => {
   };
 
   // Update profile (name, bio, phone, avatar)
-  const updateUserProfile = async (profileData) => {
+  const updateUserProfile = async (formData) => {
     try {
-      const formData = new FormData();
-      formData.append("firstName", profileData.firstName);
-      formData.append("lastName", profileData.lastName);
-      formData.append("bio", profileData.bio || "");
-      formData.append("phone", profileData.phone || "");
-      if (profileData.avatar instanceof File) {
-        formData.append("avatar", profileData.avatar);
+      console.log("Sending FormData to backend:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
       }
 
-      const response = await apiService.put("/users/profile", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // ✅ Call backend
+      const response = await apiService.updateProfile(formData);
 
-      setCurrentUser((prev) => ({ ...prev, ...response.data }));
-      return response.data;
+      console.log("Backend returned:", response);
+
+      // ✅ Extract user data from response
+      const updatedUser = response.data;
+
+      // ✅ Update context state
+      setCurrentUser(updatedUser);
+
+      return updatedUser;
     } catch (err) {
-      console.error("Failed to update profile:", err);
+      console.error("Profile update error:", err);
       throw err;
     }
   };

@@ -1,5 +1,5 @@
 // src/components/Header.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Menu, Bell, X, ChevronDown, LogOut, User } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
@@ -15,18 +15,19 @@ const Header = () => {
 
   const user = currentUser || { email: "", role: "user", firstName: "User" };
 
+  // Refs for detecting outside clicks
+  const userMenuRef = useRef(null);
+  const notificationsRef = useRef(null);
+
   // --- Load notifications safely ---
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!currentUser) return;
       try {
         const data = await apiService.getNotifications();
-
-        // Ensure we have an array
         const notificationsArray = Array.isArray(data)
           ? data
           : data?.notifications || [];
-
         setUserNotifications(notificationsArray);
         setUnreadCount(notificationsArray.filter((n) => !n.read).length);
       } catch (err) {
@@ -35,9 +36,25 @@ const Header = () => {
         setUnreadCount(0);
       }
     };
-
     fetchNotifications();
   }, [currentUser]);
+
+  // --- Handle outside clicks ---
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // --- Mark notification as read ---
   const handleNotificationClick = async (notificationId) => {
@@ -93,7 +110,7 @@ const Header = () => {
       {/* Right: Notifications + User */}
       <div className="flex items-center gap-5 relative">
         {/* Notifications */}
-        <div className="relative">
+        <div ref={notificationsRef} className="relative">
           <button
             onClick={() => setShowNotifications(prev => !prev)}
             className="relative p-2 rounded-full hover:bg-gray-100 transition"
@@ -116,7 +133,7 @@ const Header = () => {
               }
             `}
           >
-            {/* Header */}
+            {/* ...notifications content stays the same... */}
             <div className="flex justify-between items-center p-3 border-b bg-gray-50">
               <h3 className="font-semibold text-gray-700 text-sm">
                 Notifications
@@ -179,16 +196,29 @@ const Header = () => {
         </div>
 
         {/* User Menu */}
-        <div className="relative">
+        <div ref={userMenuRef} className="relative">
           <button
             onClick={() => setShowUserMenu((prev) => !prev)}
             className="flex items-center gap-2 focus:outline-none"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-teal-700 flex items-center justify-center text-white font-semibold">
-              {user.firstName ? user.firstName[0].toUpperCase() : "U"}
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="User Avatar"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-red-500 to-teal-700 flex items-center justify-center">
+                  {user.firstName ? user.firstName[0].toUpperCase() : "U"}
+                </div>
+              )}
             </div>
+
             <div className="px-1 py-3 text-left">
-              <p className="font-semibold text-white">{user.firstName}</p>
+              <p className="font-semibold text-white">
+                {user.firstName || "User"}
+              </p>
             </div>
             <ChevronDown className="w-4 h-4 text-white" />
           </button>

@@ -30,6 +30,7 @@ const registerUser = async (req, res) => {
       email,
       phone,
       role: "user",
+      avatar: "",
     };
 
     const token = jwt.sign(
@@ -70,14 +71,12 @@ const loginUser = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ error: "Invalid email or password" });
 
-    // Generate token
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // Still set cookie (optional)
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -85,9 +84,14 @@ const loginUser = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // **** FIX: RETURN TOKEN TO FRONTEND TOO ****
+    // Build full image URL
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const avatarUrl = user.avatar
+      ? `${baseUrl}/uploads/avatars/${user.avatar}`
+      : "";
+
     return res.json({
-      token, // <-- THIS FIXES YOUR 401 ERROR
+      token,
       user: {
         id: user.id,
         firstName: user.first_name,
@@ -95,6 +99,7 @@ const loginUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        avatar: avatarUrl,
       },
       message: "Login successful",
     });
@@ -108,13 +113,16 @@ const loginUser = async (req, res) => {
 const getCurrentUser = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id, first_name, last_name, email, phone, role, firstLoginShown FROM users WHERE id = ?",
+      "SELECT id, first_name, last_name, email, phone, role, avatar, firstLoginShown FROM users WHERE id = ?",
       [req.user.id]
     );
+
     if (rows.length === 0)
       return res.status(404).json({ error: "User not found" });
 
     const user = rows[0];
+    const BASE_URL = `${req.protocol}://${req.get("host")}`;
+
     res.json({
       user: {
         id: user.id,
@@ -124,6 +132,7 @@ const getCurrentUser = async (req, res) => {
         phone: user.phone,
         role: user.role,
         firstLoginShown: user.firstLoginShown === 1,
+        avatar: user.avatar ? `${BASE_URL}/uploads/${user.avatar}` : "",
       },
     });
   } catch (err) {
@@ -132,6 +141,7 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// --- MARK FIRST LOGIN SEEN ---
 const markFirstLoginSeen = async (req, res) => {
   try {
     const userId = req.user.id;

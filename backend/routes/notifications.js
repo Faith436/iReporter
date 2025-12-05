@@ -4,6 +4,7 @@ const {
   createNotification,
   getUserNotifications,
   markNotificationRead,
+  markAllNotificationsRead,
   deleteNotification,
 } = require("../controllers/notificationController");
 const { authMiddleware } = require("../middleware/authMiddleware");
@@ -15,7 +16,10 @@ router.post("/", authMiddleware, createNotification);
 router.get("/", authMiddleware, getUserNotifications);
 
 // --- MARK notification as read ---
-router.patch("/:id/read", authMiddleware, markNotificationRead);
+router.put("/:id/read", authMiddleware, markNotificationRead);
+
+// --- Mark all notifications as read
+router.put("/mark-all-read", authMiddleware, markAllNotificationsRead);
 
 // --- DELETE a notification ---
 router.delete("/:id", authMiddleware, deleteNotification);

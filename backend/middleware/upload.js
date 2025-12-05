@@ -7,7 +7,10 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadPath = "uploads/";
 
-    if (file.mimetype.startsWith("image/")) {
+    // Special case: avatar upload
+    if (req.route.path === "/users/profile" && file.fieldname === "avatar") {
+      uploadPath += "avatars/";
+    } else if (file.mimetype.startsWith("image/")) {
       uploadPath += "images/";
     } else if (file.mimetype.startsWith("video/")) {
       uploadPath += "videos/";
@@ -16,26 +19,33 @@ const storage = multer.diskStorage({
     }
 
     // Ensure folder exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-      console.log(`🟢 Created folder: ${uploadPath}`);
+    const fullPath = path.join(__dirname, "..", uploadPath);
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath, { recursive: true });
+      console.log(`🟢 Created folder: ${fullPath}`);
     }
 
-    cb(null, uploadPath);
+    cb(null, fullPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+    cb(
+      null,
+      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
+    );
   },
 });
 
 // --- File filter ---
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image/") || file.mimetype.startsWith("video/")) {
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("video/")
+  ) {
     cb(null, true);
   } else {
     console.warn(`⚠️ Skipped file (invalid type): ${file.originalname}`);
-    cb(null, false); // skip invalid file instead of throwing
+    cb(null, false);
   }
 };
 
@@ -46,21 +56,4 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
 });
 
-// --- Middleware wrapper ---
-const uploadMiddleware = (req, res, next) => {
-  // Use array to accept multiple files from field 'media'
-  upload.array("media", 5)(req, res, (err) => {
-    if (err) {
-      console.error("Upload error:", err.message);
-      return res.status(400).json({ error: err.message });
-    }
-
-    // Ensure req.body exists even if no text fields sent
-    req.body = req.body || {};
-    req.files = req.files || [];
-
-    next();
-  });
-};
-
-module.exports = uploadMiddleware;
+module.exports = upload;
