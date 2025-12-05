@@ -82,7 +82,7 @@ const Dashboard = () => {
   const [editingReport, setEditingReport] = React.useState(null);
   const [showFirstPopup, setShowFirstPopup] = React.useState(false);
 
-  const navigate = useNavigate();
+
 
   // First login popup
   React.useEffect(() => {
