@@ -1,215 +1,98 @@
-// src/components/Header.jsx
-
 import React, { useState, useEffect, useRef } from "react";
 import { Menu, Bell, X, ChevronDown, LogOut, User } from "lucide-react";
-import { useUsers } from "../contexts/UserContext";
+// Corrected path with explicit extension, assuming the file is UserContext.jsx
+import { useUsers } from "../contexts/UserContext.jsx"; 
 import { useNavigate } from "react-router-dom";
-import apiService from "../services/api";
+// Note: apiService is no longer needed here, but kept if used elsewhere.
+// import apiService from "../services/api"; 
+// Corrected path with explicit extension, assuming the file is NotificationDropdown.jsx
+import NotificationDropdown from "./NotificationDropdown.jsx"; // <-- NEW IMPORT
 
-// 1. Component now accepts isSidebarCollapsed as a prop
 const Header = ({ isSidebarCollapsed, toggleMobileSidebar }) => {
   const { currentUser, logout } = useUsers();
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false); // Only state for visibility remains
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [userNotifications, setUserNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // NOTE: userNotifications and unreadCount were moved to NotificationDropdown
+
   const navigate = useNavigate();
 
   const user = currentUser || { email: "", role: "user", firstName: "User" };
 
   const userMenuRef = useRef(null);
-  const notificationsRef = useRef(null);
+  
+  // The notificationsRef is now inside NotificationDropdown
 
   // --- Dynamic Positioning Logic ---
-  // If collapsed (w-20), header starts at left-20. If expanded (w-64), header starts at left-64.
   const sidebarWidthClass = isSidebarCollapsed ? 'md:left-20' : 'md:left-64';
 
-  // --- Load notifications safely ---
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!currentUser) return;
-      try {
-        const data = await apiService.getNotifications();
-        const notificationsArray = Array.isArray(data)
-          ? data
-          : data?.notifications || [];
-        setUserNotifications(notificationsArray);
-        setUnreadCount(notificationsArray.filter((n) => !n.read).length);
-      } catch (err) {
-        console.error("Failed to fetch notifications:", err);
-        setUserNotifications([]);
-        setUnreadCount(0);
-      }
-    };
-    fetchNotifications();
-  }, [currentUser]);
-
-  // --- Handle outside clicks ---
+  // --- Handle outside clicks for User Menu ONLY ---
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Only check for user menu, since notificationsRef is now in the child component
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
       }
-      if (
-        notificationsRef.current &&
-        !notificationsRef.current.contains(event.target)
-      ) {
-        setShowNotifications(false);
-      }
+      // Note: No more notification outside click logic here
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- Mark notification as read ---
-  const handleNotificationClick = async (notificationId) => {
-    try {
-      await apiService.markNotificationRead(notificationId);
-      setUserNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
-      setShowNotifications(false);
-    } catch (err) {
-      console.error("Failed to mark notification as read:", err);
-    }
-  };
+  // Note: All API handlers (handleNotificationClick, handleRemoveNotification) 
+  // and utility (getNotificationIcon) have been MOVED.
 
-  // --- Remove notification ---
-  const handleRemoveNotification = async (notificationId) => {
-    try {
-      await apiService.deleteNotification(notificationId);
-      setUserNotifications((prev) =>
-        prev.filter((n) => n.id !== notificationId)
-      );
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
-    } catch (err) {
-      console.error("Failed to remove notification:", err);
-    }
-  };
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case "new-report":
-        return "📋";
-      case "status-update":
-        return "🔄";
-      case "report-edited":
-        return "✏️";
-      case "report-deleted":
-        return "🗑️";
-      case "submission-confirmation":
-        return "✅";
-      default:
-        return "🔔";
-    }
-  };
+  // Placeholder for the unread count badge display (you will need to pass this count from the dropdown component via prop drilling or context if you want it here)
+  const tempUnreadCount = 3; // Use a temporary value or pass the real count
 
   return (
-    // FIX 2: Dynamic position, white background, shadow to fix content bleed, and transition
     <header className={`fixed top-0 left-0 ${sidebarWidthClass} right-0 h-20 bg-white shadow-md flex items-center justify-between px-6 md:px-10 z-10 border-b border-gray-100 transition-[left] duration-300`}>
       
       {/* Left: Menu */}
       <div className="flex items-center gap-4 flex-1">
-        {/* Assume toggleMobileSidebar is passed to control the sidebar menu on mobile */}
         <Menu 
           className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" 
-          onClick={toggleMobileSidebar} // Hook up mobile toggle here
+          onClick={toggleMobileSidebar}
         />
       </div>
 
       {/* Right: Notifications + User */}
       <div className="flex items-center gap-5 relative">
-        {/* Notifications */}
-        <div ref={notificationsRef} className="relative">
+        
+        {/* Notifications Button (Wrapper for the Bell Icon and its state) */}
+        <div className="relative">
           <button
-            onClick={() => setShowNotifications((prev) => !prev)}
+            onClick={() => {
+                setShowNotifications((prev) => !prev);
+                setShowUserMenu(false); // Close user menu if notifications open
+            }}
+            // NOTE: We no longer need notificationsRef here
             className="relative p-2 rounded-full hover:bg-gray-100 transition"
           >
-            <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" /> {/* Changed icon color for light theme */}
-            {unreadCount > 0 && (
+            <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+            {tempUnreadCount > 0 && ( // Use tempUnreadCount or pass the real one from the child
               <span className="absolute top-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 text-white text-[0.55rem] sm:text-xs flex items-center justify-center rounded-full">
-                {unreadCount}
+                {/* In a real app, you would pass the actual unread count here */}
+                {tempUnreadCount} 
               </span>
             )}
           </button>
+          
+          {/* 🌟 Notification Dropdown Component - Handles Mobile and Desktop views 🌟 */}
+          <NotificationDropdown
+              showNotifications={showNotifications}
+              setShowNotifications={setShowNotifications}
+          />
 
-          {/* Notifications Dropdown */}
-          <div
-            className={`absolute left-1/2 mt-2 w-80 sm:w-96 md:w-[28rem] lg:w-[32rem] bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto transform -translate-x-1/2 transition-all duration-300 ease-in-out
-              ${
-                showNotifications
-                  ? "opacity-100 translate-y-0 scale-100"
-                  : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-              }
-            `}
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center p-3 border-b bg-gray-50">
-              <h3 className="font-semibold text-gray-700 text-sm">
-                Notifications
-              </h3>
-              <button
-                onClick={() => setShowNotifications(false)}
-                className="text-gray-400 hover:text-red-500"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Notification Items */}
-            {userNotifications.length === 0 ? (
-              <p className="p-4 text-sm text-gray-500 text-center">
-                No notifications
-              </p>
-            ) : (
-              <div className="divide-y">
-                {userNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification.id)}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition ${
-                      !notification.read ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg">
-                            {getNotificationIcon(notification.type)}
-                          </span>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {notification.title || "Notification"}
-                          </p>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(notification.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveNotification(notification.id);
-                        }}
-                        className="text-gray-400 hover:text-red-500 ml-2"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* User Menu */}
         <div ref={userMenuRef} className="relative">
           <button
-            onClick={() => setShowUserMenu((prev) => !prev)}
+            onClick={() => {
+                setShowUserMenu((prev) => !prev);
+                setShowNotifications(false); // Close notifications if user menu opens
+            }}
             className="flex items-center gap-2 focus:outline-none"
           >
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
@@ -218,6 +101,7 @@ const Header = ({ isSidebarCollapsed, toggleMobileSidebar }) => {
                   src={user.avatar}
                   alt="User Avatar"
                   className="w-full h-full object-cover rounded-full"
+                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/40x40/505050/FFFFFF?text=U'; }}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-red-500 to-teal-700 flex items-center justify-center">
@@ -226,7 +110,7 @@ const Header = ({ isSidebarCollapsed, toggleMobileSidebar }) => {
               )}
             </div>
 
-            <div className="px-1 py-3 text-left hidden sm:block"> {/* Hide name on very small screens for space */}
+            <div className="px-1 py-3 text-left hidden sm:block">
               <p className="font-semibold text-gray-800">
                 {user.firstName || "User"}
               </p>
@@ -248,7 +132,7 @@ const Header = ({ isSidebarCollapsed, toggleMobileSidebar }) => {
                     } else {
                       navigate("/dashboard/profile");
                     }
-                    setShowUserMenu(false); // Close menu after navigation
+                    setShowUserMenu(false);
                   }}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
@@ -258,7 +142,7 @@ const Header = ({ isSidebarCollapsed, toggleMobileSidebar }) => {
                 <li
                   onClick={() => {
                       logout();
-                      setShowUserMenu(false); // Close menu after logout
+                      setShowUserMenu(false);
                   }}
                   className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                 >

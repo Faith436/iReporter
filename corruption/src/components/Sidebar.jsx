@@ -75,7 +75,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
           <h1 className="text-xl font-bold text-indigo-600">iR</h1>
         ) : (
           <h1
-            className={`text-2xl font-bold tracking-wide text-gray-800 whitespace-nowrap transition-opacity duration-300`}
+            className={`text-2xl font-bold pt-5 tracking-wide text-gray-800 whitespace-nowrap transition-opacity duration-300`}
           >
             iReporter
           </h1>
@@ -164,7 +164,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
 
       {/* Mobile sidebar (unchanged, still uses fixed width) */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white text-gray-800 transform transition-transform duration-300 z-40 shadow-xl rounded-r-xl
+        className={`fixed top-0 left-0 h-full pt-6 w-64 bg-white text-gray-800 transform transition-transform duration-300 z-40 shadow-xl rounded-r-xl
         ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:hidden`}
       >
         {SidebarContent}
