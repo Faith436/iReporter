@@ -73,7 +73,7 @@ const QuickActions = ({ openStepper, setType }) => {
 // ───── USER DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
-  const { reports, createReport, updateReport, deleteReport } = useReports();
+  const { reports, updateReport, deleteReport } = useReports();
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
 
   const [stats, setStats] = React.useState({});
