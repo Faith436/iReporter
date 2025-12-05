@@ -4,7 +4,7 @@ import {
   Flag,
   Zap,
   Search,
-  Trash2,
+  
   XCircle,
   Clock,
 } from "lucide-react";
