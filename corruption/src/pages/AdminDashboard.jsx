@@ -12,7 +12,7 @@ import {
   ArrowDown,
   Bell,
 } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 // --- Utility Functions ---
 const normalizeStatus = (status) =>
