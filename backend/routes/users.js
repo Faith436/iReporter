@@ -38,15 +38,26 @@ router.get("/profile", authMiddleware, async (req, res) => {
 });
 
 // --- PUT update profile ---
+// --- PUT update profile ---
 router.put(
   "/profile",
   authMiddleware,
   upload.single("avatar"), // Cloudinary upload
   async (req, res) => {
     try {
-      const { firstName, lastName, bio, phone } = req.body;
-      const avatarUrl = req.file ? req.file.path : null; // Cloudinary URL
+      console.log("=== Update Profile Request ===");
+      console.log("req.body:", req.body);
+      console.log("req.file:", req.file);
 
+      const { firstName, lastName, bio, phone } = req.body;
+
+      // Safely get Cloudinary URL if file uploaded
+      let avatarUrl = null;
+      if (req.file && req.file.path) {
+        avatarUrl = req.file.path;
+      }
+
+      // SQL Update
       const updateQuery = `
         UPDATE users
         SET 
@@ -67,10 +78,14 @@ router.put(
         req.user.id,
       ]);
 
+      // Fetch updated user
       const [rows] = await db.query(
         "SELECT id, first_name, last_name, email, phone, bio, avatar, role FROM users WHERE id = ?",
         [req.user.id]
       );
+
+      if (!rows.length)
+        return res.status(404).json({ message: "User not found after update" });
 
       const updatedUser = rows[0];
 
@@ -85,8 +100,11 @@ router.put(
         role: updatedUser.role,
       });
     } catch (err) {
-      console.error("Update profile error:", err);
-      res.status(500).json({ message: "Failed to update profile" });
+      console.error("Update profile error:", err); // full error
+      res.status(500).json({
+        message: "Failed to update profile",
+        error: err.message, // expose error message temporarily for debugging
+      });
     }
   }
 );
