@@ -17,7 +17,7 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [showFirstLogin, setShowFirstLogin] = useState(false);
   const { user } = useAuth(); // ✅ get current token from AuthContext
-  const token = user?.token;
+  
 
   // Check if first login popup should show
   const checkFirstLogin = (user) => {
