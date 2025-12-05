@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   CheckCircle,
   Flag,
@@ -7,15 +7,13 @@ import {
   Trash2,
   XCircle,
   Clock,
-  Info,
-  FileText,
 } from "lucide-react";
 import { useReports } from "../contexts/ReportContext";
 import { useUsers } from "../contexts/UserContext";
 import ReportStepper from "../components/ReportStepper";
-import { useNotifications } from "../contexts/NotificationContext";
 import UserReportsView from "../components/UserReportsView";
 import FirstLoginPopup from "../components/FirstLoginPopup";
+import { useNotifications } from "../contexts/NotificationContext";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
@@ -46,42 +44,22 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
   const actions = [
-    {
-      label: "Add Red-Flag Record",
-      icon: Flag,
-      className: "bg-red-500 hover:bg-red-700 text-white",
-      type: "Red Flag",
-    },
-    {
-      label: "Add Intervention",
-      icon: Zap,
-      className: "bg-teal-500 hover:bg-teal-700 text-white",
-      type: "Intervention",
-    },
-    {
-      label: "View All Reports",
-      icon: FileText,
-      className: "bg-gray-100 hover:bg-gray-200 text-gray-800",
-      type: "view",
-    },
+    { label: "Add Red-Flag Record", icon: Flag, className: "bg-red-500 hover:bg-red-700 text-white", type: "Red Flag" },
+    { label: "Add Intervention", icon: Zap, className: "bg-teal-500 hover:bg-teal-700 text-white", type: "Intervention" },
+    { label: "View All Reports", icon: CheckCircle, className: "bg-gray-100 hover:bg-gray-200 text-gray-800", type: "view" },
   ];
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        Quick Actions
-      </h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
       <div className="space-y-3">
         {actions.map((a, i) => (
           <button
             key={i}
             onClick={() =>
-              a.type === "view"
-                ? navigate("/dashboard/reports")
-                : (setType(a.type), openStepper())
+              a.type === "view" ? navigate("/dashboard/reports") : (setType(a.type), openStepper())
             }
-            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${a.className} ${
-              a.className.includes("bg-gray") ? "" : "shadow-md"
-            }`}
+            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-medium transition ${a.className} ${a.className.includes("bg-gray") ? "" : "shadow-md"}`}
           >
             <a.icon className="w-5 h-5" />
             <span>{a.label}</span>
@@ -92,21 +70,22 @@ const QuickActions = ({ openStepper, setType }) => {
   );
 };
 
-// ───── DASHBOARD ─────
+// ───── USER DASHBOARD ─────
 const Dashboard = () => {
   const { currentUser, setCurrentUser } = useUsers();
-  const { reports, notifications, createReport, updateReport, deleteReport } =
-    useReports();
-  const [stats, setStats] = useState({});
-  const [stepperOpen, setStepperOpen] = useState(false);
-  const [defaultReportType, setDefaultReportType] = useState("");
-  const [editingReport, setEditingReport] = useState(null);
-  const [showFirstPopup, setShowFirstPopup] = useState(false);
+  const { reports, createReport, updateReport, deleteReport } = useReports();
+  const { notifications, markAsRead, markAllAsRead } = useNotifications();
+
+  const [stats, setStats] = React.useState({});
+  const [stepperOpen, setStepperOpen] = React.useState(false);
+  const [defaultReportType, setDefaultReportType] = React.useState("");
+  const [editingReport, setEditingReport] = React.useState(null);
+  const [showFirstPopup, setShowFirstPopup] = React.useState(false);
 
   const navigate = useNavigate();
 
   // First login popup
-  useEffect(() => {
+  React.useEffect(() => {
     if (!currentUser) return;
     if (Number(currentUser.firstLoginShown) === 0) {
       setTimeout(() => setShowFirstPopup(true), 300);
@@ -115,9 +94,7 @@ const Dashboard = () => {
 
   const markFirstLoginShown = async () => {
     try {
-      await apiService.put(`/users/${currentUser.id}/first-login-shown`, {
-        firstLoginShown: 1,
-      });
+      await apiService.put(`/users/${currentUser.id}/first-login-shown`, { firstLoginShown: 1 });
       setCurrentUser({ ...currentUser, firstLoginShown: 1 });
     } catch (err) {
       console.error("Failed to update firstLoginShown:", err);
@@ -125,21 +102,40 @@ const Dashboard = () => {
   };
 
   // Update stats whenever reports change
-  useEffect(() => {
+  React.useEffect(() => {
     if (!reports) return;
     setStats({
       resolved: reports.filter((r) => r.status === "resolved").length,
       rejected: reports.filter((r) => r.status === "rejected").length,
       pending: reports.filter((r) => r.status === "pending").length,
       underInvestigation: reports.filter((r) =>
-        ["under-investigation", "under investigation"].includes(
-          r.status?.toLowerCase()
-        )
+        ["under-investigation", "under investigation"].includes(r.status?.toLowerCase())
       ).length,
       redFlags: reports.filter((r) => r.type === "red-flag").length,
       interventions: reports.filter((r) => r.type === "intervention").length,
     });
   }, [reports]);
+
+  // Notification handlers
+  const handleMarkRead = async (id) => {
+    try {
+      await markAsRead(id);
+      toast.success("Notification marked as read");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to mark notification as read");
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllAsRead();
+      toast.success("All notifications marked as read");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to mark all notifications as read");
+    }
+  };
 
   return (
     <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative p-4">
@@ -164,50 +160,18 @@ const Dashboard = () => {
       {/* HEADER */}
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-1">
-          Welcome back, {currentUser?.firstName}!
-        </p>
+        <p className="text-gray-500 mt-1">Welcome back, {currentUser?.firstName}!</p>
       </header>
 
       {/* STATS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {[
-          {
-            title: "Resolved Reports",
-            value: stats.resolved,
-            icon: CheckCircle,
-            color: "green",
-          },
-          {
-            title: "Pending Reports",
-            value: stats.pending,
-            icon: Clock,
-            color: "gray",
-          },
-          {
-            title: "Under Investigation",
-            value: stats.underInvestigation,
-            icon: Search,
-            color: "yellow",
-          },
-          {
-            title: "Rejected Reports",
-            value: stats.rejected,
-            icon: XCircle,
-            color: "red",
-          },
-          {
-            title: "Red-Flag Reports",
-            value: stats.redFlags,
-            icon: Flag,
-            color: "red",
-          },
-          {
-            title: "Interventions",
-            value: stats.interventions,
-            icon: Zap,
-            color: "blue",
-          },
+          { title: "Resolved Reports", value: stats.resolved, icon: CheckCircle, color: "green" },
+          { title: "Pending Reports", value: stats.pending, icon: Clock, color: "gray" },
+          { title: "Under Investigation", value: stats.underInvestigation, icon: Search, color: "yellow" },
+          { title: "Rejected Reports", value: stats.rejected, icon: XCircle, color: "red" },
+          { title: "Red-Flag Reports", value: stats.redFlags, icon: Flag, color: "red" },
+          { title: "Interventions", value: stats.interventions, icon: Zap, color: "blue" },
         ].map((s, i) => (
           <StatCard key={i} {...s} />
         ))}
@@ -241,21 +205,43 @@ const Dashboard = () => {
 
           {/* RECENT NOTIFICATIONS */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Recent Notifications
-            </h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xl font-semibold text-gray-800">Recent Notifications</h2>
+              {notifications.length > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="text-blue-500 hover:text-blue-700 text-sm font-semibold"
+                >
+                  Mark All Read
+                </button>
+              )}
+            </div>
+
             {notifications && notifications.length > 0 ? (
               <ul className="space-y-2 max-h-64 overflow-y-auto">
-                {notifications
-                  .slice(0, 5) // show latest 5
-                  .map((n) => (
-                    <li
-                      key={n.id}
-                      className="p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
-                    >
+                {notifications.slice(0, 5).map((n) => (
+                  <li
+                    key={n.id}
+                    className={`p-3 rounded-lg border flex justify-between items-start cursor-pointer transition ${
+                      n.is_read === 0 ? "bg-blue-50 border-l-4 border-blue-500" : "bg-gray-50 border-gray-100"
+                    }`}
+                  >
+                    <div>
                       <p className="text-gray-700 text-sm">{n.message}</p>
-                    </li>
-                  ))}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(n.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    {n.is_read === 0 && (
+                      <button
+                        onClick={() => handleMarkRead(n.id)}
+                        className="text-blue-500 hover:text-blue-700 text-xs font-semibold"
+                      >
+                        Mark Read
+                      </button>
+                    )}
+                  </li>
+                ))}
               </ul>
             ) : (
               <p className="text-gray-400 text-sm">No recent notifications</p>
@@ -281,7 +267,7 @@ const Dashboard = () => {
                 setStepperOpen(false);
                 setEditingReport(null);
               }}
-              onReportAdded={(savedReport) => toast.success("Report added!")}
+              onReportAdded={() => toast.success("Report added!")}
             />
           </div>
         </div>

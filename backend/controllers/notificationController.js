@@ -26,6 +26,18 @@ const markNotificationRead = async (req, res) => {
   }
 };
 
+// --- Mark all notifications as read for the logged-in user ---
+const markAllNotificationsRead = async (req, res) => {
+  try {
+    await db.execute("UPDATE notifications SET is_read = 1 WHERE user_id = ?", [req.user.id]);
+    res.json({ message: "All notifications marked as read" });
+  } catch (err) {
+    console.error("Mark all notifications read error:", err);
+    res.status(500).json({ error: "Failed to mark all notifications as read" });
+  }
+};
+
+
 // --- Delete a notification ---
 const deleteNotification = async (req, res) => {
   try {
@@ -51,22 +63,23 @@ const createNotification = async (req, res) => {
         .json({ error: "user_id and message are required" });
     }
 
-    const ADMIN_ID = 1; // Change this if your admin id is not 1
-
     // 1️⃣ Save notification for the target user
     const [result] = await db.execute(
       "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
       [user_id, message]
     );
 
-    // 2️⃣ Save a **copy** for the admin
-    await db.execute(
-      "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
-      [
-        ADMIN_ID,
-        `Sent to user ${user_id}: ${message}`
-      ]
+    // 2️⃣ Save a **copy** for all admins
+    const [admins] = await db.execute(
+      "SELECT id FROM users WHERE role = 'admin'"
     );
+
+    for (const admin of admins) {
+      await db.execute(
+        "INSERT INTO notifications (user_id, message) VALUES (?, ?)",
+        [admin.id, `Sent to user ${user_id}: ${message}`]
+      );
+    }
 
     const [newNotification] = await db.execute(
       "SELECT * FROM notifications WHERE id = ?",
@@ -76,20 +89,19 @@ const createNotification = async (req, res) => {
     console.log("Notification created:", newNotification[0]);
 
     res.status(201).json({
-      message: "Notification delivered, admin copy saved",
+      message: "Notification delivered, admin copies saved",
       notification: newNotification[0],
     });
-
   } catch (err) {
     console.error("Create notification error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-
 module.exports = {
   getUserNotifications,
   markNotificationRead,
+  markAllNotificationsRead,
   deleteNotification,
   createNotification,
 };

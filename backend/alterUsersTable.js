@@ -5,8 +5,9 @@ async function alterUsersTable() {
   try {
     // Alter the firstLoginShown column to default FALSE
     await pool.query(`
-      ALTER TABLE users
-      MODIFY firstLoginShown BOOLEAN NOT NULL DEFAULT FALSE
+      ALTER TABLE users ADD COLUMN avatar VARCHAR(255) NULL;
+
+
     `);
 
     console.log("Users table altered successfully!");

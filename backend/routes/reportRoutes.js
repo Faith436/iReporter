@@ -14,7 +14,7 @@ const {
 // 🟢 CREATE REPORT
 // multer handles multiple files in 'media'
 // controller handles validation, DB insert, notifications, and email
-router.post("/", authMiddleware, upload, async (req, res) => {
+router.post("/", authMiddleware, upload.array("media", 5), async (req, res) => {
   try {
     await createReport(req, res);
   } catch (err) {

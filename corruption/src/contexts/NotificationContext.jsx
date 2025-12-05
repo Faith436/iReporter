@@ -13,20 +13,31 @@ export const useNotifications = () => useContext(NotificationContext);
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
-  /** Fetch notifications immediately for fast UI */
+  /** Fetch notifications for the logged-in user/admin */
   const fetchNotifications = useCallback(async () => {
     try {
-      const data = await apiService.getNotifications(); // now returns array
-      setNotifications(data || []);
+      const data = await apiService.getNotifications(); // returns array
+      const sorted = (data || []).sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      );
+      setNotifications(sorted);
     } catch (err) {
       console.error("Fetch notifications error:", err);
       setNotifications([]);
     }
   }, []);
 
-  /** Add a new notification at the top */
-  const addNotification = (notification) => {
-    setNotifications((prev) => [notification, ...prev]);
+  /** Add a new notification and fetch latest from backend */
+  const addNotification = async (notification) => {
+    try {
+      // Send to backend
+      const res = await apiService.createNotification(notification);
+      // Fetch latest notifications to sync admin/user dashboards
+      await fetchNotifications();
+      return res;
+    } catch (err) {
+      console.error("Add notification error:", err);
+    }
   };
 
   /** Mark a notification as read */
@@ -38,6 +49,16 @@ export const NotificationProvider = ({ children }) => {
       );
     } catch (err) {
       console.error("Mark notification read error:", err);
+    }
+  };
+
+  /** Mark all notifications as read */
+  const markAllAsRead = async () => {
+    try {
+      await apiService.markAllNotificationsRead(); // single PUT request
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+    } catch (err) {
+      console.error("Mark all notifications read error:", err);
     }
   };
 
@@ -73,9 +94,10 @@ export const NotificationProvider = ({ children }) => {
         notifications,
         fetchNotifications,
         markAsRead,
+        markAllAsRead,
         deleteNotification,
         deleteAllNotifications,
-        addNotification,
+        addNotification, // now automatically syncs dashboards
       }}
     >
       {children}
