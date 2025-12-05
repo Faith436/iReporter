@@ -38,7 +38,6 @@ router.get("/profile", authMiddleware, async (req, res) => {
 });
 
 // --- PUT update profile ---
-// --- PUT update profile ---
 router.put(
   "/profile",
   authMiddleware,
@@ -51,11 +50,14 @@ router.put(
 
       const { firstName, lastName, bio, phone } = req.body;
 
-      // Safely get Cloudinary URL if file uploaded
+      // --- Determine avatar URL ---
       let avatarUrl = null;
-      if (req.file && req.file.path) {
-        avatarUrl = req.file.path;
+      if (req.file) {
+        // CloudinaryStorage usually provides the full URL in either path or filename
+        avatarUrl = req.file.path || req.file.filename || null;
       }
+
+      console.log("Computed avatarUrl:", avatarUrl);
 
       // SQL Update
       const updateQuery = `

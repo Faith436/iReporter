@@ -1,11 +1,13 @@
 // src/components/Header.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import { Menu, Bell, X, ChevronDown, LogOut, User } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 
-const Header = () => {
+// 1. Component now accepts isSidebarCollapsed as a prop
+const Header = ({ isSidebarCollapsed, toggleMobileSidebar }) => {
   const { currentUser, logout } = useUsers();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -15,9 +17,12 @@ const Header = () => {
 
   const user = currentUser || { email: "", role: "user", firstName: "User" };
 
-  // Refs for detecting outside clicks
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
+
+  // --- Dynamic Positioning Logic ---
+  // If collapsed (w-20), header starts at left-20. If expanded (w-64), header starts at left-64.
+  const sidebarWidthClass = isSidebarCollapsed ? 'md:left-20' : 'md:left-64';
 
   // --- Load notifications safely ---
   useEffect(() => {
@@ -101,10 +106,16 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 md:left-64 right-0 h-20 shadow-md flex bg-slate-600 items-center justify-between px-6 md:px-10 z-10 border-b border-gray-100">
+    // FIX 2: Dynamic position, white background, shadow to fix content bleed, and transition
+    <header className={`fixed top-0 left-0 ${sidebarWidthClass} right-0 h-20 bg-white shadow-md flex items-center justify-between px-6 md:px-10 z-10 border-b border-gray-100 transition-[left] duration-300`}>
+      
       {/* Left: Menu */}
       <div className="flex items-center gap-4 flex-1">
-        <Menu className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" />
+        {/* Assume toggleMobileSidebar is passed to control the sidebar menu on mobile */}
+        <Menu 
+          className="w-6 h-6 text-gray-600 md:hidden cursor-pointer" 
+          onClick={toggleMobileSidebar} // Hook up mobile toggle here
+        />
       </div>
 
       {/* Right: Notifications + User */}
@@ -115,7 +126,7 @@ const Header = () => {
             onClick={() => setShowNotifications((prev) => !prev)}
             className="relative p-2 rounded-full hover:bg-gray-100 transition"
           >
-            <Bell className="w-5 h-5 sm:w-6 sm:h-6 " />
+            <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" /> {/* Changed icon color for light theme */}
             {unreadCount > 0 && (
               <span className="absolute top-0 right-0 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 text-white text-[0.55rem] sm:text-xs flex items-center justify-center rounded-full">
                 {unreadCount}
@@ -133,7 +144,7 @@ const Header = () => {
               }
             `}
           >
-            {/* ...notifications content stays the same... */}
+            {/* Header */}
             <div className="flex justify-between items-center p-3 border-b bg-gray-50">
               <h3 className="font-semibold text-gray-700 text-sm">
                 Notifications
@@ -215,7 +226,7 @@ const Header = () => {
               )}
             </div>
 
-            <div className="px-1 py-3 text-left">
+            <div className="px-1 py-3 text-left hidden sm:block"> {/* Hide name on very small screens for space */}
               <p className="font-semibold text-gray-800">
                 {user.firstName || "User"}
               </p>
@@ -237,6 +248,7 @@ const Header = () => {
                     } else {
                       navigate("/dashboard/profile");
                     }
+                    setShowUserMenu(false); // Close menu after navigation
                   }}
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
@@ -244,7 +256,10 @@ const Header = () => {
                 </li>
 
                 <li
-                  onClick={logout}
+                  onClick={() => {
+                      logout();
+                      setShowUserMenu(false); // Close menu after logout
+                  }}
                   className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" /> Logout

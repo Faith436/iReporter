@@ -18,7 +18,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 
-// ───── STAT CARD ─────
+// ───── STAT CARD ───── (Remains unchanged)
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
     green: "bg-green-100 text-green-600",
@@ -40,7 +40,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
   );
 };
 
-// ───── QUICK ACTIONS ─────
+// ───── QUICK ACTIONS ───── (Remains unchanged)
 const QuickActions = ({ openStepper, setType }) => {
   const navigate = useNavigate();
   const actions = [
@@ -71,7 +71,8 @@ const QuickActions = ({ openStepper, setType }) => {
 };
 
 // ───── USER DASHBOARD ─────
-const Dashboard = () => {
+// FIX 1: Removed the isSidebarCollapsed prop from the component signature
+const Dashboard = () => { 
   const { currentUser, setCurrentUser } = useUsers();
   const { reports, createReport, updateReport, deleteReport } = useReports();
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
@@ -84,7 +85,7 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
-  // First login popup
+  // First login popup (unchanged)
   React.useEffect(() => {
     if (!currentUser) return;
     if (Number(currentUser.firstLoginShown) === 0) {
@@ -101,7 +102,7 @@ const Dashboard = () => {
     }
   };
 
-  // Update stats whenever reports change
+  // Update stats whenever reports change (unchanged)
   React.useEffect(() => {
     if (!reports) return;
     setStats({
@@ -116,7 +117,7 @@ const Dashboard = () => {
     });
   }, [reports]);
 
-  // Notification handlers
+  // Notification handlers (unchanged)
   const handleMarkRead = async (id) => {
     try {
       await markAsRead(id);
@@ -137,9 +138,12 @@ const Dashboard = () => {
     }
   };
 
+  // FIX 2: Removed dynamic margin logic and pt-24/md:pt-4 from the return block.
   return (
-    <div className="rounded-tl-3xl m-0 bg-gray-50 min-h-screen relative p-4">
-      {/* FIRST LOGIN POPUP */}
+    // Only retains standard wrapper classes. Top spacing (pt-20) is handled by DashboardLayout's <main> element.
+    <div className="m-0 bg-gray-50 min-h-screen relative p-4 pt-20"> 
+    
+      {/* FIRST LOGIN POPUP (unchanged) */}
       {showFirstPopup && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <FirstLoginPopup
@@ -157,98 +161,106 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* HEADER */}
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-1">Welcome back, {currentUser?.firstName}!</p>
-      </header>
+      {/* Content wrapper must use padding for inner layout */}
+      <div className="p-4"> 
+        {/* HEADER (This is the local header, which should now clear the fixed Header) */}
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+          <p className="text-gray-500 mt-1">Welcome back, {currentUser?.firstName}!</p>
+        </header>
 
-      {/* STATS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        {[
-          { title: "Resolved Reports", value: stats.resolved, icon: CheckCircle, color: "green" },
-          { title: "Pending Reports", value: stats.pending, icon: Clock, color: "gray" },
-          { title: "Under Investigation", value: stats.underInvestigation, icon: Search, color: "yellow" },
-          { title: "Rejected Reports", value: stats.rejected, icon: XCircle, color: "red" },
-          { title: "Red-Flag Reports", value: stats.redFlags, icon: Flag, color: "red" },
-          { title: "Interventions", value: stats.interventions, icon: Zap, color: "blue" },
-        ].map((s, i) => (
-          <StatCard key={i} {...s} />
-        ))}
-      </div>
-
-      {/* REPORTS + QUICK ACTIONS + NOTIFICATIONS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <UserReportsView
-            reports={reports}
-            role="user"
-            setEditingReport={setEditingReport}
-            setShowModal={setStepperOpen}
-            onDelete={(id) => deleteReport(id)}
-            onEdit={(report) => {
-              setEditingReport(report);
-              setStepperOpen(true);
-            }}
-            onUpdate={(id, data) => updateReport(id, data)}
-            loading={false}
-          />
+        {/* STATS GRID (unchanged) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {[
+            { title: "Resolved Reports", value: stats.resolved, icon: CheckCircle, color: "green" },
+            { title: "Pending Reports", value: stats.pending, icon: Clock, color: "gray" },
+            { title: "Under Investigation", value: stats.underInvestigation, icon: Search, color: "yellow" },
+            { title: "Rejected Reports", value: stats.rejected, icon: XCircle, color: "red" },
+            { title: "Red-Flag Reports", value: stats.redFlags, icon: Flag, color: "red" },
+            { title: "Interventions", value: stats.interventions, icon: Zap, color: "blue" },
+          ].map((s, i) => (
+            <StatCard key={i} {...s} />
+          ))}
         </div>
 
-        <div className="space-y-6">
-          <QuickActions
-            openStepper={() => setStepperOpen(true)}
-            setType={setDefaultReportType}
-          />
+        {/* REPORTS + QUICK ACTIONS + NOTIFICATIONS (unchanged) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <UserReportsView
+              reports={reports}
+              role="user"
+              setEditingReport={setEditingReport}
+              setShowModal={setStepperOpen}
+              onDelete={(id) => deleteReport(id)}
+              onEdit={(report) => {
+                setEditingReport(report);
+                setStepperOpen(true);
+              }}
+              onUpdate={(id, data) => updateReport(id, data)}
+              loading={false}
+            />
+          </div>
 
-          {/* RECENT NOTIFICATIONS */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xl font-semibold text-gray-800">Recent Notifications</h2>
-              {notifications.length > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  className="text-blue-500 hover:text-blue-700 text-sm font-semibold"
-                >
-                  Mark All Read
-                </button>
+          <div className="space-y-6">
+            <QuickActions
+              openStepper={() => setStepperOpen(true)}
+              setType={setDefaultReportType}
+            />
+
+            {/* RECENT NOTIFICATIONS (unchanged) */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-xl font-semibold text-gray-800">Recent Notifications</h2>
+                {notifications.length > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-blue-500 hover:text-blue-700 text-sm font-semibold"
+                  >
+                    Mark All Read
+                  </button>
+                )}
+              </div>
+
+              {notifications && notifications.length > 0 ? (
+                <ul className="space-y-2 max-h-64 overflow-y-auto">
+                  {notifications.slice(0, 5).map((n) => (
+                    <li
+                      key={n.id}
+                      onClick={() => navigate('/dashboard/notifications')}
+                      className={`p-3 rounded-lg border flex justify-between items-start cursor-pointer transition ${
+                        n.is_read === 0 ? "bg-blue-50 border-l-4 border-blue-500" : "bg-gray-50 border-gray-100"
+                      }`}
+                    >
+                      <div>
+                        <p className="text-gray-700 text-sm">{n.message}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(n.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      {n.is_read === 0 && (
+                        <button
+                          onClick={(e) => {
+                              e.stopPropagation(); // Prevent navigating when marking read
+                              handleMarkRead(n.id);
+                          }}
+                          className="text-blue-500 hover:text-blue-700 text-xs font-semibold"
+                        >
+                          Mark Read
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-400 text-sm">No recent notifications</p>
               )}
             </div>
-
-            {notifications && notifications.length > 0 ? (
-              <ul className="space-y-2 max-h-64 overflow-y-auto">
-                {notifications.slice(0, 5).map((n) => (
-                  <li
-                    key={n.id}
-                    className={`p-3 rounded-lg border flex justify-between items-start cursor-pointer transition ${
-                      n.is_read === 0 ? "bg-blue-50 border-l-4 border-blue-500" : "bg-gray-50 border-gray-100"
-                    }`}
-                  >
-                    <div>
-                      <p className="text-gray-700 text-sm">{n.message}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(n.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                    {n.is_read === 0 && (
-                      <button
-                        onClick={() => handleMarkRead(n.id)}
-                        className="text-blue-500 hover:text-blue-700 text-xs font-semibold"
-                      >
-                        Mark Read
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-400 text-sm">No recent notifications</p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* REPORT STEPPER MODAL */}
+
+      {/* REPORT STEPPER MODAL (unchanged) */}
       {stepperOpen && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-auto">
           <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full mt-20 p-6 relative">

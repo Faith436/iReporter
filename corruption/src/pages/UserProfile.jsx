@@ -116,8 +116,8 @@ const UserProfile = () => {
     "w-full bg-indigo-600 text-white py-3 px-4 rounded-xl hover:bg-indigo-700 transition font-bold shadow-md hover:shadow-lg";
 
   return (
-    <div className="min-h-screen sm:p-10 bg-gray-100">
-      <div className="w-full">
+    <div className="min-h-screen sm:p-10 ">
+      <div className="w-full p-4 pt-20">
         {/* Header & Back Button */}
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900">My Profile</h1>

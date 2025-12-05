@@ -377,7 +377,7 @@ const AdminDashboard = () => {
   const displayName = currentUser?.name?.split(" ")[0] || "Admin";
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-8 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden p-4 pt-20">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
         Dashboard Overview
       </h1>
