@@ -18,6 +18,8 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 
+
+
 // ───── STAT CARD ───── (Remains unchanged)
 const StatCard = ({ title, value, icon: Icon, color }) => {
   const colorClasses = {
@@ -73,6 +75,7 @@ const QuickActions = ({ openStepper, setType }) => {
 // ───── USER DASHBOARD ─────
 // FIX 1: Removed the isSidebarCollapsed prop from the component signature
 const Dashboard = () => { 
+    const navigate = useNavigate(); 
   const { currentUser, setCurrentUser } = useUsers();
   const { reports, updateReport, deleteReport } = useReports();
   const { notifications, markAsRead, markAllAsRead } = useNotifications();
