@@ -4,8 +4,7 @@ import {
   Flag,
   Zap,
   Search,
-  
-  XCircle,
+   XCircle,
   Clock,
 } from "lucide-react";
 import { useReports } from "../contexts/ReportContext";
