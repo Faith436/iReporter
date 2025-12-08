@@ -1,39 +1,37 @@
 // controllers/userController.js
 const db = require("../db");
-
-const BASE_URL = "https://ireporter-xafr.onrender.com"; // make sure it's HTTPS
+const cloudinary = require("../cloudinary"); // your cloudinary config
+const fs = require("fs");
 
 // --- GET LOGGED-IN USER PROFILE ---
 const getProfile = async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT id, first_name, last_name, email, phone, bio, avatar, role 
-       FROM users 
-       WHERE id = ?`,
+      `
+      SELECT id, first_name, last_name, email, phone, bio, avatar, role 
+      FROM users 
+      WHERE id = ?
+      `,
       [req.user.id]
     );
 
     if (rows.length === 0)
       return res.status(404).json({ error: "User not found" });
 
-    const user = rows[0];
+    const u = rows[0];
 
     res.json({
-      id: user.id,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      email: user.email,
-      phone: user.phone,
-      bio: user.bio,
-      avatar: user.avatar
-        ? user.avatar.startsWith("http")
-          ? user.avatar
-          : `${BASE_URL}${user.avatar}` // ✅ prepend HTTPS
-        : "", // 👈 SENT TO FRONTEND
-      role: user.role,
+      id: u.id,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      email: u.email,
+      phone: u.phone,
+      bio: u.bio || "",
+      avatar: u.avatar || "", // Already a Cloudinary URL
+      role: u.role,
     });
   } catch (err) {
-    console.error("GET PROFILE ERROR", err);
+    console.error("GET PROFILE ERROR:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -42,7 +40,10 @@ const getProfile = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const [users] = await db.query(
-      `SELECT id, first_name, last_name, email, phone, bio, avatar, role FROM users`
+      `
+      SELECT id, first_name, last_name, email, phone, bio, avatar, role 
+      FROM users
+      `
     );
 
     res.json(
@@ -52,78 +53,74 @@ const getAllUsers = async (req, res) => {
         lastName: u.last_name,
         email: u.email,
         phone: u.phone,
-        bio: u.bio,
-        avatar: u.avatar
-          ? u.avatar.startsWith("http")
-            ? u.avatar
-            : `${BASE_URL}${u.avatar}`
-          : "",
-
+        bio: u.bio || "",
+        avatar: u.avatar || "", // Cloudinary URL
         role: u.role,
       }))
     );
   } catch (err) {
-    console.error("GET ALL USERS ERROR", err);
+    console.error("GET ALL USERS ERROR:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// UPDATE PROFILE
+// --- UPDATE PROFILE ---
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const { firstName, lastName, phone, bio } = req.body;
 
-    // Save only the filename (NOT the full URL)
-    let avatarFilename = null;
+    let avatarUrl = null;
+
+    // Upload avatar to Cloudinary if file exists
     if (req.file) {
-      avatarFilename = req.file.filename;
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "avatars",
+        use_filename: true,
+        unique_filename: false,
+      });
+      avatarUrl = result.secure_url;
+
+      // Remove local file
+      fs.unlinkSync(req.file.path);
     }
 
     const query = `
       UPDATE users 
       SET 
-        first_name = ?, 
-        last_name = ?, 
-        phone = ?, 
-        bio = ?, 
+        first_name = COALESCE(?, first_name),
+        last_name = COALESCE(?, last_name),
+        phone = COALESCE(?, phone),
+        bio = COALESCE(?, bio),
         avatar = COALESCE(?, avatar)
       WHERE id = ?
     `;
 
-    await db.query(query, [
-      firstName,
-      lastName,
-      phone,
-      bio,
-      avatarFilename,
-      userId,
-    ]);
+    await db.query(query, [firstName, lastName, phone, bio, avatarUrl, userId]);
 
-    // Fetch updated user
     const [rows] = await db.query(
-      `SELECT id, first_name, last_name, email, phone, bio, avatar, role 
-       FROM users WHERE id = ?`,
+      `
+      SELECT id, first_name, last_name, email, phone, bio, avatar, role
+      FROM users 
+      WHERE id = ?
+      `,
       [userId]
     );
 
-    const updatedUser = rows[0];
-    const BASE_URL = "https://ireporter-xafr.onrender.com";
+    const u = rows[0];
 
     res.json({
-      id: updatedUser.id,
-      firstName: updatedUser.first_name,
-      lastName: updatedUser.last_name,
-      email: updatedUser.email,
-      phone: updatedUser.phone,
-      bio: updatedUser.bio || "",
-      avatar: updatedUser.avatar
-        ? `${BASE_URL}/uploads/avatars/${updatedUser.avatar}`
-        : "",
-      role: updatedUser.role,
+      id: u.id,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      email: u.email,
+      phone: u.phone,
+      bio: u.bio || "",
+      avatar: u.avatar || "", // Cloudinary URL
+      role: u.role,
     });
   } catch (err) {
-    console.error("UPDATE PROFILE ERROR", err);
+    console.error("UPDATE PROFILE ERROR:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -131,5 +128,5 @@ const updateProfile = async (req, res) => {
 module.exports = {
   getProfile,
   getAllUsers,
-  updateProfile, // 👈 ADD THIS
+  updateProfile,
 };

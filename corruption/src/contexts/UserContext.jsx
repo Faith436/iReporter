@@ -16,10 +16,9 @@ export const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFirstLogin, setShowFirstLogin] = useState(false);
-  const { user } = useAuth(); // ✅ get current token from AuthContext
-  
+  const { user } = useAuth(); 
+  const token = user?.token;
 
-  // Check if first login popup should show
   const checkFirstLogin = (user) => {
     setShowFirstLogin(!user.firstLoginShown);
   };
@@ -29,7 +28,15 @@ export const UserProvider = ({ children }) => {
     const fetchUser = async () => {
       try {
         const data = await apiService.getCurrentUser();
-        setCurrentUser(data.user);
+        // Use Cloudinary avatar directly
+        setCurrentUser({
+          ...data.user,
+          avatar: data.user.avatar || "",
+          firstName: data.user.firstName || "",
+          lastName: data.user.lastName || "",
+          phone: data.user.phone || "",
+          role: data.user.role || "user",
+        });
         checkFirstLogin(data.user);
       } catch (err) {
         console.error("Failed to fetch current user:", err);
@@ -44,7 +51,10 @@ export const UserProvider = ({ children }) => {
   const refreshUser = useCallback(async () => {
     try {
       const data = await apiService.getCurrentUser();
-      setCurrentUser(data.user);
+      setCurrentUser({
+        ...data.user,
+        avatar: data.user.avatar || "",
+      });
       checkFirstLogin(data.user);
     } catch (err) {
       console.error("Failed to refresh user:", err);
@@ -74,8 +84,6 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // --- New Profile Methods ---
-
   // Get full profile
   const getProfile = async () => {
     try {
@@ -90,21 +98,19 @@ export const UserProvider = ({ children }) => {
   // Update profile (name, bio, phone, avatar)
   const updateUserProfile = async (formData) => {
     try {
-      console.log("Sending FormData to backend:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      // ✅ Call backend
       const response = await apiService.updateProfile(formData);
 
-      console.log("Backend returned:", response);
-
-      // ✅ Extract user data from response
+      // Backend returns full Cloudinary URL
       const updatedUser = response.data;
 
-      // ✅ Update context state
-      setCurrentUser(updatedUser);
+      setCurrentUser({
+        ...updatedUser,
+        avatar: updatedUser.avatar || "",
+        firstName: updatedUser.firstName || "",
+        lastName: updatedUser.lastName || "",
+        phone: updatedUser.phone || "",
+        role: updatedUser.role || "user",
+      });
 
       return updatedUser;
     } catch (err) {
