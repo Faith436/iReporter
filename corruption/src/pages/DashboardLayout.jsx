@@ -1,18 +1,43 @@
-import React from "react";
+import React, { useState } from "react"; // 1. Import useState
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { Outlet } from "react-router-dom";
 
 const DashboardLayout = () => {
+  // 2. Introduce state for sidebar collapse
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Function to toggle the collapse state
+  const toggleCollapse = () => {
+      setIsCollapsed(prev => !prev);
+  };
+
+  // Dynamic class to control the desktop margin of the main content area
+  const mainContentMarginClass = isCollapsed ? 'md:ml-20' : 'md:ml-64';
+
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
+      
+      {/* 3. Pass collapse state and toggle function to Sidebar */}
+      <Sidebar 
+        isCollapsed={isCollapsed} 
+        toggleCollapse={toggleCollapse} 
+      />
 
-      {/* Content area */}
-      <div className="flex-1 flex flex-col md:ml-64">
-        <Header />
+      {/* Content area wrapper: Apply dynamic margin for desktop */}
+      <div className={`flex-1 flex flex-col ${mainContentMarginClass} transition-[margin-left] duration-300`}>
+        
+        {/* 4. Pass collapse state to Header */}
+        <Header 
+          isSidebarCollapsed={isCollapsed}
+          // Assuming the Sidebar component handles its own mobile state,
+          // but if the Header needs to trigger the *mobile* sidebar open, 
+          // you would need to lift the 'mobileOpen' state here too. 
+          // For now, we focus on desktop collapse.
+        />
 
-        <main className="mt-16 p-6">
+        {/* 5. Main content container: Remove mt-16 as content components handle spacing from fixed header */}
+        <main className="flex-1 p-6 pt-20 md:pt-4"> 
           <Outlet />
         </main>
       </div>
