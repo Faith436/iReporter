@@ -4,7 +4,7 @@ const sgMail = require("@sendgrid/mail");
 // Read SendGrid API key and sender from environment variables
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const SENDGRID_SENDER =
-  process.env.SENDGRID_SENDER || "wisdom.jeremiah.upti@gmail.com";
+  process.env.SENDGRID_SENDER || "nanvule.faith.upti@gmail.com";
 
 // Check for missing/invalid API key
 if (!SENDGRID_API_KEY || !SENDGRID_API_KEY.startsWith("SG.")) {
