@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useReports } from "../contexts/ReportContext";
 import ListView from "../components/ListView";
 import KanbanView from "../components/KanbanView";
+import toast from "react-hot-toast";
 
 const AdminReports = () => {
-  const { reports, fetchDashboardData, deleteReport } = useReports();
+  const { reports, fetchDashboardData, deleteReport, updateReportStatus } = useReports();
   const [activeView, setActiveView] = useState("list");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchDashboardData(); // just fetch in background
+    fetchDashboardData(); // fetch in background
   }, [fetchDashboardData, refreshKey]);
 
   const handleDelete = async (id) => {
@@ -17,8 +18,19 @@ const AdminReports = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
+  const handleStatusChange = async (reportId, newStatus) => {
+    try {
+      await updateReportStatus(reportId, newStatus);
+      toast.success("Report status updated");
+      setRefreshKey((prev) => prev + 1);
+    } catch (err) {
+      console.error("ListView Status Update Error:", err);
+      toast.error("Failed to update status");
+    }
+  };
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 pt-20 bg-gray-50 min-h-screen">
       <div className="flex flex-wrap justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">All Reports (Admin)</h1>
 
@@ -51,7 +63,12 @@ const AdminReports = () => {
           No reports available.
         </p>
       ) : activeView === "list" ? (
-        <ListView role="admin" refreshKey={refreshKey} />
+        <ListView
+          role="admin"
+          refreshKey={refreshKey}
+          onStatusChange={handleStatusChange} // ✅ Pass the handler here
+          onDelete={handleDelete}
+        />
       ) : (
         <KanbanView
           role="admin"
