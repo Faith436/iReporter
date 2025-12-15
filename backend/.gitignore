@@ -36,7 +36,6 @@ backend/.env.test.local
 backend/.env.production.local
 
 # Frontend env files (if any)
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
 .env
 .env.local
 .env.development.local
