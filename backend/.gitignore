@@ -1,33 +1,22 @@
-<<<<<<< HEAD
-# Dependencies
-=======
+
 # -----------------------
 # Dependencies
 # -----------------------
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
+
 node_modules/
 .pnp
 .pnp.js
 
-<<<<<<< HEAD
-# Build output
-=======
+
 # -----------------------
 # Build output
 # -----------------------
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
+
 /dist
 /build
 /out
 
-<<<<<<< HEAD
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Environment variables
-=======
 # -----------------------
 # Logs
 # -----------------------
@@ -54,25 +43,17 @@ backend/.env.production.local
 .env.test.local
 .env.production.local
 
-<<<<<<< HEAD
-# IDE / OS files
-=======
+
 # -----------------------
 # IDE / OS files
 # -----------------------
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
+
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 
-<<<<<<< HEAD
-# Test coverage
-coverage/
 
-# Temporary files
-*.log
-=======
 # -----------------------
 # Test coverage
 # -----------------------
@@ -81,7 +62,6 @@ coverage/
 # -----------------------
 # Temporary / backup files
 # -----------------------
->>>>>>> 9852c23f03473f0e720e3dabc2dd6d0b1dd51593
 *.tmp
 *.bak
 *.old

@@ -46,7 +46,7 @@ const Reports = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 pt-20 px-4">
       <div className="flex flex-wrap justify-between items-center mb-6">
         <h1
           className="text-2xl font-bold"

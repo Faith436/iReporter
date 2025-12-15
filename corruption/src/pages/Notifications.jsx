@@ -15,7 +15,7 @@ const Notifications = () => {
     deleteAllNotifications,
   } = useNotifications();
 
-  if (loading) return <p className="p-4 text-gray-500">Loading notifications...</p>;
+  if (loading) return <p className="p-4 text-gray-500">Loading notifications...</p>
 
   // Admin sees all notifications, users see only their own
   const userNotifications =
@@ -71,7 +71,7 @@ const Notifications = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 pt-20 bg-gray-50 min-h-screen">
       <Toaster position="top-center" />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Notifications</h1>

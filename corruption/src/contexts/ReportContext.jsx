@@ -8,24 +8,19 @@ import React, {
 import apiService from "../services/api";
 import { useUsers } from "./UserContext";
 import toast from "react-hot-toast";
-
 const ReportContext = createContext();
 export const useReports = () => useContext(ReportContext);
-
 export const ReportProvider = ({ children }) => {
   const { currentUser } = useUsers();
-
   const [reports, setReports] = useState([]);
   const [locations, setLocations] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasCreatedFirstReport, setHasCreatedFirstReport] = useState(false);
-
   const normalizeType = (type) =>
     type?.toLowerCase().replace(/\s+/g, "-") || "";
   const normalizeStatus = (status) =>
     status?.toLowerCase().replace(/\s+/g, "-") || "pending";
-
   // ─── FETCH DASHBOARD DATA ───
   const fetchDashboardData = useCallback(async () => {
     if (!currentUser) return;
@@ -35,22 +30,21 @@ export const ReportProvider = ({ children }) => {
         currentUser.role === "admin"
           ? apiService.getReports()
           : apiService.getReports(currentUser.id);
-
       const notificationsPromise = apiService.getNotifications();
-
       const [reportsData, notificationsData] = await Promise.all([
         reportsPromise,
         notificationsPromise,
       ]);
-
-      const formattedReports = (reportsData || []).map((r) => ({
-        ...r,
-        type: normalizeType(r.type),
-        status: normalizeStatus(r.status),
-        lat: r.lat ? Number(r.lat) : null,
-        lng: r.lng ? Number(r.lng) : null,
-      }));
-
+      const reportsArray = Array.isArray(reportsData)
+  ? reportsData
+  : reportsData?.reports || reportsData?.data || [];
+const formattedReports = reportsArray.map((r) => ({
+  ...r,
+  type: normalizeType(r.type),
+  status: normalizeStatus(r.status),
+  lat: r.lat ? Number(r.lat) : null,
+  lng: r.lng ? Number(r.lng) : null,
+}));
       setReports(formattedReports);
       setLocations(
         formattedReports
@@ -64,7 +58,6 @@ export const ReportProvider = ({ children }) => {
             status: r.status,
           }))
       );
-
       setNotifications(notificationsData || []);
       if (formattedReports.length > 0) setHasCreatedFirstReport(true);
     } catch (err) {
@@ -76,17 +69,14 @@ export const ReportProvider = ({ children }) => {
       setLoading(false);
     }
   }, [currentUser]);
-
   useEffect(() => {
     if (currentUser) fetchDashboardData();
   }, [currentUser, fetchDashboardData]);
-
   // ─── CREATE REPORT ───
   const createReport = async (data) => {
     if (!data.title || !data.description || !data.type) {
       throw new Error("Title, description, and type are required");
     }
-
     const tempId = `temp-${Date.now()}`;
     const tempReport = {
       id: tempId,
@@ -99,7 +89,6 @@ export const ReportProvider = ({ children }) => {
       lng: data.lng ? Number(data.lng) : null,
       media: data.media || [],
     };
-
     // Optimistic UI
     setReports((prev) => [tempReport, ...(prev || [])]);
     if (tempReport.lat && tempReport.lng) {
@@ -115,13 +104,10 @@ export const ReportProvider = ({ children }) => {
         },
       ]);
     }
-
     try {
       const response = await apiService.post("/reports", data);
       const savedReport = response.report;
-
       if (!savedReport?.id) throw new Error("Invalid backend response");
-
       const formattedReport = {
         id: savedReport.id,
         title: savedReport.title || "",
@@ -133,7 +119,6 @@ export const ReportProvider = ({ children }) => {
         lng: savedReport.lng ? Number(savedReport.lng) : null,
         media: savedReport.media || [],
       };
-
       // Replace temp report
       setReports((prev) =>
         (prev || []).map((r) => (r.id === tempId ? formattedReport : r))
@@ -154,7 +139,6 @@ export const ReportProvider = ({ children }) => {
           )
         );
       }
-
       setHasCreatedFirstReport(true);
       return formattedReport;
     } catch (err) {
@@ -169,18 +153,15 @@ export const ReportProvider = ({ children }) => {
       throw err;
     }
   };
-
   // ─── UPDATE REPORT ───
   const updateReport = async (reportId, reportData) => {
     const oldReport = reports.find((r) => r.id === reportId);
     if (!oldReport) return null;
-
     try {
       const updatedReport = { ...oldReport, ...reportData };
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? updatedReport : r))
       );
-
       if (updatedReport.lat && updatedReport.lng) {
         setLocations((prev) =>
           (prev || []).map((l) =>
@@ -188,12 +169,10 @@ export const ReportProvider = ({ children }) => {
           )
         );
       }
-
       const savedReport = await apiService.put(
         `/reports/${reportId}`,
         reportData
       );
-
       const formattedReport = {
         ...savedReport,
         type: normalizeType(savedReport.type),
@@ -201,7 +180,6 @@ export const ReportProvider = ({ children }) => {
         lat: savedReport.lat ? Number(savedReport.lat) : null,
         lng: savedReport.lng ? Number(savedReport.lng) : null,
       };
-
       setReports((prev) =>
         (prev || []).map((r) => (r.id === reportId ? formattedReport : r))
       );
@@ -212,7 +190,6 @@ export const ReportProvider = ({ children }) => {
           )
         );
       }
-
       return formattedReport;
     } catch (err) {
       console.error("Update report error:", err);
@@ -223,16 +200,13 @@ export const ReportProvider = ({ children }) => {
       return null;
     }
   };
-
   // ─── DELETE REPORT ───
   const deleteReport = async (reportId) => {
     const oldReports = [...reports];
     const oldLocations = [...locations];
-
     try {
       setReports((prev) => (prev || []).filter((r) => r.id !== reportId));
       setLocations((prev) => (prev || []).filter((l) => l.id !== reportId));
-
       await apiService.delete(`/reports/${reportId}`);
       toast.success("Report deleted successfully");
     } catch (err) {
@@ -242,12 +216,10 @@ export const ReportProvider = ({ children }) => {
       setLocations(oldLocations);
     }
   };
-
   // ─── UPDATE REPORT STATUS ───
   const updateReportStatus = async (reportId, status) => {
     const oldReport = reports.find((r) => r.id === reportId);
     if (!oldReport) return null;
-
     try {
       // Optimistic update
       setReports((prev) =>
@@ -256,9 +228,7 @@ export const ReportProvider = ({ children }) => {
       setLocations((prev) =>
         (prev || []).map((l) => (l.id === reportId ? { ...l, status } : l))
       );
-
       await apiService.put(`/reports/${reportId}/status`, { status });
-
       return { ...oldReport, status };
     } catch (err) {
       console.error("Update status error:", err);
@@ -269,7 +239,6 @@ export const ReportProvider = ({ children }) => {
       return null;
     }
   };
-
   return (
     <ReportContext.Provider
       value={{
@@ -290,3 +259,10 @@ export const ReportProvider = ({ children }) => {
     </ReportContext.Provider>
   );
 };
+
+
+
+
+
+
+
